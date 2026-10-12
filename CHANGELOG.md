@@ -13,6 +13,7 @@
 ### Fixed
 
 - Find durable fix and refusal precedents ([pm-review-precedents](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-precedents.toon))
+- Classify Sourcery budget, Sourcery guide and CodeRabbit manual-review notices as informational ([pm-review-pr7r](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-pr7r.toon))
 
 ### Other
 

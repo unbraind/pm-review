@@ -3,7 +3,7 @@ import type { Contribution, Finding, FindingKind, PullRequest, ReviewThread } fr
 /** Recognize bot noise that provides context without requesting a code change. */
 export function isInformational(body: string): boolean {
   if (/(?:^|[\s_*])potential issue(?:$|[\s_*])|_nitpick_|!\[(?:high|medium|low)[-_]priority\]|\bseverity\s*[:=]\s*(?:critical|high|medium|low|major|minor)\b/iu.test(body)) return false;
-  return /rate[- ]limit|quota (?:exceeded|exhausted)|trial (?:has )?ended|review failed|failed to (?:review|generate)|full review finished|walkthrough|no actionable (?:comments|issues)|actionable comments posted:|review skipped|summary of (?:changes|pull request)/i.test(body);
+  return /rate[- ]limit|quota (?:exceeded|exhausted)|trial (?:has )?ended|review failed|failed to (?:review|generate)|full review finished|walkthrough|no actionable (?:comments|issues)|actionable comments posted:|review skipped|summary of (?:changes|pull request)|review budget|does not receive automatic reviews|reviewer's guide/i.test(body);
 }
 
 /** Extract explicit severity markers used by CodeRabbit, Greptile, Gemini and Sourcery. */
@@ -21,7 +21,7 @@ export function severityOf(body: string): string {
 /** Choose a readable finding title while retaining the unabridged body in the tracker. */
 export function summaryOf(body: string): string {
   const lines = body.split('\n').map(/** Remove Markdown wrappers from candidate title lines. */ line => line.replace(/<[^>]*>/g, '').replace(/^[\s#>*_-]+|[\s*_]+$/g, '').trim());
-  const title = lines.find(/** Prefer substantial text over severity and diff headers. */ line => line.length > 0 && !/^[`!]|potential issue|nitpick|(?:🔴|🟠|🟡|🔵)\s*(critical|major|minor)|^---|^\|/i.test(line));
+  const title = lines.find(/** Prefer substantial text over severity and diff headers. */ line => line.length > 0 && !/^[`!]|^\[!|potential issue|nitpick|(?:🔴|🟠|🟡|🔵)\s*(critical|major|minor)|^---|^\|/i.test(line));
   return (title ?? 'Bot review context').slice(0, 200);
 }
 

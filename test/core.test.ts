@@ -14,6 +14,9 @@ import { contribution, pullRequest, syntheticTransport, tracker } from './helper
  test('marker parsing preserves actionability and all four supported bot severities', () => {
   for (const body of ['Rate-limit exceeded', 'Trial ended', 'Review failed', 'Walkthrough', 'Full review finished', 'No actionable comments', 'Review skipped', 'Summary of changes']) assert.equal(isInformational(body), true);
   assert.equal(isInformational('Validate input before writes'), false);
+  // Real notices observed on fleet PRs: Sourcery budget/guide comments and CodeRabbit's manual-review notice.
+  for (const body of ["Sorry @maintainer, you've used your own review budget of 250,000 diff characters for the last 7 days.", '> [!IMPORTANT]\n> - [ ] 🔍 Trigger review\n>\n> This repository does not receive automatic reviews.', "## Reviewer's Guide\n\nThe PR fixes a publication-ordering defect."]) assert.equal(isInformational(body), true, body);
+  assert.equal(summaryOf('> [!IMPORTANT]\n> This repository does not receive automatic reviews.'), 'This repository does not receive automatic reviews.');
   assert.equal(isInformational('_Potential issue_ | _🟠 Major_\nFix rate-limit backoff in the walkthrough generator.'), false);
   assert.equal(isInformational('Severity: high\nRate-limit responses must be retried.'), false);
   assert.equal(isInformational('Potential issue\nFix quota exceeded handling.'), false);
