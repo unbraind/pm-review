@@ -14,6 +14,8 @@ import { contribution, pullRequest, syntheticTransport, tracker } from './helper
  test('marker parsing preserves actionability and all four supported bot severities', () => {
   for (const body of ['Rate-limit exceeded', 'Trial ended', 'Review failed', 'Walkthrough', 'Full review finished', 'No actionable comments', 'Review skipped', 'Summary of changes']) assert.equal(isInformational(body), true);
   assert.equal(isInformational('Validate input before writes'), false);
+  assert.equal(isInformational('_Potential issue_ | _🟠 Major_\nFix rate-limit backoff in the walkthrough generator.'), false);
+  assert.equal(isInformational('Severity: high\nRate-limit responses must be retried.'), false);
   for (const [body, expected] of [['_🟠 Major_', 'high'], ['_🟡 Minor_', 'low'], ['🔴 Critical', 'critical'], ['Severity: high', 'high'], ['[medium]', 'medium'], ['![high-priority](image)', 'high'], ['![medium_priority](image)', 'medium'], ['unmarked', 'unknown']]) assert.equal(severityOf(body), expected);
   assert.equal(summaryOf(contribution().body), 'Validate the input before writing.');
   assert.equal(summaryOf(''), 'Bot review context');
