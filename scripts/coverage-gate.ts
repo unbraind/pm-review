@@ -253,6 +253,8 @@ function runC8(root: string, config: CoverageGateConfig, inventory: SourceInvent
     [
       runner.script,
       "--all",
+      "--temp-directory",
+      join(root, "coverage", "tmp"),
       ...inventory.include.flatMap(pattern => ["--include", pattern]),
       ...excludes.flatMap(pattern => ["--exclude", pattern]),
       "--reporter=json-summary",

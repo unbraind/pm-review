@@ -1,0 +1,23 @@
+id: pm-review-round
+title: Compute exact-head review round completion
+description: ""
+type: Feature
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-12T10:47:30.490Z"
+updated_at: "2026-10-12T11:37:56.411Z"
+author: codex-sol
+acceptance_criteria: Aggregate checks; finished CodeRabbit review at current head or timed full-review reply; unresolved threads; missing author reactions; pending imported items; fail closed on incomplete data; compact line and exit code.
+parent: pm-review-epic
+release: 2026.10.12
+comments[1]{created_at,author,text}:
+  "2026-10-12T11:23:58.598Z",codex-sol,"Behavioral revert proof: dropping exact-head comparison inside coderabbitFinished makes node --test --test-name-pattern=\"round requires current\" test/core.test.ts fail on old-head evidence. Restored byte-for-byte. Skipped and neutral checks remain pending."
+files[2]{path,scope}:
+  src/round.ts,project
+  test/core.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test test/core.test.ts,project,codex-sol,"2026-10-12T11:03:49.350Z",local_mutation,feat/review
+docs[1]{path,scope}:
+  README.md,project
+body: ""

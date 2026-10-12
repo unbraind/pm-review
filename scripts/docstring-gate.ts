@@ -51,7 +51,7 @@ export function runDocstringGate(options: DocstringGateOptions = {}): void {
     (options.error ?? console.error)(
       `docstring-gate: ${report.violations.length} violation(s) across ${report.files_scanned} file(s):\n${findings}`,
     );
-    (options.exit ?? process.exit)(1);
+    return (options.exit ?? process.exit)(1);
   }
   (options.log ?? console.log)(
     `docstring-gate: ${report.files_scanned} file(s), ${report.declarations_checked} declaration(s) documented.`,

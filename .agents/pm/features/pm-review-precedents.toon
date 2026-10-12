@@ -1,0 +1,23 @@
+id: pm-review-precedents
+title: Find durable fix and refusal precedents
+description: ""
+type: Feature
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-12T10:47:31.162Z"
+updated_at: "2026-10-12T11:37:58.086Z"
+author: codex-sol
+acceptance_criteria: "Search all tracker verdicts using summary, original finding and decision reason; optional repository and PR scope; list matching fix and refuse decisions through the host renderer."
+parent: pm-review-epic
+release: 2026.10.12
+comments[1]{created_at,author,text}:
+  "2026-10-12T11:24:02.403Z",codex-sol,"Behavioral revert proof: excluding closed items inside precedents makes node --test --test-name-pattern=\"real SDK upsert\" test/core.test.ts fail on a terminal refusal/fix precedent. Restored byte-for-byte; the complete SDK reader includes all statuses."
+files[2]{path,scope}:
+  src/tracker.ts,project
+  test/core.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test test/core.test.ts,project,codex-sol,"2026-10-12T11:03:52.696Z",local_mutation,feat/review
+docs[1]{path,scope}:
+  README.md,project
+body: ""

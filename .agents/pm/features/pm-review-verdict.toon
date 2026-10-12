@@ -1,0 +1,23 @@
+id: pm-review-verdict
+title: Record verdicts and apply replay-safe thread actions
+description: ""
+type: Feature
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-12T10:47:29.809Z"
+updated_at: "2026-10-12T11:37:54.740Z"
+author: codex-sol
+acceptance_criteria: Typed verdict vocabulary and required reason; local durable comment plus fields; optional commit; apply replies and reactions without duplicates; resolve thread; synthetic remote mutations only.
+parent: pm-review-epic
+release: 2026.10.12
+comments[1]{created_at,author,text}:
+  "2026-10-12T11:23:56.804Z",codex-sol,"Behavioral revert proof: removing the replay check inside decide makes node --test --test-name-pattern=\"apply writes only synthetic\" test/core.test.ts fail because the repeat application posts a duplicate reply. Restored byte-for-byte. All remote write fixtures are synthetic."
+files[2]{path,scope}:
+  src/verdict.ts,project
+  test/core.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test test/core.test.ts,project,codex-sol,"2026-10-12T11:03:45.010Z",local_mutation,feat/review
+docs[1]{path,scope}:
+  README.md,project
+body: ""

@@ -23,6 +23,8 @@ import { runCoverageGate } from "../scripts/coverage-gate.ts";
 import { runDocstringGate } from "../scripts/docstring-gate.ts";
 import { VERDICTS } from "../src/types.ts";
 
+import fleetConfig from '../eslint.config.ts';
+
 const repositoryRoot = resolve(import.meta.dirname, "..");
 const scriptsDirectory = join(repositoryRoot, "scripts");
 const scratchBase = mkdtempSync(join(tmpdir(), "pm-review-tooling-"));
@@ -483,3 +485,15 @@ test("publish attestation verifier audits the tracked repository as main", () =>
   assert.equal(outcome.status, 0);
   assert.ok(outcome.stdout.length > 0);
 });
+ test("published flat configuration can be consumed directly", () => { assert.ok(Array.isArray(fleetConfig)); });
+
+ test('coverage inventory includes nested authored source modules', () => {
+  const root = fixtureProject('coverage-nested-source', {
+    'package.json': coverageManifest(FULL_THRESHOLDS),
+    'src/nested/covered.ts': COVERED_SOURCE,
+    'test/covered.test.ts': COVERED_TEST.replace('../src/covered.ts', '../src/nested/covered.ts'),
+  });
+  const result = capturedGate(root);
+  assert.equal(result.status, 0);
+  assert.match(result.seen, /1 source file/);
+ });
