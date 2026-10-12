@@ -6,16 +6,17 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-12T10:47:31.986Z"
-updated_at: "2026-10-12T11:50:22.757Z"
+updated_at: "2026-10-12T12:31:49.919Z"
 author: codex-sol
 acceptance_criteria: Adapt pm-jev tooling; no scheduled release; full authored source coverage; documentation and duplication clean; npm and Bun release gates; npm/npx and native Bun/bunx packed installs; real public read-only acceptance.
 parent: pm-review-epic
 release: 2026.10.12
-comments[4]{created_at,author,text}:
+comments[5]{created_at,author,text}:
   "2026-10-12T10:55:51.852Z",pi-glm-quality,"Plan: implement scripts/main-invocation.ts, scripts/docstring-gate.ts and a compact c8-based scripts/coverage-gate.ts (package.json coverageGate config; c8 --all include src+scripts+root entry, exclude tests/dist/node_modules; json-summary/json/lcov; report invalidation on start and failure; disk-inventory reconciliation against the summary). Cover scripts via test/tooling.test.ts (real child executions plus importable functions; c8 aggregates child coverage) and add test/install.acceptance.ts (pack allowlist, isolated npm+Bun consumers, real SDK temp trackers, npx/bunx registration). Review .github workflows against the scaffolded package; expected no-op since guards already reference PM_REVIEW_RELEASE_ENABLED and workflow_dispatch only."
   "2026-10-12T11:16:46.204Z",codex-sol,"Orchestrator adopted and verified the CLI worker drafts after the GLM quota check showed only four percent remaining. Further worker calls were stopped. Packed npm/npx and native Bun/bunx consumers both passed: allowlisted tarball, four command help surfaces, typed schema registration, offline precedent query and search in independent real trackers. Coverage and full release gates are still being completed."
   "2026-10-12T11:37:35.004Z",codex-sol,"Final quality receipts: fresh npm ci passed; both full npm and Bun gates and the isolated Git-identity full npm gate passed. Packed artifacts passed in independent npm/npx and native Bun/bunx workspaces. The fixture-backed transport and real tracker tests pass at unchanged 100/100/100/100 thresholds. Four development audit entries from one braces advisory remain tracked by pm-review-dev-audit; production audit is clean."
   "2026-10-12T11:50:22.757Z",codex-sol,"Final acceptance hygiene correction: npm pack now receives a scratch HOME rather than the package directory, keeping package-manager logs and cache in the disposable consumer fixture. Runtime code and the packed allowlist are unchanged. Package-local caches remain ignored."
+  "2026-10-12T12:31:48.639Z",codex-sol,"Final full-gate verification is complete at source commit 5fe85ac under npm, Bun and isolated Git identity. npm pack --dry-run lists 37 allowlisted files; packed consumer acceptance passes npm/npx and native Bun/bunx. SDK type-registration and normal-home global-extension version skew remain tracked by pm-review-sdk-gap; the four development audit entries from one underlying braces advisory remain tracked by pm-review-dev-audit. Release workflow remains dispatch-only and maintainer-disabled. Claims are released for orchestrator review; no items are closed."
 files[12]{path,scope}:
   .github/workflows/ci.yml,project
   .github/workflows/release.yml,project
