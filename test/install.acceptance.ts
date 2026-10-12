@@ -19,7 +19,10 @@ function command(cwd: string, name: string, args: string[], pmRoot: string, home
   const root = resolve(import.meta.dirname, '..');
   const scratch = await mkdtemp(join(tmpdir(), 'pm-review-install-'));
   t.after(async () => { await rm(scratch, { recursive: true, force: true }); });
-  const manifest = JSON.parse(command(root, 'npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', scratch], join(scratch, '.agents/pm'), scratch)) as { filename: string; files: { path: string }[] }[];
+  // npm 10 still runs prepare during pack; its source workspace must use the source tracker.
+  const packOutput = command(root, 'npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', scratch], join(root, '.agents/pm'), scratch);
+  // npm 10 can prefix its final JSON array with prepare output.
+  const manifest = JSON.parse(packOutput.slice(packOutput.lastIndexOf('\n[') + 1)) as { filename: string; files: { path: string }[] }[];
   const files = manifest[0].files.map(file => file.path);
   assert.ok(files.includes('dist/index.js'));
   for (const file of files) assert.ok(file.startsWith('dist/') || ['package.json', 'manifest.json', 'README.md', 'LICENSE', 'CHANGELOG.md'].includes(file), `unexpected packed file: ${file}`);
