@@ -4,8 +4,8 @@
 
 ### Added
 
-- Scaffold fleet gates and certify packed consumers ([pm-review-quality](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-quality.toon))
 - Typed GitHub transport and recorded public fixtures ([pm-review-transport](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-transport.toon))
+- Scaffold fleet gates and certify packed consumers ([pm-review-quality](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-quality.toon))
 - Compute exact-head review round completion ([pm-review-round](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-round.toon))
 - Record verdicts and apply replay-safe thread actions ([pm-review-verdict](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-verdict.toon))
 - Import every bot thread, review and issue comment idempotently ([pm-review-import](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-import.toon))

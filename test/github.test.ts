@@ -36,6 +36,7 @@ interface Scripted {
   text?: string;
   link?: string | null;
   match?: RegExp;
+  variables?: Record<string, unknown>;
 }
 
 /** One request/response pair recorded from the real GitHub API. */
@@ -89,6 +90,7 @@ function scriptFetch(script: Scripted[], token = TOKEN): FetchLike {
     const next = script[index];
     index++;
     checkEnvelope(url, init, next.match, token);
+    if (next.variables !== undefined) deepEqual(JSON.parse(init.body!).variables, next.variables);
     if (init.method === 'POST') equal(url, GRAPHQL_URL);
     return respond(next.status ?? 200, next.text ?? JSON.stringify(next.body ?? null), next.link ?? null);
   };
@@ -545,14 +547,14 @@ test('viewer reads the authenticated login and fails closed on malformed viewers
 });
 
 test('thread mutations run only against a synthetic transport and require payloads', async () => {
-  const reply = syntheticTransport([{ body: { data: { addPullRequestReviewThreadReply: { clientMutationId: null } } }, match: /addPullRequestReviewThreadReply\(input:\{ pullRequestReviewThreadId:\$thread,body:\$body \}\)/ }]);
+  const reply = syntheticTransport([{ variables: { thread: 'RT_1', body: 'done' }, body: { data: { addPullRequestReviewThreadReply: { clientMutationId: null } } }, match: /addPullRequestReviewThreadReply\(input:\{ pullRequestReviewThreadId:\$thread,body:\$body \}\)/ }]);
   await reply.reply('RT_1', 'done');
   await rejects(syntheticTransport([gql({ addPullRequestReviewThreadReply: null })]).reply('RT_1', 'done'), /\(addPullRequestReviewThreadReply payload\)/);
   await rejects(syntheticTransport([gql(null, [{ message: 'insufficient permission' }])]).reply('RT_1', 'done'), /GraphQL reported 1 error\(s\)/);
-  const react = syntheticTransport([{ body: { data: { addReaction: { clientMutationId: null } } }, match: /addReaction\(input:\{ subjectId:\$node,content:\$content \}\).*"content":"THUMBS_DOWN"/s }]);
+  const react = syntheticTransport([{ variables: { node: 'IC_1', content: 'THUMBS_DOWN' }, body: { data: { addReaction: { clientMutationId: null } } }, match: /addReaction\(input:\{ subjectId:\$node,content:\$content \}\).*"content":"THUMBS_DOWN"/s }]);
   await react.react('IC_1', 'THUMBS_DOWN');
   await rejects(syntheticTransport([gql({ addReaction: null })]).react('IC_1', 'THUMBS_UP'), /\(addReaction payload\)/);
-  const resolve = syntheticTransport([{ body: { data: { resolveReviewThread: { clientMutationId: null } } }, match: /resolveReviewThread\(input:\{ threadId:\$thread \}\)/ }]);
+  const resolve = syntheticTransport([{ variables: { thread: 'RT_1' }, body: { data: { resolveReviewThread: { clientMutationId: null } } }, match: /resolveReviewThread\(input:\{ threadId:\$thread \}\)/ }]);
   await resolve.resolve('RT_1');
   await rejects(syntheticTransport([gql({ resolveReviewThread: null })]).resolve('RT_1'), /\(resolveReviewThread payload\)/);
 });

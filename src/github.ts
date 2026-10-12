@@ -196,15 +196,15 @@ export function createGitHubTransport(options: GitHubTransportOptions = {}): Git
 
   /** Reply to one review thread; only ever exercised against a synthetic transport in tests. */
   const reply = (thread: string, body: string): Promise<void> =>
-    mutate('addPullRequestReviewThreadReply', REPLY_MUTATION, { pullRequestReviewThreadId: thread, body });
+    mutate('addPullRequestReviewThreadReply', REPLY_MUTATION, { thread, body });
 
   /** Add one thumbs-up or thumbs-down reaction to any reactable node. */
   const react = (node: string, content: 'THUMBS_UP' | 'THUMBS_DOWN'): Promise<void> =>
-    mutate('addReaction', REACT_MUTATION, { subjectId: node, content });
+    mutate('addReaction', REACT_MUTATION, { node, content });
 
   /** Resolve one review thread. */
   const resolve = (thread: string): Promise<void> =>
-    mutate('resolveReviewThread', RESOLVE_MUTATION, { threadId: thread });
+    mutate('resolveReviewThread', RESOLVE_MUTATION, { thread });
 
   /** Snapshot one pull request; rejects truncation, mutation and stale heads. */
   const snapshot = async (repo: string, pr: number): Promise<PullRequest> => {
