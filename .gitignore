@@ -36,3 +36,6 @@ dist/
 # pm-cli:runtime-cache:end
 
 *.local.*
+
+# Package-manager cache is generated runtime state.
+.npm/

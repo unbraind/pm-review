@@ -6,8 +6,8 @@ import { join, resolve } from 'node:path';
 import { test } from 'node:test';
 
 /** Run a consumer command with isolated HOME and tracker coordinates, preserving stderr for failures. */
-function command(cwd: string, name: string, args: string[], pmRoot: string): string {
-  const env: NodeJS.ProcessEnv = { ...process.env, HOME: cwd, PM_PATH: pmRoot, PM_AUTHOR: 'install-test', GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', NPM_CONFIG_USERCONFIG: '/dev/null', npm_config_userconfig: '/dev/null' };
+function command(cwd: string, name: string, args: string[], pmRoot: string, home = cwd): string {
+  const env: NodeJS.ProcessEnv = { ...process.env, HOME: home, PM_PATH: pmRoot, PM_AUTHOR: 'install-test', GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', NPM_CONFIG_USERCONFIG: '/dev/null', npm_config_userconfig: '/dev/null' };
   for (const key of Object.keys(env)) if (key.toLowerCase() === 'npm_config_allow_scripts') delete env[key];
   const result = spawnSync(name, args, { cwd, encoding: 'utf8', env, maxBuffer: 16 * 1024 * 1024 });
   assert.equal(result.error, undefined);
@@ -19,7 +19,7 @@ function command(cwd: string, name: string, args: string[], pmRoot: string): str
   const root = resolve(import.meta.dirname, '..');
   const scratch = await mkdtemp(join(tmpdir(), 'pm-review-install-'));
   t.after(async () => { await rm(scratch, { recursive: true, force: true }); });
-  const manifest = JSON.parse(command(root, 'npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', scratch], join(scratch, '.agents/pm'))) as { filename: string; files: { path: string }[] }[];
+  const manifest = JSON.parse(command(root, 'npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', scratch], join(scratch, '.agents/pm'), scratch)) as { filename: string; files: { path: string }[] }[];
   const files = manifest[0].files.map(file => file.path);
   assert.ok(files.includes('dist/index.js'));
   for (const file of files) assert.ok(file.startsWith('dist/') || ['package.json', 'manifest.json', 'README.md', 'LICENSE', 'CHANGELOG.md'].includes(file), `unexpected packed file: ${file}`);
