@@ -133,6 +133,9 @@ import { contribution, pullRequest, syntheticTransport, tracker } from './helper
   assert.equal(evaluateRound(old, items).coderabbit_finished, true);
   const none = structuredClone(pr); none.reviews[0].state = 'PENDING'; none.comments = [];
   assert.equal(evaluateRound(none, items).coderabbit_finished, false);
+  none.comments = [contribution({ body: 'Full review finished.' })];
+  assert.equal(evaluateRound(none, items).coderabbit_finished, false);
+  none.comments = [];
   none.reviews[0].state = 'COMMENTED'; none.reviews[0].body = 'Review failed';
   assert.equal(evaluateRound(none, items).coderabbit_finished, false);
   none.reviews[0].isBot = false;

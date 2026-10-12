@@ -625,7 +625,7 @@ test('normalizes every documented check state and fails closed on the rest', () 
   const outcomes: [string, 'pass' | 'fail' | 'pending'][] = [
     ['success', 'pass'],
     ['FAILURE', 'fail'], ['CANCELLED', 'fail'], ['TIMED_OUT', 'fail'], ['ACTION_REQUIRED', 'fail'], ['error', 'fail'], ['STALE', 'fail'], ['STARTUP_FAILURE', 'fail'],
-    ['queued', 'pending'], ['in_progress', 'pending'], ['PENDING', 'pending'], ['expected', 'pending'], ['skipped', 'pending'], ['neutral', 'pending'],
+    ['queued', 'pending'], ['in_progress', 'pending'], ['PENDING', 'pending'], ['expected', 'pending'], ['skipped', 'pending'], ['neutral', 'pending'], ['waiting', 'pending'], ['requested', 'pending'],
   ];
   for (const [state, expected] of outcomes) equal(checkOutcome(state), expected, state);
   throws(() => checkOutcome('WEIRD'), /unclassifiable GitHub check state/);

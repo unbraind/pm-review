@@ -128,7 +128,7 @@ The full TOON/JSON receipt lists unresolved thread ids, bot comments without a P
 Completion requires:
 
 - Successful checks on the current head. Failure wins over pending; missing, skipped and neutral checks remain incomplete.
-- A completed CodeRabbit review object naming that head, or a CodeRabbit “Full review finished” reply created after the head commit timestamp. Pending/dismissed reviews and quota/failure notices do not substitute.
+- A completed CodeRabbit review object naming that head, or, when that head has no CodeRabbit review object, a CodeRabbit “Full review finished” reply created after the head commit timestamp. Pending/dismissed reviews and quota/failure notices do not substitute.
 - Zero unresolved review threads, including human threads.
 - A reaction from the PR author account on every nonempty bot comment/review body. Another account's vote does not substitute.
 - No pending imported findings and no current source nodes missing from the tracker.

@@ -6,15 +6,16 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-12T10:49:27.924Z"
-updated_at: "2026-10-12T11:38:02.653Z"
+updated_at: "2026-10-12T11:45:51.085Z"
 author: codex-sol
 acceptance_criteria: One transport; token precedence matching pm-github; complete GraphQL pagination and nested comment/reaction/check pages; snapshot head stability; typed validation; replay-safe mutation operations tested on synthetic endpoints; real public recorded responses.
 parent: pm-review-epic
 release: 2026.10.12
-comments[3]{created_at,author,text}:
+comments[4]{created_at,author,text}:
   "2026-10-12T10:58:34.300Z",pi-glm-transport,"Plan: implement src/github.ts as the single typed GitHub boundary (createGitHubTransport with injectable fetch/token/env/gh reader/pageSize/timeout; fixed GraphQL endpoint, redirect:error, AbortSignal timeout; REST only for the paginated legacy commit-status list). snapshot() pages review threads (nested replies+reactions), submitted reviews, issue comments, commits, check suites (nested runs) and statuses; fail closed on malformed data, missing/repeated/cycling cursors and mid-snapshot head changes; final head re-check after all pages. Real read-only fixtures for public PR unbraind/pm-rl#68 recorded via gh at small page size so every connection paginates; synthetic fixtures cover >100 nodes, all failure paths, mutations (synthetic transport only, never against the real PR) and token resolution. Schema fields verified live: ReviewThread.path/line/isResolved, PullRequestReviewComment.originalCommit, PullRequestReview.commit/url/createdAt, mutation inputs addPullRequestReviewThreadReply(pullRequestReviewThreadId), addReaction(subjectId), resolveReviewThread(threadId)."
   "2026-10-12T11:20:47.405Z",codex-sol,"Orchestrator verified the worker draft and adopted final ownership for corrections. Public fixture refresh records 84 read-only requests at head 14669bcf58229e7226eed958470babc06c88d570, with credentials and request headers excluded. Nested query page size is bounded, each continuation is consumed once, malformed/cycling pages fail closed, and newer runs win per app and check name. Transport tests pass 29/29; mutation tests use synthetic responses only."
   "2026-10-12T11:24:05.856Z",codex-sol,"Behavioral revert proof: resetting the continuation cursor inside drain makes node --test --test-name-pattern=\"pages every connection\" test/github.test.ts fail. Restored byte-for-byte. The regression paginates 150 nodes in every supported connection, including nested replies/reactions/runs."
+  "2026-10-12T11:45:48.101Z",codex-sol,"Refreshed the complete 84-request public fixture with an unfiltered visible-reviews query, so pending review objects cannot disappear from round evidence. The public head and inventory remain unchanged. Valid WAITING and REQUESTED check states are normalized to pending."
 files[4]{path,scope}:
   src/github.ts,project
   test/fixtures/pm-rl-68/snapshot.json,project

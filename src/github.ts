@@ -33,7 +33,7 @@ const KNOWN_BOT_LOGINS: ReadonlySet<string> = new Set([
 /** Check conclusions and commit-status states that count as a hard failure. */
 const FAILING_STATES: ReadonlySet<string> = new Set(['FAILURE', 'CANCELLED', 'TIMED_OUT', 'ACTION_REQUIRED', 'ERROR', 'STALE', 'STARTUP_FAILURE']);
 /** Check conclusions and commit-status states that are expected to settle, or deliberately inert. */
-const PENDING_STATES: ReadonlySet<string> = new Set(['QUEUED', 'IN_PROGRESS', 'PENDING', 'EXPECTED', 'SKIPPED', 'NEUTRAL']);
+const PENDING_STATES: ReadonlySet<string> = new Set(['QUEUED', 'IN_PROGRESS', 'PENDING', 'EXPECTED', 'SKIPPED', 'NEUTRAL', 'WAITING', 'REQUESTED']);
 /** Node __typenames whose reactions connection the reaction continuation query understands. */
 const REACTION_TYPENAMES: readonly string[] = ['PullRequestReviewComment', 'IssueComment', 'PullRequestReview'];
 
@@ -56,8 +56,8 @@ const REVIEW_FIELDS = `id state body url createdAt ${AUTHOR} commit{ oid } ${REA
 
 /** Pages review threads, including each thread's first page of replies and reactions. */
 const THREADS_QUERY = `query SnapshotThreads($owner:String!,$repo:String!,$number:Int!,$size:Int!,$cursor:String){ repository(owner:$owner,name:$repo){ pullRequest(number:$number){ headRefOid author{ login } reviewThreads(first:$size,after:$cursor){ ${PAGE_INFO} nodes{ id isResolved path line comments(first:$size){ ${PAGE_INFO} nodes{ ${THREAD_COMMENT} } } } } } } }`;
-/** Pages submitted reviews (drafts excluded) with their first page of reactions. */
-const REVIEWS_QUERY = `query SnapshotReviews($owner:String!,$repo:String!,$number:Int!,$size:Int!,$cursor:String){ repository(owner:$owner,name:$repo){ pullRequest(number:$number){ headRefOid reviews(first:$size,after:$cursor,states:[APPROVED,CHANGES_REQUESTED,COMMENTED,DISMISSED]){ ${PAGE_INFO} nodes{ ${REVIEW_FIELDS} } } } } }`;
+/** Pages every visible review, including pending objects, with its first reactions page. */
+const REVIEWS_QUERY = `query SnapshotReviews($owner:String!,$repo:String!,$number:Int!,$size:Int!,$cursor:String){ repository(owner:$owner,name:$repo){ pullRequest(number:$number){ headRefOid reviews(first:$size,after:$cursor){ ${PAGE_INFO} nodes{ ${REVIEW_FIELDS} } } } } }`;
 /** Pages issue comments with their first page of reactions. */
 const COMMENTS_QUERY = `query SnapshotComments($owner:String!,$repo:String!,$number:Int!,$size:Int!,$cursor:String){ repository(owner:$owner,name:$repo){ pullRequest(number:$number){ headRefOid comments(first:$size,after:$cursor){ ${PAGE_INFO} nodes{ ${ISSUE_COMMENT} } } } } }`;
 /** Pages the commit history. */
