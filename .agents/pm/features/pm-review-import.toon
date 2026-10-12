@@ -6,15 +6,17 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-12T10:47:29.083Z"
-updated_at: "2026-10-12T12:14:02.536Z"
+updated_at: "2026-10-12T12:26:18.373Z"
 author: codex-sol
 acceptance_criteria: Paginate all connections and nested replies; stable GitHub node IDs; typed schema fields; commit links; preserve verdicts; informational noise classification; pm search visibility.
 parent: pm-review-epic
 release: 2026.10.12
-comments[3]{created_at,author,text}:
+comments[5]{created_at,author,text}:
   "2026-10-12T10:52:32.558Z",codex-sol,"SDK design: ReviewFinding type and namespaced typed fields are registered on activation and persisted through schema APIs during import. Complete-corpus reads include terminal items. Thread identity is the thread node, with all replies available to the transport; review and issue-comment identities remain distinct. Missing issue-comment commit provenance stays unknown rather than being guessed."
   "2026-10-12T11:23:54.616Z",codex-sol,"Behavioral revert proof for this new package: disabling prior-verdict preservation in importFindings makes node --test --test-name-pattern=\"real SDK upsert\" test/core.test.ts fail. Restoring the function returns the regression to green; real SDK comments and fields survive re-import."
   "2026-10-12T12:14:00.257Z",codex-sol,"Explicit finding/priority/severity markers now take precedence over noise words. An actionable rate-limit or walkthrough-generator finding stays pending; genuine unmarked quota/trial/failure/walkthrough notices remain informational. Removing this guard alone makes node --test --test-name-pattern=\"marker parsing\" test/core.test.ts fail. Correct behavior restored before full gates."
+  "2026-10-12T12:25:42.054Z",codex-sol,"Resume audit found the final npm gate failing: word boundaries did not match CodeRabbit Markdown underscores in the actionable marker guard. Correcting delimiter handling, checking every actionable marker family, and rerunning the behavioral disable proof before both complete release gates."
+  "2026-10-12T12:26:17.321Z",codex-sol,"Corrected Markdown delimiter handling and verified CodeRabbit, nitpick, Gemini priority and explicit severity markers retain actionable findings despite noise words. Focused test passes 1/1. Corrected revert proof: disabling only isInformational's actionable-marker guard makes that test fail 0/1 with true !== false; restoring the function passes 1/1. This supersedes the earlier guard receipt whose baseline failed the full npm gate."
 files[4]{path,scope}:
   src/findings.ts,project
   src/tracker.ts,project

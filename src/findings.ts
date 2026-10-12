@@ -2,7 +2,7 @@ import type { Contribution, Finding, FindingKind, PullRequest, ReviewThread } fr
 
 /** Recognize bot noise that provides context without requesting a code change. */
 export function isInformational(body: string): boolean {
-  if (/\bpotential issue\b|_nitpick_|!\[(?:high|medium|low)[-_]priority\]|\bseverity\s*[:=]\s*(?:critical|high|medium|low|major|minor)\b/iu.test(body)) return false;
+  if (/(?:^|[\s_*])potential issue(?:$|[\s_*])|_nitpick_|!\[(?:high|medium|low)[-_]priority\]|\bseverity\s*[:=]\s*(?:critical|high|medium|low|major|minor)\b/iu.test(body)) return false;
   return /rate[- ]limit|quota (?:exceeded|exhausted)|trial (?:has )?ended|review failed|failed to (?:review|generate)|full review finished|walkthrough|no actionable (?:comments|issues)|actionable comments posted:|review skipped|summary of (?:changes|pull request)/i.test(body);
 }
 

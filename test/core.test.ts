@@ -16,6 +16,9 @@ import { contribution, pullRequest, syntheticTransport, tracker } from './helper
   assert.equal(isInformational('Validate input before writes'), false);
   assert.equal(isInformational('_Potential issue_ | _🟠 Major_\nFix rate-limit backoff in the walkthrough generator.'), false);
   assert.equal(isInformational('Severity: high\nRate-limit responses must be retried.'), false);
+  assert.equal(isInformational('Potential issue\nFix quota exceeded handling.'), false);
+  assert.equal(isInformational('_Nitpick_\nImprove the walkthrough formatting.'), false);
+  assert.equal(isInformational('![medium-priority](image)\nHandle review failed responses.'), false);
   for (const [body, expected] of [['_🟠 Major_', 'high'], ['_🟡 Minor_', 'low'], ['🔴 Critical', 'critical'], ['Severity: high', 'high'], ['[medium]', 'medium'], ['![high-priority](image)', 'high'], ['![medium_priority](image)', 'medium'], ['unmarked', 'unknown']]) assert.equal(severityOf(body), expected);
   assert.equal(summaryOf(contribution().body), 'Validate the input before writing.');
   assert.equal(summaryOf(''), 'Bot review context');
