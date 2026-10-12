@@ -193,12 +193,12 @@ function inventorySources(root: string, config: CoverageGateConfig, skipped: Rea
   const include: string[] = [];
   for (const source of config.sources) {
     const target = resolve(root, source);
-    const name = relative(root, target).split(sep).join("/");
+    const name = relative(root, target).split(sep).join("/") || ".";
     if (!existsSync(target)) {
       throw new CoverageGateFailure(`coverageGate.sources names ${name}, which does not exist.`);
     }
     if (statSync(target).isDirectory()) {
-      include.push(`${name}/**/*.ts`);
+      include.push(name === "." ? "**/*.ts" : `${name}/**/*.ts`);
       required.push(...walkDirectory(root, target, skipped));
     } else {
       if (!target.endsWith(".ts") || target.endsWith(".d.ts")) {

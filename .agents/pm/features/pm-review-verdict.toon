@@ -6,13 +6,15 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-12T10:47:29.809Z"
-updated_at: "2026-10-12T11:37:54.740Z"
+updated_at: "2026-10-12T13:32:37.675Z"
 author: codex-sol
 acceptance_criteria: Typed verdict vocabulary and required reason; local durable comment plus fields; optional commit; apply replies and reactions without duplicates; resolve thread; synthetic remote mutations only.
 parent: pm-review-epic
 release: 2026.10.12
-comments[1]{created_at,author,text}:
+comments[3]{created_at,author,text}:
   "2026-10-12T11:23:56.804Z",codex-sol,"Behavioral revert proof: removing the replay check inside decide makes node --test --test-name-pattern=\"apply writes only synthetic\" test/core.test.ts fail because the repeat application posts a duplicate reply. Restored byte-for-byte. All remote write fixtures are synthetic."
+  "2026-10-12T13:22:58.767Z",codex-sol,Review round 1 confirms pending --apply can reply and resolve a thread. Reject before local or remote writes; retain local pending verdict support.
+  "2026-10-12T13:30:30.992Z",codex-sol,"Finding 4248463316: pending --apply rejects before transport reads or tracker writes; local pending remains supported. node --test --test-name-pattern=\"pending apply fails\" test/core.test.ts passes with a real tracker; reverting only the pending guard fails (exit 1)."
 files[2]{path,scope}:
   src/verdict.ts,project
   test/core.test.ts,project

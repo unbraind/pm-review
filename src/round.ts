@@ -13,9 +13,7 @@ export interface RoundReceipt {
 /** Reject notices and pending/dismissed reviews as finished CodeRabbit evidence. */
 function coderabbitFinished(pr: PullRequest): boolean {
   const isRabbit = (comment: Contribution): boolean => comment.isBot && /^coderabbitai(?:\[bot\])?$/i.test(comment.bot);
-  const currentReviews = pr.reviews.filter(/** Replies supplement only heads lacking a CodeRabbit review object. */ review => isRabbit(review) && review.head === pr.head);
-  if (currentReviews.length > 0) return currentReviews.some(/** A completed submitted review must name the exact current commit. */ review => ['APPROVED', 'CHANGES_REQUESTED', 'COMMENTED'].includes(review.state) && !/review failed|rate[- ]limit|review skipped|trial (?:has )?ended/i.test(review.body));
-  return [...pr.comments, ...pr.threads.flatMap(/** Completion replies can appear beneath a review thread. */ thread => thread.comments)].some(/** A timed full-review reply is evidence only when the head timestamp is known and valid. */ comment => isRabbit(comment) && /\bfull review finished\b/i.test(comment.body) && Date.parse(comment.createdAt) > Date.parse(pr.headDate));
+  return pr.reviews.some(/** Completion requires a submitted review tied to the exact current commit. */ review => isRabbit(review) && review.head === pr.head && ['APPROVED', 'CHANGES_REQUESTED', 'COMMENTED'].includes(review.state) && !/review failed|rate[- ]limit|review skipped|trial (?:has )?ended/i.test(review.body));
 }
 
 /** Collect all nonempty bot comments; every reaction must come from the PR author account. */

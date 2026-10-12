@@ -99,7 +99,7 @@ resolved: true
 
 `--apply` checks the live thread and authenticated account, posts the reason as a marked reply, adds 👍 for `fix` or `informational` and 👎 for `refuse`, then resolves the thread. Other verdicts post a reason and resolve without inventing a reaction. Repeating the same decision checks its exact marked reply and that account's reactions; existing replies, reactions and resolutions are retained without duplicate writes. A partial network failure can be retried with the same decision. The local decision is durable before remote actions begin.
 
-Application is supported for thread items. Review-body and issue-comment verdicts remain local because they have no review-thread reply/resolution target. The item must belong to the supplied repository and PR. Never use a real PR for unapproved mutation testing; the package's write tests use synthetic responses.
+Application is supported for final verdicts on thread items. A pending verdict remains local and cannot be applied. Review-body and issue-comment verdicts remain local because they have no review-thread reply/resolution target. The item must belong to the supplied repository and PR. Never use a real PR for unapproved mutation testing; the package's write tests use synthetic responses.
 
 | Verdict | Meaning |
 | --- | --- |
@@ -128,7 +128,7 @@ The full TOON/JSON receipt lists unresolved thread ids, bot comments without a P
 Completion requires:
 
 - Successful checks on the current head. Failure wins over pending; missing, skipped and neutral checks remain incomplete.
-- A completed CodeRabbit review object naming that head, or, when that head has no CodeRabbit review object, a CodeRabbit “Full review finished” reply created after the head commit timestamp. Pending/dismissed reviews and quota/failure notices do not substitute.
+- A completed CodeRabbit review object naming that exact head. Completion replies alone cannot establish which head was reviewed. Pending/dismissed reviews and quota/failure notices do not substitute.
 - Zero unresolved review threads, including human threads.
 - A reaction from the PR author account on every nonempty bot comment/review body. Another account's vote does not substitute.
 - No pending imported findings and no current source nodes missing from the tracker.

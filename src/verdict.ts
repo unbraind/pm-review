@@ -29,6 +29,7 @@ export async function decide(client: PmClient, transport: GitHubTransport | unde
     return receipt;
   }
   if (item.review_kind !== 'thread') throw new Error('--apply requires a thread finding; review and issue-comment verdicts are local');
+  if (input.verdict === 'pending') throw new Error('--apply requires a final verdict; pending decisions stay local');
   if (!transport) throw new Error('GitHub transport is required for --apply');
   const snapshot = await transport.snapshot(input.repo, input.pr);
   const thread = snapshot.threads.find(/** Source identity must still exist in the requested PR before remote writes. */ candidate => candidate.id === item.review_thread_id);

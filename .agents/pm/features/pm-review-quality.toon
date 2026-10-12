@@ -6,24 +6,32 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-12T10:47:31.986Z"
-updated_at: "2026-10-12T12:31:49.919Z"
+updated_at: "2026-10-12T13:32:56.198Z"
 author: codex-sol
 acceptance_criteria: Adapt pm-jev tooling; no scheduled release; full authored source coverage; documentation and duplication clean; npm and Bun release gates; npm/npx and native Bun/bunx packed installs; real public read-only acceptance.
 parent: pm-review-epic
 release: 2026.10.12
-comments[5]{created_at,author,text}:
+comments[11]{created_at,author,text}:
   "2026-10-12T10:55:51.852Z",pi-glm-quality,"Plan: implement scripts/main-invocation.ts, scripts/docstring-gate.ts and a compact c8-based scripts/coverage-gate.ts (package.json coverageGate config; c8 --all include src+scripts+root entry, exclude tests/dist/node_modules; json-summary/json/lcov; report invalidation on start and failure; disk-inventory reconciliation against the summary). Cover scripts via test/tooling.test.ts (real child executions plus importable functions; c8 aggregates child coverage) and add test/install.acceptance.ts (pack allowlist, isolated npm+Bun consumers, real SDK temp trackers, npx/bunx registration). Review .github workflows against the scaffolded package; expected no-op since guards already reference PM_REVIEW_RELEASE_ENABLED and workflow_dispatch only."
   "2026-10-12T11:16:46.204Z",codex-sol,"Orchestrator adopted and verified the CLI worker drafts after the GLM quota check showed only four percent remaining. Further worker calls were stopped. Packed npm/npx and native Bun/bunx consumers both passed: allowlisted tarball, four command help surfaces, typed schema registration, offline precedent query and search in independent real trackers. Coverage and full release gates are still being completed."
   "2026-10-12T11:37:35.004Z",codex-sol,"Final quality receipts: fresh npm ci passed; both full npm and Bun gates and the isolated Git-identity full npm gate passed. Packed artifacts passed in independent npm/npx and native Bun/bunx workspaces. The fixture-backed transport and real tracker tests pass at unchanged 100/100/100/100 thresholds. Four development audit entries from one braces advisory remain tracked by pm-review-dev-audit; production audit is clean."
   "2026-10-12T11:50:22.757Z",codex-sol,"Final acceptance hygiene correction: npm pack now receives a scratch HOME rather than the package directory, keeping package-manager logs and cache in the disposable consumer fixture. Runtime code and the packed allowlist are unchanged. Package-local caches remain ignored."
   "2026-10-12T12:31:48.639Z",codex-sol,"Final full-gate verification is complete at source commit 5fe85ac under npm, Bun and isolated Git identity. npm pack --dry-run lists 37 allowlisted files; packed consumer acceptance passes npm/npx and native Bun/bunx. SDK type-registration and normal-home global-extension version skew remain tracked by pm-review-sdk-gap; the four development audit entries from one underlying braces advisory remain tracked by pm-review-dev-audit. Release workflow remains dispatch-only and maintainer-disabled. Claims are released for orchestrator review; no items are closed."
-files[12]{path,scope}:
+  "2026-10-12T13:22:57.223Z",codex-sol,"Review round 1 confirms missing identity enforcement, broken release epic link, ignored eval queries, and root-source coverage glob. Add minimal behavioral regressions and independently revert each fix before recording proof."
+  "2026-10-12T13:30:18.594Z",codex-sol,"Finding 4248463199: added identity-gate.ts to required CI and release checks. Real Git regression rejects unapproved author/committer identities, private home paths and side-branch history. Behavioral revert of auditIdentities to no enforcement fails identity policy rejects unapproved (exit 1); reverting only CI wiring fails identity policy runs as a required (exit 1)."
+  "2026-10-12T13:30:19.861Z",codex-sol,"Finding 4248463231: release PR body now links the existing pm-review-epic. node --test --test-name-pattern=\"release PR tracking link\" test/tooling.test.ts passes; reverting only that link fails the same test (exit 1, missing tracked epic)."
+  "2026-10-12T13:30:21.115Z",codex-sol,"Finding 4248463257: removed parent search-directory ignore. Real Git check-ignore now includes eval-queries.json while excluding generated search files. node --test --test-name-pattern=\"Git includes eval queries\" test/tooling.test.ts passes; reverting only the ignore fix fails (exit 1)."
+  "2026-10-12T13:30:22.626Z",codex-sol,"Finding 4248463262: root sources normalize to . and use **/*.ts. Real c8 fixture at 100/100/100/100 passes with sources=[.]. node --test --test-name-pattern=\"coverage gate measures repository-root\" test/tooling.test.ts passes; reverting only inventorySources fails (exit 1, source absent from report)."
+  "2026-10-12T13:32:35.571Z",codex-sol,"Round 1 preliminary full coverage passes 82/82 tests, zero failures/cancellations/skips/todos, with 100/100/100/100 over all 17 configured authored source files. All eleven findings have targeted isolated revert proofs; identity enforcement also has a separate CI-wiring proof. Final committed-head npm, Bun, isolated-identity and Node 22 release checks follow."
+files[14]{path,scope}:
   .github/workflows/ci.yml,project
   .github/workflows/release.yml,project
+  .gitignore,project
   package.json,project
   scripts/coverage-gate.ts,project
   scripts/docstring-gate.ts,project
   scripts/duplication-gate.ts,project
+  scripts/identity-gate.ts,project
   scripts/lint.ts,project
   scripts/main-invocation.ts,project
   scripts/prepare-merge-driver.ts,project

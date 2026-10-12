@@ -6,15 +6,17 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-12T10:47:30.490Z"
-updated_at: "2026-10-12T11:45:49.574Z"
+updated_at: "2026-10-12T13:32:37.170Z"
 author: codex-sol
 acceptance_criteria: Aggregate checks; finished CodeRabbit review at current head or timed full-review reply; unresolved threads; missing author reactions; pending imported items; fail closed on incomplete data; compact line and exit code.
 parent: pm-review-epic
 release: 2026.10.12
-comments[3]{created_at,author,text}:
+comments[5]{created_at,author,text}:
   "2026-10-12T11:23:58.598Z",codex-sol,"Behavioral revert proof: dropping exact-head comparison inside coderabbitFinished makes node --test --test-name-pattern=\"round requires current\" test/core.test.ts fail on old-head evidence. Restored byte-for-byte. Skipped and neutral checks remain pending."
   "2026-10-12T11:41:11.741Z",codex-sol,"Final semantic review found and corrected the completion fallback: a timed full-review reply supplements only a head with no CodeRabbit review object. A pending or failed object for that head remains incomplete even when a later full-review text exists. The real-tracker regression now includes that case. Transport reads all visible reviews rather than filtering pending objects out."
   "2026-10-12T11:45:46.209Z",codex-sol,"Additional behavioral revert proof: allowing the timed-reply fallback despite a pending current-head review makes node --test --test-name-pattern=\"round requires current\" test/core.test.ts fail. Restored byte-for-byte. A completed review object or the no-object timed-reply path is required."
+  "2026-10-12T13:22:58.256Z",codex-sol,Review round 1 confirms committedDate cannot establish when a head was pushed. Require a submitted CodeRabbit review associated with the exact head.
+  "2026-10-12T13:30:28.974Z",codex-sol,"Finding 4248463303: require a completed CodeRabbit review associated with the exact head; completion replies and commit timestamps cannot substitute. node --test --test-name-pattern=\"round rejects completion replies\" test/core.test.ts passes; reverting only coderabbitFinished fails (exit 1). README and existing complete-round fixtures updated."
 files[2]{path,scope}:
   src/round.ts,project
   test/core.test.ts,project

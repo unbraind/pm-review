@@ -11,7 +11,7 @@
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -22,6 +22,7 @@ import { isMainInvocation } from "../scripts/main-invocation.ts";
 import { runCoverageGate } from "../scripts/coverage-gate.ts";
 import { runDocstringGate } from "../scripts/docstring-gate.ts";
 import { VERDICTS } from "../src/types.ts";
+import { auditIdentities, runIdentityGate } from "../scripts/identity-gate.ts";
 
 import fleetConfig from '../eslint.config.ts';
 
@@ -107,6 +108,126 @@ const FULL_THRESHOLDS = {
 };
 
 after(() => rmSync(scratchBase, { recursive: true, force: true }));
+
+/** Run Git in an isolated fixture with an explicit public test identity. */
+function fixtureGit(root: string, args: readonly string[], author = 'noreply@github.com', committer = author): string {
+  const result = spawnSync('git', [...args], { cwd: root, encoding: 'utf8', env: { ...process.env, GIT_AUTHOR_NAME: 'Fixture', GIT_AUTHOR_EMAIL: author, GIT_COMMITTER_NAME: 'Fixture', GIT_COMMITTER_EMAIL: committer } });
+  assert.equal(result.status, 0, result.stderr);
+  return result.stdout.trim();
+}
+
+/** Create a real repository whose baseline precedes one clean policy commit. */
+function identityFixture(name: string): string {
+  const root = fixtureProject(name, { 'note.txt': 'baseline\n' });
+  fixtureGit(root, ['init', '--initial-branch=main']);
+  fixtureGit(root, ['add', 'note.txt']);
+  fixtureGit(root, ['commit', '-m', 'Initialize fixture']);
+  const baseline = fixtureGit(root, ['rev-parse', 'HEAD']);
+  mkdirSync(join(root, '.github'));
+  writeFileSync(join(root, '.github/identity-baseline.txt'), `# Baseline\n\n${baseline}\n`);
+  writeFileSync(join(root, '.github/approved-git-identities.txt'), '# Public fixture identity\nnoreply@github.com\n');
+  fixtureGit(root, ['add', '.github/identity-baseline.txt', '.github/approved-git-identities.txt']);
+  fixtureGit(root, ['commit', '-m', 'Record fixture policy']);
+  return root;
+}
+
+test('identity policy rejects unapproved authors, committers and newly added home paths', () => {
+  const root = identityFixture('identity-dirty');
+  assert.deepEqual(auditIdentities(root), []);
+  const privatePath = '/' + 'home/' + 'fixture/private';
+  writeFileSync(join(root, 'note.txt'), `${privatePath}\n`);
+  fixtureGit(root, ['add', 'note.txt']);
+  fixtureGit(root, ['commit', '-m', 'Add disallowed fixture data'], 'unknown@example.invalid', 'other@example.invalid');
+  const violations = auditIdentities(root);
+  assert.equal(violations.length, 3);
+  assert.match(violations.join('\n'), /unapproved author identity/);
+  assert.match(violations.join('\n'), /unapproved committer identity/);
+  assert.match(violations.join('\n'), /added absolute home path/);
+  const lines: string[] = [];
+  assert.equal(runIdentityGate(root, line => lines.push(line)), 1);
+  assert.equal(lines.join('\n').includes(privatePath), false);
+  assert.equal(lines.join('\n').includes('unknown@example.invalid'), false);
+  writeFileSync(join(root, 'note.txt'), 'Removed private fixture data\n');
+  fixtureGit(root, ['add', 'note.txt']);
+  fixtureGit(root, ['commit', '-m', 'Remove fixture data']);
+  assert.equal(auditIdentities(root).length, 3, 'Historical violations cannot be hidden by a later deletion');
+});
+
+test('identity policy fails closed on invalid policy and unavailable baseline history', () => {
+  const root = identityFixture('identity-invalid');
+  const file = join(root, '.github/identity-baseline.txt');
+  const original = readFileSync(file, 'utf8');
+  writeFileSync(file, 'invalid\n');
+  assert.throws(() => auditIdentities(root), /Invalid identity baseline/);
+  writeFileSync(file, 'a'.repeat(40));
+  const lines: string[] = [];
+  assert.equal(runIdentityGate(root, line => lines.push(line)), 1);
+  assert.match(lines[0], /could not be verified/);
+  writeFileSync(file, original);
+  writeFileSync(join(root, '.github/approved-git-identities.txt'), '# No approved identities\n');
+  assert.throws(() => auditIdentities(root), /identity list is empty/);
+  rmSync(file);
+  assert.equal(runIdentityGate(root, () => undefined), 1);
+});
+
+test('identity policy checks side-branch commits and merged additions', () => {
+  const root = identityFixture('identity-merge');
+  fixtureGit(root, ['switch', '-c', 'side']);
+  fixtureGit(root, ['commit', '--allow-empty', '-m', 'Unapproved side commit'], 'unknown@example.invalid');
+  fixtureGit(root, ['switch', 'main']);
+  fixtureGit(root, ['commit', '--allow-empty', '-m', 'Advance main']);
+  fixtureGit(root, ['merge', '--no-ff', '--no-commit', 'side']);
+  writeFileSync(join(root, 'note.txt'), '/' + 'Users/' + 'fixture/private\n');
+  fixtureGit(root, ['add', 'note.txt']);
+  fixtureGit(root, ['commit', '-m', 'Merge side with disallowed fixture data']);
+  assert.equal(auditIdentities(root).length, 3);
+});
+
+test('identity policy runs as a required CI and release gate', () => {
+  const ci = readFileSync(join(repositoryRoot, '.github/workflows/ci.yml'), 'utf8');
+  const manifest = JSON.parse(readFileSync(join(repositoryRoot, 'package.json'), 'utf8')) as { scripts: Record<string, string> };
+  assert.match(ci, /- name: Verify commit identities and private path policy\s+run: npm run identity:check/);
+  assert.match(manifest.scripts['release:check'], /npm run identity:check/);
+  assert.equal(manifest.scripts['identity:check'], 'node scripts/identity-gate.ts');
+  const root = identityFixture('identity-main');
+  assert.equal(runScript('identity-gate.ts', [root]).status, 0);
+  assert.equal(runScript('identity-gate.ts', [], root).status, 0);
+  fixtureGit(root, ['reset', '--hard', 'HEAD~1']);
+  // An empty audit range is valid once the policy files are restored locally.
+  mkdirSync(join(root, '.github'));
+  writeFileSync(join(root, '.github/identity-baseline.txt'), fixtureGit(root, ['rev-parse', 'HEAD']));
+  writeFileSync(join(root, '.github/approved-git-identities.txt'), 'noreply@github.com\n');
+  assert.deepEqual(auditIdentities(root), []);
+  assert.equal(runIdentityGate(root), 0);
+});
+
+test('release PR tracking link resolves to an existing epic', () => {
+  const workflow = readFileSync(join(repositoryRoot, '.github/workflows/release.yml'), 'utf8');
+  const body = workflow.split('\n').find(line => line.includes('--body') && line.includes('Tracking:'));
+  assert.ok(body);
+  const link = body.match(/https:\/\/github\.com\/unbraind\/pm-review\/blob\/main\/(\.agents\/pm\/epics\/[^)]+\.toon)/);
+  assert.ok(link);
+  assert.equal(existsSync(join(repositoryRoot, link[1])), true);
+});
+
+test('Git includes eval queries while ignoring generated search contents', () => {
+  const root = fixtureProject('ignore-search', { '.gitignore': readFileSync(join(repositoryRoot, '.gitignore'), 'utf8') });
+  fixtureGit(root, ['init', '--initial-branch=main']);
+  const result = spawnSync('git', ['check-ignore', '--no-index', '--stdin'], { cwd: root, input: '.agents/pm/search/eval-queries.json\n.agents/pm/search/index.db\n', encoding: 'utf8' });
+  assert.equal(result.status, 0);
+  assert.equal(result.stdout.trim(), '.agents/pm/search/index.db');
+});
+
+test('coverage gate measures repository-root sources at full thresholds', () => {
+  const root = fixtureProject('coverage-root-source', {
+    'package.json': coverageManifest({ ...FULL_THRESHOLDS, sources: ['.'] }),
+    'src/covered.ts': COVERED_SOURCE,
+    'test/covered.test.ts': COVERED_TEST,
+  });
+  const result = capturedGate(root);
+  assert.equal(result.status, 0, result.seen);
+  assert.match(result.seen, /1 source file\(s\) reported; every threshold met/);
+});
 
 test("entry-point guard answers identity, absence and difference", () => {
   const modulePath = join(scriptsDirectory, "main-invocation.ts");

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import { activateExtensionForTest, runRegisteredCommandForTest } from '@unbrained/pm-cli/sdk/testing';
 import extension from '../index.ts';
@@ -10,6 +11,68 @@ import { compactRound, evaluateRound } from '../src/round.ts';
 import { decide, parseVerdict } from '../src/verdict.ts';
 import { runReviewCommand, targetOf } from '../src/commands.ts';
 import { contribution, pullRequest, syntheticTransport, tracker } from './helpers.ts';
+
+test('review body sections retain pending findings through import', async t => {
+  const { client } = await tracker(t);
+  for (const section of ['Outside diff range comments (1)', '🧹 Nitpick comments (2)', '_🛠️ Refactor suggestion_ | _🟠 Major_', '_🟡 Minor_', '_🔴 Critical_']) {
+    const body = `**Actionable comments posted: 0**\n${section}\nCorrect the boundary check.`;
+    assert.equal(isInformational(body), false, section);
+    const pr = pullRequest({ threads: [], comments: [], reviews: [{ ...contribution({ id: section, body }), state: 'COMMENTED' }] });
+    await importFindings(client, pr, findingsOf(pr));
+    assert.equal(evaluateRound(pr, await reviewItems(client)).pending_items.length, 1);
+  }
+  assert.equal(isInformational('**Actionable comments posted: 0**\nWalkthrough'), true);
+});
+
+test('severity parsing bounds adversarial priority whitespace', () => {
+  for (const marker of ['priority high', 'priority_-=\tmajor', 'priority: low']) assert.notEqual(severityOf(marker), 'unknown');
+  const moduleUrl = new URL('../src/findings.ts', import.meta.url).href;
+  const result = spawnSync(process.execPath, ['--input-type=module', '-e', `import { severityOf } from ${JSON.stringify(moduleUrl)}; if (severityOf('priority' + '\\t'.repeat(150_000) + '!') !== 'unknown') process.exit(1);`], { timeout: 5_000, encoding: 'utf8' });
+  assert.equal(result.error, undefined);
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test('title parsing bounds adversarial open tags and Markdown whitespace', () => {
+  const moduleUrl = new URL('../src/findings.ts', import.meta.url).href;
+  const result = spawnSync(process.execPath, ['--input-type=module', '-e', `import { summaryOf } from ${JSON.stringify(moduleUrl)}; summaryOf('<'.repeat(150_000)); summaryOf('Title' + ' '.repeat(150_000) + '!');`], { timeout: 5_000, encoding: 'utf8' });
+  assert.equal(result.error, undefined);
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(summaryOf(' ## **Title** \t'), 'Title');
+  assert.equal(summaryOf('<b>Title</b>\nSecond'), 'Title');
+  assert.equal(summaryOf('  '), 'Bot review context');
+});
+
+test('title parsing removes truncated and nested tag delimiters', () => {
+  assert.equal(summaryOf('<script'), 'Bot review context');
+  assert.equal(summaryOf('Safe <<script>title>'), 'Safe title');
+  assert.equal(summaryOf('<script<script>>Fix input'), 'Fix input');
+});
+
+test('round rejects completion replies for an unreviewed head with an older commit date', () => {
+  const pr = pullRequest({ reviews: [], threads: [], headDate: '2026-10-12T10:05:00Z', comments: [contribution({ body: 'Full review finished.', head: null, createdAt: '2026-10-12T10:10:00Z' })] });
+  assert.equal(evaluateRound(pr, []).coderabbit_finished, false);
+  pr.threads.push({ id: 'old-review', path: 'src/input.ts', line: 1, resolved: true, comments: pr.comments });
+  pr.comments = [];
+  assert.equal(evaluateRound(pr, []).coderabbit_finished, false);
+});
+
+test('pending apply fails before transport reads and tracker writes', async t => {
+  const { client } = await tracker(t);
+  const pr = pullRequest();
+  const imported = await importFindings(client, pr, findingsOf(pr));
+  const transport = syntheticTransport(pr);
+  let reads = 0;
+  transport.snapshot = async () => { reads++; return pr; };
+  const input = { id: imported.items[0].id, repo: pr.repo, pr: pr.number, verdict: parseVerdict('pending'), reason: 'Awaiting evidence', commit: '', apply: true };
+  const before = (await client.get(input.id, { depth: 'full' })).item;
+  await assert.rejects(decide(client, transport, input), /final verdict/);
+  assert.equal(reads, 0);
+  assert.deepEqual(transport.calls, []);
+  assert.deepEqual((await client.get(input.id, { depth: 'full' })).item, before);
+  assert.equal((await client.comments(input.id)).comments.length, 0);
+  assert.equal(pr.threads[0].resolved, false);
+  assert.equal((await decide(client, undefined, { ...input, apply: false })).applied, false);
+});
 
  test('marker parsing preserves actionability and all four supported bot severities', () => {
   for (const body of ['Rate-limit exceeded', 'Trial ended', 'Review failed', 'Walkthrough', 'Full review finished', 'No actionable comments', 'Review skipped', 'Summary of changes']) assert.equal(isInformational(body), true);
@@ -134,11 +197,11 @@ import { contribution, pullRequest, syntheticTransport, tracker } from './helper
   const old = structuredClone(pr); old.reviews[0].head = 'old'; old.comments[0].createdAt = old.headDate;
   assert.equal(evaluateRound(old, items).coderabbit_finished, false);
   old.comments[0].createdAt = '2026-10-12T10:00:00Z';
-  assert.equal(evaluateRound(old, items).coderabbit_finished, true);
+  assert.equal(evaluateRound(old, items).coderabbit_finished, false);
   old.comments[0].body = 'Rate-limit exceeded';
   assert.equal(evaluateRound(old, items).coderabbit_finished, false);
   old.threads[0].comments.push(contribution({ id: 'done', body: 'Full review finished.' }));
-  assert.equal(evaluateRound(old, items).coderabbit_finished, true);
+  assert.equal(evaluateRound(old, items).coderabbit_finished, false);
   const none = structuredClone(pr); none.reviews[0].state = 'PENDING'; none.comments = [];
   assert.equal(evaluateRound(none, items).coderabbit_finished, false);
   none.comments = [contribution({ body: 'Full review finished.' })];
@@ -195,7 +258,7 @@ import { contribution, pullRequest, syntheticTransport, tracker } from './helper
 
  test('compact complete rounds retain a successful host exit', async t => {
   const { client, pmRoot, cwd } = await tracker(t);
-  const pr = pullRequest({ threads: [], reviews: [], comments: [contribution({ body: 'Full review finished.', id: 'complete' })] });
+  const pr = pullRequest({ threads: [], reviews: [{ ...contribution({ body: '', id: 'complete' }), state: 'COMMENTED' }], comments: [] });
   await importFindings(client, pr, findingsOf(pr));
   const ctx: CommandHandlerContext = { command: 'review round', args: [], options: { repo: pr.repo, pr: '1', compact: true }, global: { quiet: true }, pm_root: pmRoot, repo_root: cwd };
   const result = await runReviewCommand(ctx, syntheticTransport(pr)) as { exit_code: number };

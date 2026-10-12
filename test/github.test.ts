@@ -561,7 +561,12 @@ test('thread mutations run only against a synthetic transport and require payloa
 
 test('bounds every request with the configured timeout', () => {
   const stuck: FetchLike = (_url, init) => new Promise((_resolve, reject) => {
-    init.signal.addEventListener('abort', () => reject(new Error('request timed out')), { once: true });
+    // Model a real fetch socket: keep the loop alive until the unref'd abort timer fires.
+    const keepAlive = setTimeout(() => undefined, 5_000);
+    init.signal.addEventListener('abort', () => {
+      clearTimeout(keepAlive);
+      reject(new Error('request timed out'));
+    }, { once: true });
   });
   const transport = createGitHubTransport({ fetch: stuck, token: TOKEN, timeoutMs: 10 });
   return rejects(transport.viewer(), /request timed out/);
