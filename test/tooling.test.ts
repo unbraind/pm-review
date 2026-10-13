@@ -22,7 +22,7 @@ import { isMainInvocation } from "../scripts/main-invocation.ts";
 import { runCoverageGate } from "../scripts/coverage-gate.ts";
 import { runDocstringGate } from "../scripts/docstring-gate.ts";
 import { VERDICTS } from "../src/types.ts";
-import { auditIdentities, runIdentityGate } from "../scripts/identity-gate.ts";
+import { auditIdentities, containsAbsoluteHomePath, runIdentityGate } from "../scripts/identity-gate.ts";
 
 import fleetConfig from '../eslint.config.ts';
 
@@ -151,6 +151,36 @@ test('identity policy rejects unapproved authors, committers and newly added hom
   fixtureGit(root, ['add', 'note.txt']);
   fixtureGit(root, ['commit', '-m', 'Remove fixture data']);
   assert.equal(auditIdentities(root).length, 3, 'Historical violations cannot be hidden by a later deletion');
+});
+
+test('home-path detection is anchored to path boundaries', () => {
+  // Built from parts so this test file never contains a literal private path itself.
+  const home = '/' + 'home/';
+  const root = '/' + 'root';
+  const users = '/' + 'Users/';
+  const detected = [
+    `${home}fixture/private`,
+    `cd ${home}fixture`,
+    `PATH=${home}fixture/bin`,
+    `file://${home}fixture/x`,
+    `"${users}fixture/x"`,
+    `${root}/.ssh/config`,
+    `cwd: ${root}`,
+    `(${root})`,
+    `C:\\${users.slice(1, -1)}\\fixture`,
+    `C:${users}fixture`,
+  ];
+  const ignored = [
+    './root.ts',
+    'docs/root-cause.md',
+    'src/rootless.ts',
+    'https://example.invalid/home/page',
+    'packages/home/README.md',
+    'my-home/notes',
+    '~/home/notes',
+  ];
+  for (const text of detected) assert.equal(containsAbsoluteHomePath(text), true, text);
+  for (const text of ignored) assert.equal(containsAbsoluteHomePath(text), false, text);
 });
 
 test('identity policy fails closed on invalid policy and unavailable baseline history', () => {

@@ -9,6 +9,18 @@ function policyEntries(root: string, name: string): string[] {
   return readFileSync(join(root, '.github', name), 'utf8').split('\n').map(line => line.trim()).filter(line => line !== '' && !line.startsWith('#'));
 }
 
+/**
+ * Detect an absolute home-directory path: a Linux or macOS user home, the root home, or a Windows user profile.
+ *
+ * The match is anchored to a path boundary: a home or Users directory segment must not continue a word,
+ * dot, tilde or hyphen token, and the root home must end its path segment. Relative names such as a root-named source
+ * file or a root-cause document are therefore not reported. A false positive here fails every later gate run until
+ * the commit leaves the audited range.
+ */
+export function containsAbsoluteHomePath(text: string): boolean {
+  return /(?<![\w.~-])\/(?:home|Users)\/|(?<![\w.~-])\/root(?=\/|$|[\s"'`)])|\b[A-Za-z]:[\\/]Users[\\/]/.test(text);
+}
+
 /** Audit every post-baseline commit, including side branches, against tracked policy. */
 export function auditIdentities(root: string): string[] {
   const baseline = policyEntries(root, 'identity-baseline.txt');
@@ -24,7 +36,7 @@ export function auditIdentities(root: string): string[] {
     if (!approved.has(author)) violations.push(`${commit}: unapproved author identity`);
     if (!approved.has(committer)) violations.push(`${commit}: unapproved committer identity`);
     const patch = git(['show', '--format=', '--diff-merges=first-parent', '--no-ext-diff', '--no-textconv', '--unified=0', commit]);
-    if (patch.split('\n').some(line => line.startsWith('+') && !line.startsWith('+++') && /\/(?:home|Users)\/|\/(?:root)(?:\/|\b)|[A-Za-z]:[\\/]Users[\\/]/.test(line))) {
+    if (patch.split('\n').some(line => line.startsWith('+') && !line.startsWith('+++') && containsAbsoluteHomePath(line))) {
       violations.push(`${commit}: added absolute home path`);
     }
   }
