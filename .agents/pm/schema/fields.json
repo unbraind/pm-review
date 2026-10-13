@@ -1,0 +1,148 @@
+{
+  "fields": [
+    {
+      "key": "review_bot",
+      "type": "string",
+      "commands": [
+        "create",
+        "update"
+      ]
+    },
+    {
+      "key": "review_commit",
+      "type": "string",
+      "commands": [
+        "create",
+        "update"
+      ]
+    },
+    {
+      "key": "review_commits",
+      "type": "string",
+      "commands": [
+        "create",
+        "update"
+      ]
+    },
+    {
+      "key": "review_head",
+      "type": "string",
+      "commands": [
+        "create",
+        "update"
+      ]
+    },
+    {
+      "key": "review_head_source",
+      "type": "string",
+      "commands": [
+        "create",
+        "update"
+      ]
+    },
+    {
+      "key": "review_kind",
+      "type": "string",
+      "commands": [
+        "create",
+        "update"
+      ]
+    },
+    {
+      "key": "review_line",
+      "type": "number",
+      "commands": [
+        "create",
+        "update"
+      ]
+    },
+    {
+      "key": "review_node_id",
+      "type": "string",
+      "commands": [
+        "create",
+        "update"
+      ]
+    },
+    {
+      "key": "review_path",
+      "type": "string",
+      "commands": [
+        "create",
+        "update"
+      ]
+    },
+    {
+      "key": "review_pr",
+      "type": "number",
+      "commands": [
+        "create",
+        "update"
+      ]
+    },
+    {
+      "key": "review_reason",
+      "type": "string",
+      "commands": [
+        "create",
+        "update"
+      ]
+    },
+    {
+      "key": "review_repo",
+      "type": "string",
+      "commands": [
+        "create",
+        "update"
+      ]
+    },
+    {
+      "key": "review_resolved",
+      "type": "boolean",
+      "commands": [
+        "create",
+        "update"
+      ]
+    },
+    {
+      "key": "review_severity",
+      "type": "string",
+      "commands": [
+        "create",
+        "update"
+      ]
+    },
+    {
+      "key": "review_summary",
+      "type": "string",
+      "commands": [
+        "create",
+        "update"
+      ]
+    },
+    {
+      "key": "review_thread_id",
+      "type": "string",
+      "commands": [
+        "create",
+        "update"
+      ]
+    },
+    {
+      "key": "review_url",
+      "type": "string",
+      "commands": [
+        "create",
+        "update"
+      ]
+    },
+    {
+      "key": "review_verdict",
+      "type": "string",
+      "commands": [
+        "create",
+        "update"
+      ]
+    }
+  ]
+}

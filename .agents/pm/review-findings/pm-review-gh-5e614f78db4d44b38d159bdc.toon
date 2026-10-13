@@ -1,0 +1,27 @@
+id: pm-review-gh-5e614f78db4d44b38d159bdc
+title: "coderabbitai: ✅ Action performed"
+description: "<!-- This is an auto-generated reply by CodeRabbit -->\n<!-- CodeRabbit review command invocation: v2:fba143fd1ae45415f8075633d2a93cded7e0ea05eadd4f35ec72a526a5332238 -->\n<details>\n<summary>✅ Action performed</summary>\n\nFull review finished.\n\n</details>"
+type: ReviewFinding
+status: open
+priority: 2
+tags: []
+created_at: "2026-10-13T12:46:00.633Z"
+updated_at: "2026-10-13T12:46:00.633Z"
+author: pm-extension
+review_bot: coderabbitai
+review_commits: "420fa98721332458be5005d99c1da0d498f6a031 https://github.com/unbraind/pm-review/commit/420fa98721332458be5005d99c1da0d498f6a031\nf3e90a466cbf914de69bef8b258ab3d20ce09403 https://github.com/unbraind/pm-review/commit/f3e90a466cbf914de69bef8b258ab3d20ce09403\n21dba492a96a10ac07fa52cdd0123d295f7190bd https://github.com/unbraind/pm-review/commit/21dba492a96a10ac07fa52cdd0123d295f7190bd\nce72b00af4d0a2b4f8dc3647ff9289a366373625 https://github.com/unbraind/pm-review/commit/ce72b00af4d0a2b4f8dc3647ff9289a366373625\n0c0906e18beb7b9a081d450f77e21812cd95a67c https://github.com/unbraind/pm-review/commit/0c0906e18beb7b9a081d450f77e21812cd95a67c\n3bcc0f90a107183b9a62002409889ae9b046712c https://github.com/unbraind/pm-review/commit/3bcc0f90a107183b9a62002409889ae9b046712c\n5fe85ac74734192a152cd5944aa73641f6449068 https://github.com/unbraind/pm-review/commit/5fe85ac74734192a152cd5944aa73641f6449068\nbb78681a56cf3ca9270f5be3f271605a5bde1162 https://github.com/unbraind/pm-review/commit/bb78681a56cf3ca9270f5be3f271605a5bde1162\n57f2fb54272af9d5bcdab0e0379c0ae42bf79a08 https://github.com/unbraind/pm-review/commit/57f2fb54272af9d5bcdab0e0379c0ae42bf79a08\n6b0a7739a0a1c71222ed020900e48399217ea01d https://github.com/unbraind/pm-review/commit/6b0a7739a0a1c71222ed020900e48399217ea01d\ndda1d09726f7b6be00cb174eec6b0512ab60a6ae https://github.com/unbraind/pm-review/commit/dda1d09726f7b6be00cb174eec6b0512ab60a6ae"
+review_head: ""
+review_head_source: unknown
+review_kind: comment
+review_line: 0
+review_node_id: IC_kwDOVGABD88AAAABbRMgAA
+review_path: ""
+review_pr: 1
+review_repo: unbraind/pm-review
+review_resolved: false
+review_severity: unknown
+review_summary: ✅ Action performed
+review_thread_id: ""
+review_url: "https://github.com/unbraind/pm-review/pull/1#issuecomment-6124937216"
+review_verdict: informational
+body: "Source: https://github.com/unbraind/pm-review/pull/1#issuecomment-6124937216\n\n<!-- This is an auto-generated reply by CodeRabbit -->\n<!-- CodeRabbit review command invocation: v2:fba143fd1ae45415f8075633d2a93cded7e0ea05eadd4f35ec72a526a5332238 -->\n<details>\n<summary>✅ Action performed</summary>\n\nFull review finished.\n\n</details>\n\nPR commits:\n- [420fa98721332458be5005d99c1da0d498f6a031](https://github.com/unbraind/pm-review/commit/420fa98721332458be5005d99c1da0d498f6a031)\n- [f3e90a466cbf914de69bef8b258ab3d20ce09403](https://github.com/unbraind/pm-review/commit/f3e90a466cbf914de69bef8b258ab3d20ce09403)\n- [21dba492a96a10ac07fa52cdd0123d295f7190bd](https://github.com/unbraind/pm-review/commit/21dba492a96a10ac07fa52cdd0123d295f7190bd)\n- [ce72b00af4d0a2b4f8dc3647ff9289a366373625](https://github.com/unbraind/pm-review/commit/ce72b00af4d0a2b4f8dc3647ff9289a366373625)\n- [0c0906e18beb7b9a081d450f77e21812cd95a67c](https://github.com/unbraind/pm-review/commit/0c0906e18beb7b9a081d450f77e21812cd95a67c)\n- [3bcc0f90a107183b9a62002409889ae9b046712c](https://github.com/unbraind/pm-review/commit/3bcc0f90a107183b9a62002409889ae9b046712c)\n- [5fe85ac74734192a152cd5944aa73641f6449068](https://github.com/unbraind/pm-review/commit/5fe85ac74734192a152cd5944aa73641f6449068)\n- [bb78681a56cf3ca9270f5be3f271605a5bde1162](https://github.com/unbraind/pm-review/commit/bb78681a56cf3ca9270f5be3f271605a5bde1162)\n- [57f2fb54272af9d5bcdab0e0379c0ae42bf79a08](https://github.com/unbraind/pm-review/commit/57f2fb54272af9d5bcdab0e0379c0ae42bf79a08)\n- [6b0a7739a0a1c71222ed020900e48399217ea01d](https://github.com/unbraind/pm-review/commit/6b0a7739a0a1c71222ed020900e48399217ea01d)\n- [dda1d09726f7b6be00cb174eec6b0512ab60a6ae](https://github.com/unbraind/pm-review/commit/dda1d09726f7b6be00cb174eec6b0512ab60a6ae)"

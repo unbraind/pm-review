@@ -1,0 +1,30 @@
+id: pm-review-precedents
+title: Find durable fix and refusal precedents
+description: ""
+type: Feature
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-12T10:47:31.162Z"
+updated_at: "2026-10-13T19:39:02.667Z"
+author: codex-sol
+acceptance_criteria: "Search all tracker verdicts using summary, original finding and decision reason; optional repository and PR scope; list matching fix and refuse decisions through the host renderer."
+parent: pm-review-epic
+release: 2026.10.12
+comments[4]{created_at,author,text}:
+  "2026-10-12T11:24:02.403Z",codex-sol,"Behavioral revert proof: excluding closed items inside precedents makes node --test --test-name-pattern=\"real SDK upsert\" test/core.test.ts fail on a terminal refusal/fix precedent. Restored byte-for-byte; the complete SDK reader includes all statuses."
+  "2026-10-13T19:26:17.644Z",codex-agent,"PR 1 finding 1 accepted: parse optional repo and PR precedent filters independently, retaining validation for provided values and strict coordinates for import, round and verdict. Add real-tracker dispatch regression and function-only revert proof."
+  "2026-10-13T19:33:04.551Z",codex-agent,"Accepted findings have passing real-tracker regressions. Reverting only the relevant dispatch, classification, import or apply function makes each targeted test fail on the original behavior; fixed functions restored. See docs/pr-1-review-round.md for per-finding evidence and packed dogfood UX."
+  "2026-10-13T19:39:01.231Z",codex-agent,"Fix round complete: isolated npm run release:check and bun run release:check each passed 91/91 tests, 100% statements/branches/functions/lines across 17 sources, zero duplication, production audit, pack, changelog, release attestation and packed npm/native Bun acceptance. All five latest function-only revert proofs fail as expected; fixed functions restored. Packed dogfood re-import created zero duplicates, preserves five explicit fix verdicts, repairs notice and legacy major classifications, and supports repo-only precedent search. Identity gate and added-line privacy checks report zero. See docs/pr-1-review-round.md. Live review actions were not applied."
+files[4]{path,scope}:
+  src/commands.ts,project
+  src/tracker.ts,project
+  test/core.test.ts,project
+  test/review-regressions.test.ts,project
+tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test test/core.test.ts,project,codex-sol,"2026-10-12T11:03:52.696Z",local_mutation,feat/review
+  "node --test --test-name-pattern=\"repository-only precedent\" test/review-regressions.test.ts",project,codex-agent,"2026-10-13T19:32:58.217Z",local_mutation,feat/review
+docs[2]{path,scope}:
+  docs/pr-1-review-round.md,project
+  README.md,project
+body: ""

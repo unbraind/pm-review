@@ -1,0 +1,20 @@
+id: pm-review-dev-audit
+title: Track development glob dependency advisory before publication
+description: "The reference toolchain has one braces advisory propagating through micromatch, fast-glob and pm-ops: four high-severity audit entries in the development graph. The configured production audit passes."
+type: Issue
+status: open
+priority: 2
+tags: []
+created_at: "2026-10-12T11:33:11.450Z"
+updated_at: "2026-10-12T11:37:40.720Z"
+author: codex-sol
+acceptance_criteria: Review GHSA-vfj7-8cjw-p6xm and consume a compatible published dependency fix before maintainer-approved publication; preserve fleet gate thresholds and published launcher identity.
+parent: pm-review-epic
+comments[1]{created_at,author,text}:
+  "2026-10-12T11:33:13.673Z",codex-sol,"npm audit reports four high entries from one underlying braces stack-exhaustion advisory: braces, micromatch, fast-glob and pm-ops. npm audit --omit=dev reports zero vulnerabilities. The suggested automated fix would downgrade pm-ops to an older version and is not a safe automatic repair for this new package. No forced downgrade or upstream edit was made."
+files[2]{path,scope}:
+  package-lock.json,project
+  package.json,project
+docs[1]{path,scope}:
+  README.md,project
+body: ""
