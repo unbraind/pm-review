@@ -18,7 +18,8 @@ function command(cwd: string, name: string, args: string[], pmRoot: string, home
  test('packed npm/npx and native Bun/bunx consumers activate commands and search a real tracker', async t => {
   const root = resolve(import.meta.dirname, '..');
   const scratch = await mkdtemp(join(tmpdir(), 'pm-review-install-'));
-  t.after(async () => { await rm(scratch, { recursive: true, force: true }); });
+  // Recursive removal can race Bun's install cache and throw ENOTEMPTY. Node retries that error only when asked.
+  t.after(async () => { await rm(scratch, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); });
   // npm 10 still runs prepare during pack; its source workspace must use the source tracker.
   const packOutput = command(root, 'npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', scratch], join(root, '.agents/pm'), scratch);
   // npm 10 can prefix its final JSON array with prepare output.

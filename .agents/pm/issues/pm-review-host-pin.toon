@@ -6,21 +6,25 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-13T14:50:30.150Z"
-updated_at: "2026-10-13T14:59:49.011Z"
+updated_at: "2026-10-13T15:03:49.494Z"
+assignee: pi-grok
+claim_principal: pi-grok
 author: pi-grok
 acceptance_criteria: "Pinned devDependency, peer floor and manifest floor are 2026.10.13; pinned pm health --strict-exit --require-merge-drivers exits 0; pinned pm history pm-review-round --verify exits 0; CodeRabbit path filter excludes history JSONL and leaves toon items reviewable; reviewable pull-request file count is under 100; npm and Bun release checks pass."
 parent: pm-review-epic
 release: 2026.10.12
-comments[3]{created_at,author,text}:
+comments[4]{created_at,author,text}:
   "2026-10-13T14:50:40.314Z",pi-grok,"Pinned @unbrained/pm-cli devDependency to 2026.10.13, peer floor to >=2026.10.13, and manifest pm_min_version to 2026.10.13. README states the same floor. pm-ops stays at 2026.10.6: its peer is >=2026.8.20, so the pin does not require a bump. Did not rewrite history. Before further tracker writes, the pinned host verified pm-review-round (25 entries, current hash matches latest) and pm health --strict-exit --require-merge-drivers exited 0 with history_drift ok."
   "2026-10-13T14:53:22.511Z",pi-grok,"CodeRabbit path filter excludes .agents/pm/history while leaving toon items reviewable. After this change the pull request has 119 changed paths, 36 history ledgers, and 83 reviewable files, under the 100-file cap. Linked health and history verification both passed on the pinned host. pm-ops was not bumped."
   "2026-10-13T14:58:00.970Z",pi-grok,"Gates passed on the pinned host. npm run release:check exit 0: identity 0 violations; 85/85 tests, 0 failed, cancelled, skipped or todo; coverage 100/100/100/100 over 17 authored sources; duplication 0/3451 lines; 50/50 declarations documented; production audit 0 vulnerabilities; pack dry-run 37 files; packed acceptance 1/1. bun run release:check exit 0 with the same 85/85, 100/100/100/100, 17 sources, 0/3451 duplication and 1/1 packed acceptance. Revert proof: before the pin, the 2026.10.10 host failed health with history_drift_chain_mismatch and history_drift_hash_mismatch on pm-review-round, and history --verify reported after_hash_mismatch on entry 23. The same commands pass after the pin without rewriting history."
-files[5]{path,scope}:
+  "2026-10-13T15:03:49.494Z",pi-grok,"Node 26 CI passed health, then packed acceptance failed in cleanup with ENOTEMPTY while removing the Bun install cache. The product assertions were not the failure. Recursive rm now retries that error. Local Node 26 acceptance passed before the retry option was added; the runner race is not reproducible here."
+files[6]{path,scope}:
   .coderabbit.yaml,project
   manifest.json,project
   package-lock.json,project
   package.json,project
   README.md,project
+  test/install.acceptance.ts,project
 tests[4]:
   - command: ./node_modules/.bin/pm health --strict-exit --require-merge-drivers
     scope: project
