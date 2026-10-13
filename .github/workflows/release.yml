@@ -524,13 +524,17 @@ jobs:
                              ([.comments.nodes[]?] | length))
                     | select([.comments.nodes[]?.author.__typename]
                              | length > 0 and all(. == "Bot"))
+                    | select([.comments.nodes[]?.author.login]
+                             | all(. as $l | ["coderabbitai"] | index($l)))
                     | .id' 2>/dev/null || true)"
             if [[ -n "$unresolved" ]]; then
               while IFS= read -r thread_id; do
                 [[ -z "$thread_id" ]] && continue
                 gh api graphql \
                   -f query='mutation($t:ID!){resolveReviewThread(input:{threadId:$t}){thread{isResolved}}}' \
-                  -F t="$thread_id" >/dev/null 2>&1 || true
+                  -F t="$thread_id" >/dev/null 2>&1 \
+                  && echo "Auto-resolved bot review thread ${thread_id} on release PR #${pr_number}." >> "$GITHUB_STEP_SUMMARY" \
+                  || true
               done <<< "$unresolved"
             fi
 
