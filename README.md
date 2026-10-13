@@ -27,7 +27,7 @@ bunx --bun --package @unbrained/pm-cli pm install pm-review --project
 
 npm and Bun dependency installation make the package available to your application. `pm install` installs and activates its extension for the project. A consuming SDK host can also import the extension and register it through the PM extension loader.
 
-Requires Node 22.18 or later and PM CLI/SDK 2026.10.10 or later. Authentication follows pm-github: `GITHUB_TOKEN`, then `GH_TOKEN`, then `gh auth token`. Credentials stay in memory and never appear in receipts. The endpoint is GitHub.com; redirects are refused and each network request has a deadline.
+Requires Node 22.18 or later and PM CLI/SDK 2026.10.13 or later. Authentication follows pm-github: `GITHUB_TOKEN`, then `GH_TOKEN`, then `gh auth token`. Credentials stay in memory and never appear in receipts. The endpoint is GitHub.com; redirects are refused and each network request has a deadline.
 
 ## Import
 

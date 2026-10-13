@@ -1,0 +1,13 @@
+# CodeRabbit review configuration.
+#
+# `.agents/pm/history/**` is append-only machine output. Its integrity is
+# already enforced by `pm history --verify` and the CI health gate. Reviewing
+# those JSONL files is noise, and counting them makes CodeRabbit skip the
+# pull request: it refuses any review over 100 changed files and reports that
+# as "Review skipped" rather than as a failure — an unreviewed pull request
+# looks exactly like a clean one.
+#
+# The `.toon` items stay reviewable. Only the history ledger is excluded.
+reviews:
+  path_filters:
+    - "!.agents/pm/history/**"
