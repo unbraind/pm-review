@@ -8,7 +8,7 @@ export function isInformational(body: string): boolean {
 
 /** Extract explicit severity markers used by CodeRabbit, Greptile, Gemini and Sourcery. */
 export function severityOf(body: string): string {
-  const marked = body.match(/(?:🔴\s*|severity\s*[:=]\s*|priority[\s_-]*(?:[:=]\s*)?)(critical|high|medium|low|major|minor)/iu)
+  const marked = body.match(/(?:[🔴🟠🟡]\s*|severity\s*[:=]\s*|priority[\s_-]*(?:[:=]\s*)?)(critical|high|medium|low|major|minor)/iu)
     ?? body.match(/(?:_\s*[🟠🟡🔵]\s*|\[\s*)(critical|high|medium|low|major|minor)/iu)
     ?? body.match(/(?:\/|\b)(high|medium|low)[-_]priority(?:\.|\b)/i);
   if (!marked) return 'unknown';

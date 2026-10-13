@@ -1,4 +1,4 @@
-import { PmClient, printResult, readBooleanOption, readStringOption, suppressHostOutput } from '@unbrained/pm-cli/sdk';
+import { createPmCliExpectedError, isPmCliExpectedError, PmClient, printResult, readBooleanOption, readStringOption, suppressHostOutput } from '@unbrained/pm-cli/sdk';
 import { defineCommand } from '@unbrained/pm-cli/sdk/authoring';
 import type { CommandHandlerContext, ExtensionApi, FlagDefinition } from '@unbrained/pm-cli/sdk/authoring';
 import { findingsOf } from './findings.ts';
@@ -18,6 +18,16 @@ export function targetOf(options: Record<string, unknown>): { repo: string; pr: 
 
 /** Dispatch package commands using host workspace coordinates and the injected SDK client. */
 export async function runReviewCommand(ctx: CommandHandlerContext, provided?: GitHubTransport): Promise<unknown> {
+  try {
+    return await dispatchReviewCommand(ctx, provided);
+  } catch (failure) {
+    // A plain Error leaving an extension handler makes the host report a misleading flag diagnostic; expected errors keep the real validation message.
+    throw isPmCliExpectedError(failure) ? failure : createPmCliExpectedError(failure instanceof Error ? failure.message : String(failure));
+  }
+}
+
+/** Run one dispatched package command; separated so the wrapper above stays the single error boundary. */
+async function dispatchReviewCommand(ctx: CommandHandlerContext, provided?: GitHubTransport): Promise<unknown> {
   const client = ctx.sdk?.client ?? new PmClient({ cwd: ctx.source_workspace_root ?? ctx.repo_root, pmRoot: ctx.pm_root, author: ctx.global.author });
   if (ctx.command === 'review precedents') {
     const scoped = readStringOption(ctx.options, 'repo') !== undefined || readStringOption(ctx.options, 'pr') !== undefined;

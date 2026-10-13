@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import { activateExtensionForTest, runRegisteredCommandForTest } from '@unbrained/pm-cli/sdk/testing';
 import extension from '../index.ts';
-import { createExtensionCommandSdk } from '@unbrained/pm-cli/sdk';
+import { createExtensionCommandSdk, createPmCliExpectedError, isPmCliExpectedError } from '@unbrained/pm-cli/sdk';
 import type { CommandHandlerContext } from '@unbrained/pm-cli/sdk/authoring';
 import { findingsOf, isInformational, severityOf, summaryOf } from '../src/findings.ts';
 import { fieldOptions, ensureReviewSchema, importFindings, precedents, reviewItems } from '../src/tracker.ts';
@@ -85,7 +85,7 @@ test('pending apply fails before transport reads and tracker writes', async t =>
   assert.equal(isInformational('Potential issue\nFix quota exceeded handling.'), false);
   assert.equal(isInformational('_Nitpick_\nImprove the walkthrough formatting.'), false);
   assert.equal(isInformational('![medium-priority](image)\nHandle review failed responses.'), false);
-  for (const [body, expected] of [['_🟠 Major_', 'high'], ['_🟡 Minor_', 'low'], ['🔴 Critical', 'critical'], ['Severity: high', 'high'], ['[medium]', 'medium'], ['![high-priority](image)', 'high'], ['![medium_priority](image)', 'medium'], ['unmarked', 'unknown']]) assert.equal(severityOf(body), expected);
+  for (const [body, expected] of [['_🟠 Major_', 'high'], ['_🟡 Minor_', 'low'], ['**🩺 Stability & Availability** | **🟠 Major** | **⚡ Quick win**', 'high'], ['**🎯 Functional Correctness** | **🟡 Minor** | **⚡ Quick win**', 'low'], ['🔴 Critical', 'critical'], ['Severity: high', 'high'], ['[medium]', 'medium'], ['![high-priority](image)', 'high'], ['![medium_priority](image)', 'medium'], ['unmarked', 'unknown']]) assert.equal(severityOf(body), expected);
   assert.equal(summaryOf(contribution().body), 'Validate the input before writing.');
   assert.equal(summaryOf(''), 'Bot review context');
   assert.equal(summaryOf('x'.repeat(250)).length, 200);
@@ -267,21 +267,29 @@ test('pending apply fails before transport reads and tracker writes', async t =>
   assert.match(compactRound(evaluateRound(pullRequest({ reviews: [], comments: [] }), [])), /coderabbit=missing/);
  });
 
- test('missing verdict arguments are rejected and default transport dispatch is confined to an injected network boundary', async t => {
+test('extension failures leave as host-expected errors so the CLI renders the real message', async t => {
   const { client, cwd, pmRoot } = await tracker(t);
   const pr = pullRequest();
   const imported = await importFindings(client, pr, findingsOf(pr));
-  const ctx: CommandHandlerContext = { command: 'review verdict', args: [], options: { repo: pr.repo, pr: '1' }, global: { json: true }, pm_root: pmRoot, source_workspace_root: cwd };
-  await assert.rejects(runReviewCommand(ctx), /Invalid verdict/);
-  ctx.args = [imported.items[0].id, 'fix'];
-  await assert.rejects(runReviewCommand(ctx), /nonempty/);
+  const ctx: CommandHandlerContext = { command: 'review verdict', args: [], options: { repo: pr.repo, pr: '1', reason: 'Synthetic decision' }, global: { json: true }, pm_root: pmRoot, source_workspace_root: cwd };
+  await assert.rejects(runReviewCommand(ctx), error => isPmCliExpectedError(error) && /Invalid verdict/.test(error.message));
+  await assert.rejects(runReviewCommand({ ...ctx, args: [imported.items[0].id, 'bogus'] }), error => isPmCliExpectedError(error) && /Invalid verdict/.test(error.message));
+  await assert.rejects(runReviewCommand({ ...ctx, args: [imported.items[0].id, 'fix'], options: { ...ctx.options, reason: '' } }), error => isPmCliExpectedError(error) && /nonempty/.test(error.message));
+  await assert.rejects(runReviewCommand({ ...ctx, args: ['unknown-item', 'fix'] }), error => isPmCliExpectedError(error) && /not found/.test(error.message));
+  await assert.rejects(runReviewCommand({ ...ctx, command: 'review round', options: { repo: 'bad', pr: '1' } }, syntheticTransport(pr)), error => isPmCliExpectedError(error) && /owner\/name/.test(error.message));
+  await assert.rejects(runReviewCommand({ ...ctx, command: 'review invalid' }, syntheticTransport(pr)), error => isPmCliExpectedError(error) && /Unknown pm-review command/.test(error.message));
+  const importContext = { ...ctx, command: 'review import' };
+  const transport = syntheticTransport(pr);
+  const expected = createPmCliExpectedError('Synthetic expected transport failure');
+  transport.snapshot = async () => { throw expected; };
+  await assert.rejects(runReviewCommand(importContext, transport), error => error === expected);
+  transport.snapshot = async () => { throw 'Synthetic non-Error transport failure'; };
+  await assert.rejects(runReviewCommand(importContext, transport), error => isPmCliExpectedError(error) && error.message === 'Synthetic non-Error transport failure');
   const original = globalThis.fetch;
   const token = process.env.GITHUB_TOKEN;
   process.env.GITHUB_TOKEN = 'synthetic-only-token';
   globalThis.fetch = async () => { throw new Error('synthetic network refusal'); };
   t.after(() => { globalThis.fetch = original; if (token === undefined) delete process.env.GITHUB_TOKEN; else process.env.GITHUB_TOKEN = token; });
-  ctx.options.apply = true; ctx.options.reason = 'Synthetic decision';
-  await assert.rejects(runReviewCommand(ctx), /synthetic network refusal/);
-  ctx.command = 'review import';
-  await assert.rejects(runReviewCommand(ctx), /synthetic network refusal/);
- });
+  await assert.rejects(runReviewCommand({ ...ctx, args: [imported.items[0].id, 'fix'], options: { ...ctx.options, apply: true } }), error => isPmCliExpectedError(error) && /synthetic network refusal/.test(error.message));
+  await assert.rejects(runReviewCommand(importContext), error => isPmCliExpectedError(error) && /synthetic network refusal/.test(error.message));
+});

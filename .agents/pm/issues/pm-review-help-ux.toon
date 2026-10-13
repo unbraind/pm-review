@@ -1,0 +1,14 @@
+id: pm-review-help-ux
+title: Follow up repeated extension value placeholders in host help
+description: "Dogfood pm review verdict --help under the pinned host prints two value placeholders for repo, pr, reason and commit and repeats extension flag documentation. Command execution succeeds; investigate the host authoring descriptor and help rendering contract separately."
+type: Issue
+status: open
+priority: 2
+tags: []
+created_at: "2026-10-13T12:49:37.702Z"
+updated_at: "2026-10-13T12:49:37.702Z"
+author: codex-agent
+parent: pm-review-epic
+files[1]{path,scope}:
+  src/commands.ts,project
+body: ""

@@ -1,3 +1,9 @@
 {
-  "definitions": []
+  "definitions": [
+    {
+      "name": "ReviewFinding",
+      "folder": "review-findings",
+      "description": "Bot finding with source identity, decision reasoning and commit provenance"
+    }
+  ]
 }

@@ -201,6 +201,16 @@ test('identity policy runs as a required CI and release gate', () => {
   assert.equal(runIdentityGate(root), 0);
 });
 
+test('identity policy reads post-baseline patches larger than the default execFileSync buffer', () => {
+  const root = identityFixture('identity-large-patch');
+  // A single generated line beyond the 1 MiB execFileSync default makes the original helper throw ENOBUFS.
+  writeFileSync(join(root, 'generated-fixture.txt'), `+${'x'.repeat(2 * 1024 * 1024)}\n`);
+  fixtureGit(root, ['add', 'generated-fixture.txt']);
+  fixtureGit(root, ['commit', '-m', 'Add a large generated fixture']);
+  assert.deepEqual(auditIdentities(root), []);
+  assert.equal(runScript('identity-gate.ts', [root]).status, 0);
+});
+
 test('release PR tracking link resolves to an existing epic', () => {
   const workflow = readFileSync(join(repositoryRoot, '.github/workflows/release.yml'), 'utf8');
   const body = workflow.split('\n').find(line => line.includes('--body') && line.includes('Tracking:'));
@@ -208,6 +218,20 @@ test('release PR tracking link resolves to an existing epic', () => {
   const link = body.match(/https:\/\/github\.com\/unbraind\/pm-review\/blob\/main\/(\.agents\/pm\/epics\/[^)]+\.toon)/);
   assert.ok(link);
   assert.equal(existsSync(join(repositoryRoot, link[1])), true);
+});
+
+test('release pack manifest parsing survives npm 10 prepare output before the JSON array', () => {
+  const workflow = readFileSync(join(repositoryRoot, '.github/workflows/release.yml'), 'utf8');
+  const assignment = workflow.split('\n').find(line => line.includes('filename="$(node -p'));
+  assert.ok(assignment);
+  // npm 10 can run the package prepare script during pack and prefix its output to the JSON manifest.
+  const root = fixtureProject('release-pack-manifest', {
+    'pack.json': 'prepare: installing the merge driver\nprepare: done\n[{"filename":"pm-review-2026.10.12.tgz"}]\n',
+  });
+  const outcome = spawnSync('bash', ['-c', `set -e\n${assignment}\nprintf '%s' "$filename"`], { cwd: root, encoding: 'utf8' });
+  assert.equal(outcome.error, undefined);
+  assert.equal(outcome.status, 0, outcome.stderr);
+  assert.equal(outcome.stdout, 'pm-review-2026.10.12.tgz');
 });
 
 test('Git includes eval queries while ignoring generated search contents', () => {
@@ -521,6 +545,40 @@ test("coverage gate runs as main from a root argument and from the working direc
   const withoutArgument = runScript("coverage-gate.ts", [], workingRoot);
   assert.equal(withoutArgument.status, 0);
   assert.match(withoutArgument.stdout, /every threshold met/);
+});
+
+test("coverage gate anchors a relative root at the invoking directory for runner and reader alike", () => {
+  // A configured runner resolves the reports directory against its own working directory (the pinned c8 does this for every honored relative flag), so a relative root would nest the report twice and reconcile would fail.
+  const runner = [
+    'import { mkdirSync, writeFileSync } from "node:fs";',
+    'import { join, resolve } from "node:path";',
+    'const args = process.argv.slice(2);',
+    'const directory = resolve(args[args.indexOf("--reports-directory") + 1]);',
+    'mkdirSync(directory, { recursive: true });',
+    'const metric = { pct: 100 };',
+    'const summary = { total: { statements: metric, branches: metric, functions: metric, lines: metric }, "src/covered.ts": { statements: metric, branches: metric, functions: metric, lines: metric } };',
+    'writeFileSync(join(directory, "coverage-summary.json"), JSON.stringify(summary));',
+    '',
+  ].join("\n");
+  const root = fixtureProject("coverage-relative-root", {
+    "package.json": coverageManifest(FULL_THRESHOLDS),
+    "src/covered.ts": COVERED_SOURCE,
+    "test/covered.test.ts": COVERED_TEST,
+    "runner.ts": runner,
+  });
+  const previousCwd = process.cwd();
+  process.chdir(scratchBase);
+  try {
+    const outcome = capturedGate("coverage-relative-root", { executable: process.execPath, script: join(root, "runner.ts") });
+    assert.equal(outcome.status, 0, outcome.seen);
+    assert.match(outcome.seen, /every threshold met/);
+    assert.equal(existsSync(join(root, "coverage", "coverage-summary.json")), true);
+  } finally {
+    process.chdir(previousCwd);
+  }
+  const cli = runScript("coverage-gate.ts", ["coverage-relative-root"], scratchBase);
+  assert.equal(cli.status, 0, `${cli.stdout}\n${cli.stderr}`);
+  assert.match(cli.stdout, /every threshold met/);
 });
 
 test("lint gate passes the repository through the canonical policy", () => {

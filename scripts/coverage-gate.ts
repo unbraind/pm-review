@@ -301,30 +301,37 @@ function reconcile(root: string, required: readonly string[], thresholds: Thresh
 /**
  * Run the whole gate against one repository root and return the exit code.
  *
+ * The root is resolved against the invoking process's working directory before
+ * any use, so every path handed to the coverage runner — which may resolve its
+ * own flags against its own working directory — and every report location this
+ * gate reads or invalidates anchor at the same absolute directory even when a
+ * caller passes a relative root.
+ *
  * Reports are invalidated before the run and again on every failure, so a red
  * run leaves no green-looking artefact behind; a clean run leaves the json,
  * json-summary and lcov reports in place for consumers.
  *
- * @param root - Repository root whose `package.json` configures the gate.
+ * @param root - Repository root whose `package.json` configures the gate; relative paths resolve against the current working directory.
  * @param options - Optional runner and stream boundaries for the suite.
  * @returns The process exit code: zero only on a fully measured, fully covered run.
  */
 export function runCoverageGate(root: string, options: CoverageGateOptions = {}): number {
   const log = options.log ?? console.log;
   const failure = options.error ?? console.error;
-  const reports = join(root, "coverage");
+  const repositoryRoot = resolve(root);
+  const reports = join(repositoryRoot, "coverage");
   try {
-    const { config, thresholds } = loadConfiguration(root);
+    const { config, thresholds } = loadConfiguration(repositoryRoot);
     const skipped = new Set(SKIPPED_DIRECTORY_NAMES);
     for (const name of config.skipDirs ?? []) skipped.add(name);
-    const inventory = inventorySources(root, config, skipped);
+    const inventory = inventorySources(repositoryRoot, config, skipped);
     rmSync(reports, { recursive: true, force: true });
-    const status = runC8(root, config, inventory, options);
+    const status = runC8(repositoryRoot, config, inventory, options);
     if (status !== 0) {
       rmSync(reports, { recursive: true, force: true });
       return status;
     }
-    const violations = reconcile(root, inventory.required, thresholds);
+    const violations = reconcile(repositoryRoot, inventory.required, thresholds);
     if (violations.length > 0) {
       rmSync(reports, { recursive: true, force: true });
       failure(`coverage-gate: ${violations.length} violation(s) after the run:\n${violations.join("\n")}`);

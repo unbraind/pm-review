@@ -15,7 +15,7 @@ export function auditIdentities(root: string): string[] {
   if (baseline.length !== 1 || !/^[a-f0-9]{40}$/i.test(baseline[0])) throw new Error('Invalid identity baseline');
   const approved = new Set(policyEntries(root, 'approved-git-identities.txt'));
   if (approved.size === 0) throw new Error('Approved identity list is empty');
-  const git = (args: readonly string[]): string => execFileSync('git', [...args], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  const git = (args: readonly string[]): string => execFileSync('git', [...args], { cwd: root, encoding: 'utf8', maxBuffer: 512 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] }).trim();
   git(['merge-base', '--is-ancestor', baseline[0], 'HEAD']);
   const commits = git(['rev-list', `${baseline[0]}..HEAD`]).split('\n').filter(Boolean);
   const violations: string[] = [];

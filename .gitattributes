@@ -21,6 +21,8 @@
 ".agents/pm/plans/*.md" merge=pm-item-markdown
 ".agents/pm/reminders/*.toon" merge=pm-item-toon
 ".agents/pm/reminders/*.md" merge=pm-item-markdown
+".agents/pm/review-findings/*.toon" merge=pm-item-toon
+".agents/pm/review-findings/*.md" merge=pm-item-markdown
 ".agents/pm/tasks/*.toon" merge=pm-item-toon
 ".agents/pm/tasks/*.md" merge=pm-item-markdown
 ".agents/pm/**/*.jsonl" merge=pm-relationship

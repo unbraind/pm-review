@@ -206,7 +206,7 @@ jobs:
           set -euo pipefail
           mkdir release-artifact
           npm pack --ignore-scripts --json > pack.json
-          filename="$(node -p "JSON.parse(require('node:fs').readFileSync('pack.json','utf8'))[0].filename")"
+          filename="$(node -p "const s=require('node:fs').readFileSync('pack.json','utf8');JSON.parse(s.slice(s.lastIndexOf('\n[')+1))[0].filename")"
           mv "$filename" release-artifact/package.tgz
           cp RELEASE_NOTES.md release-artifact/RELEASE_NOTES.md
           git branch verified-release HEAD

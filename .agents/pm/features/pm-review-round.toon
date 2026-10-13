@@ -6,22 +6,27 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-12T10:47:30.490Z"
-updated_at: "2026-10-12T13:32:37.170Z"
+updated_at: "2026-10-13T13:27:31.105Z"
 author: codex-sol
-acceptance_criteria: Aggregate checks; finished CodeRabbit review at current head or timed full-review reply; unresolved threads; missing author reactions; pending imported items; fail closed on incomplete data; compact line and exit code.
+acceptance_criteria: Aggregate checks; submitted and completed CodeRabbit review associated with the exact current head; unresolved threads; missing author reactions; pending imported items; fail closed on incomplete data; compact line and exit code.
 parent: pm-review-epic
 release: 2026.10.12
-comments[5]{created_at,author,text}:
+comments[8]{created_at,author,text}:
   "2026-10-12T11:23:58.598Z",codex-sol,"Behavioral revert proof: dropping exact-head comparison inside coderabbitFinished makes node --test --test-name-pattern=\"round requires current\" test/core.test.ts fail on old-head evidence. Restored byte-for-byte. Skipped and neutral checks remain pending."
   "2026-10-12T11:41:11.741Z",codex-sol,"Final semantic review found and corrected the completion fallback: a timed full-review reply supplements only a head with no CodeRabbit review object. A pending or failed object for that head remains incomplete even when a later full-review text exists. The real-tracker regression now includes that case. Transport reads all visible reviews rather than filtering pending objects out."
   "2026-10-12T11:45:46.209Z",codex-sol,"Additional behavioral revert proof: allowing the timed-reply fallback despite a pending current-head review makes node --test --test-name-pattern=\"round requires current\" test/core.test.ts fail. Restored byte-for-byte. A completed review object or the no-object timed-reply path is required."
   "2026-10-12T13:22:58.256Z",codex-sol,Review round 1 confirms committedDate cannot establish when a head was pushed. Require a submitted CodeRabbit review associated with the exact head.
   "2026-10-12T13:30:28.974Z",codex-sol,"Finding 4248463303: require a completed CodeRabbit review associated with the exact head; completion replies and commit timestamps cannot substitute. node --test --test-name-pattern=\"round rejects completion replies\" test/core.test.ts passes; reverting only coderabbitFinished fails (exit 1). README and existing complete-round fixtures updated."
-files[2]{path,scope}:
+  "2026-10-13T12:43:05.703Z",codex-agent,"Taking over the interrupted second review round. Independently checking all four current CodeRabbit threads, the active completion criterion, and both dogfood regressions. Previous revert-proof claims are unverified. Original scratch instructions are currently unavailable; requested their location."
+  "2026-10-13T12:49:06.991Z",codex-agent,"All five independent runtime revert proofs verified: the three tooling fixes plus severity badge parsing and expected CLI errors. Each targeted test fails only while its production fix is reverted, then passes when restored; restoration hashes match. Live invalid-verdict CLI output now carries the actual validation message and exit 2. Active acceptance criteria now require a submitted completed review for the exact head; historical comments are preserved."
+  "2026-10-13T13:27:20.957Z",codex-agent,"Final npm and Bun release gates both pass with exit 0, all 85 coverage tests passing without skips, and 100 percent in every configured coverage dimension. Four current CodeRabbit findings carry local fix verdicts and explicit reasons; no --apply was used. Both dogfood fixes have independent failing reverts and passing restorations. All imported item ids and per-thread commands are documented in docs/review-round2.md. Leaving items in progress for orchestrator verification."
+files[4]{path,scope}:
+  src/commands.ts,project
+  src/findings.ts,project
   src/round.ts,project
   test/core.test.ts,project
-tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
-  node --test test/core.test.ts,project,codex-sol,"2026-10-12T11:03:49.350Z",local_mutation,feat/review
+tests[1]{command,scope,timeout_seconds,provenance{author,created_at,source_kind,source_ref},updated_by,updated_at}:
+  node --test test/core.test.ts,project,600,codex-sol,"2026-10-12T11:03:49.350Z",local_mutation,feat/review,codex-agent,"2026-10-13T12:56:35.894Z"
 docs[1]{path,scope}:
   README.md,project
 body: ""

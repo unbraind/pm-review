@@ -1,0 +1,27 @@
+id: pm-review-gh-e42de0001e8f08c535d7dff8
+title: "github-advanced-security: CodeQL / Incomplete multi-character sanitization"
+description: "## CodeQL / Incomplete multi-character sanitization\n\nThis string may still contain [<script](1), which may cause an HTML element injection vulnerability.\n\n[Show more details](https://github.com/unbraind/pm-review/security/code-scanning/3)"
+type: ReviewFinding
+status: open
+priority: 2
+tags: []
+created_at: "2026-10-13T12:45:46.801Z"
+updated_at: "2026-10-13T12:45:46.801Z"
+author: pm-extension
+review_bot: github-advanced-security
+review_commits: "420fa98721332458be5005d99c1da0d498f6a031 https://github.com/unbraind/pm-review/commit/420fa98721332458be5005d99c1da0d498f6a031\nf3e90a466cbf914de69bef8b258ab3d20ce09403 https://github.com/unbraind/pm-review/commit/f3e90a466cbf914de69bef8b258ab3d20ce09403\n21dba492a96a10ac07fa52cdd0123d295f7190bd https://github.com/unbraind/pm-review/commit/21dba492a96a10ac07fa52cdd0123d295f7190bd\nce72b00af4d0a2b4f8dc3647ff9289a366373625 https://github.com/unbraind/pm-review/commit/ce72b00af4d0a2b4f8dc3647ff9289a366373625\n0c0906e18beb7b9a081d450f77e21812cd95a67c https://github.com/unbraind/pm-review/commit/0c0906e18beb7b9a081d450f77e21812cd95a67c\n3bcc0f90a107183b9a62002409889ae9b046712c https://github.com/unbraind/pm-review/commit/3bcc0f90a107183b9a62002409889ae9b046712c\n5fe85ac74734192a152cd5944aa73641f6449068 https://github.com/unbraind/pm-review/commit/5fe85ac74734192a152cd5944aa73641f6449068\nbb78681a56cf3ca9270f5be3f271605a5bde1162 https://github.com/unbraind/pm-review/commit/bb78681a56cf3ca9270f5be3f271605a5bde1162\n57f2fb54272af9d5bcdab0e0379c0ae42bf79a08 https://github.com/unbraind/pm-review/commit/57f2fb54272af9d5bcdab0e0379c0ae42bf79a08\n6b0a7739a0a1c71222ed020900e48399217ea01d https://github.com/unbraind/pm-review/commit/6b0a7739a0a1c71222ed020900e48399217ea01d\ndda1d09726f7b6be00cb174eec6b0512ab60a6ae https://github.com/unbraind/pm-review/commit/dda1d09726f7b6be00cb174eec6b0512ab60a6ae"
+review_head: 57f2fb54272af9d5bcdab0e0379c0ae42bf79a08
+review_head_source: github
+review_kind: thread
+review_line: 0
+review_node_id: PRRT_kwDOVGABD86rdeU5
+review_path: src/findings.ts
+review_pr: 1
+review_repo: unbraind/pm-review
+review_resolved: true
+review_severity: unknown
+review_summary: CodeQL / Incomplete multi-character sanitization
+review_thread_id: PRRT_kwDOVGABD86rdeU5
+review_url: "https://github.com/unbraind/pm-review/pull/1#discussion_r4248090384"
+review_verdict: pending
+body: "Source: https://github.com/unbraind/pm-review/pull/1#discussion_r4248090384\n\n## CodeQL / Incomplete multi-character sanitization\n\nThis string may still contain [<script](1), which may cause an HTML element injection vulnerability.\n\n[Show more details](https://github.com/unbraind/pm-review/security/code-scanning/3)\n\nPR commits:\n- [420fa98721332458be5005d99c1da0d498f6a031](https://github.com/unbraind/pm-review/commit/420fa98721332458be5005d99c1da0d498f6a031)\n- [f3e90a466cbf914de69bef8b258ab3d20ce09403](https://github.com/unbraind/pm-review/commit/f3e90a466cbf914de69bef8b258ab3d20ce09403)\n- [21dba492a96a10ac07fa52cdd0123d295f7190bd](https://github.com/unbraind/pm-review/commit/21dba492a96a10ac07fa52cdd0123d295f7190bd)\n- [ce72b00af4d0a2b4f8dc3647ff9289a366373625](https://github.com/unbraind/pm-review/commit/ce72b00af4d0a2b4f8dc3647ff9289a366373625)\n- [0c0906e18beb7b9a081d450f77e21812cd95a67c](https://github.com/unbraind/pm-review/commit/0c0906e18beb7b9a081d450f77e21812cd95a67c)\n- [3bcc0f90a107183b9a62002409889ae9b046712c](https://github.com/unbraind/pm-review/commit/3bcc0f90a107183b9a62002409889ae9b046712c)\n- [5fe85ac74734192a152cd5944aa73641f6449068](https://github.com/unbraind/pm-review/commit/5fe85ac74734192a152cd5944aa73641f6449068)\n- [bb78681a56cf3ca9270f5be3f271605a5bde1162](https://github.com/unbraind/pm-review/commit/bb78681a56cf3ca9270f5be3f271605a5bde1162)\n- [57f2fb54272af9d5bcdab0e0379c0ae42bf79a08](https://github.com/unbraind/pm-review/commit/57f2fb54272af9d5bcdab0e0379c0ae42bf79a08)\n- [6b0a7739a0a1c71222ed020900e48399217ea01d](https://github.com/unbraind/pm-review/commit/6b0a7739a0a1c71222ed020900e48399217ea01d)\n- [dda1d09726f7b6be00cb174eec6b0512ab60a6ae](https://github.com/unbraind/pm-review/commit/dda1d09726f7b6be00cb174eec6b0512ab60a6ae)"
