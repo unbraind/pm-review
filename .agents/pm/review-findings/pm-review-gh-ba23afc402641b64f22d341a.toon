@@ -6,12 +6,13 @@ status: open
 priority: 2
 tags: []
 created_at: "2026-10-13T12:45:57.112Z"
-updated_at: "2026-10-13T12:49:20.808Z"
+updated_at: "2026-10-13T13:29:37.621Z"
 author: pm-extension
-comments[1]{created_at,author,text}:
+comments[2]{created_at,author,text}:
   "2026-10-13T12:49:16.725Z",pm-extension,"pm-review fix: Identity gate permits patch reads up to 512 MiB and retains fail-closed auditing. Regression: node --test --test-name-pattern=\"identity policy reads\" test/tooling.test.ts passes with a 2 MiB commit; reverting maxBuffer fails with ENOBUFS, exit 1, then restoration passes, exit 0."
+  "2026-10-13T13:29:37.391Z",pm-extension,"pm-review fix: Identity gate permits patch reads up to 512 MiB and retains fail-closed auditing. Regression: node --test --test-name-pattern=\"identity policy reads\" test/tooling.test.ts passes with a 2 MiB commit; reverting maxBuffer fails with ENOBUFS, exit 1, then restoration passes, exit 0.\nCommit: defdd9078d6ed88d6fafcd42437920108f755984"
 review_bot: coderabbitai
-review_commit: ""
+review_commit: defdd9078d6ed88d6fafcd42437920108f755984
 review_commits: "420fa98721332458be5005d99c1da0d498f6a031 https://github.com/unbraind/pm-review/commit/420fa98721332458be5005d99c1da0d498f6a031\nf3e90a466cbf914de69bef8b258ab3d20ce09403 https://github.com/unbraind/pm-review/commit/f3e90a466cbf914de69bef8b258ab3d20ce09403\n21dba492a96a10ac07fa52cdd0123d295f7190bd https://github.com/unbraind/pm-review/commit/21dba492a96a10ac07fa52cdd0123d295f7190bd\nce72b00af4d0a2b4f8dc3647ff9289a366373625 https://github.com/unbraind/pm-review/commit/ce72b00af4d0a2b4f8dc3647ff9289a366373625\n0c0906e18beb7b9a081d450f77e21812cd95a67c https://github.com/unbraind/pm-review/commit/0c0906e18beb7b9a081d450f77e21812cd95a67c\n3bcc0f90a107183b9a62002409889ae9b046712c https://github.com/unbraind/pm-review/commit/3bcc0f90a107183b9a62002409889ae9b046712c\n5fe85ac74734192a152cd5944aa73641f6449068 https://github.com/unbraind/pm-review/commit/5fe85ac74734192a152cd5944aa73641f6449068\nbb78681a56cf3ca9270f5be3f271605a5bde1162 https://github.com/unbraind/pm-review/commit/bb78681a56cf3ca9270f5be3f271605a5bde1162\n57f2fb54272af9d5bcdab0e0379c0ae42bf79a08 https://github.com/unbraind/pm-review/commit/57f2fb54272af9d5bcdab0e0379c0ae42bf79a08\n6b0a7739a0a1c71222ed020900e48399217ea01d https://github.com/unbraind/pm-review/commit/6b0a7739a0a1c71222ed020900e48399217ea01d\ndda1d09726f7b6be00cb174eec6b0512ab60a6ae https://github.com/unbraind/pm-review/commit/dda1d09726f7b6be00cb174eec6b0512ab60a6ae"
 review_head: dda1d09726f7b6be00cb174eec6b0512ab60a6ae
 review_head_source: github

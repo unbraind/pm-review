@@ -67,3 +67,5 @@ The dogfood import retained all 22 current public bot findings and context recor
 - Each full gate passed all 85 coverage tests with zero skips and measured 100 percent statements, branches, functions and lines across all 17 configured authored source files.
 - Each full gate passed production audit, zero-duplication policy, documentation, changelog, publish attestation, package allowlist and real packed npm/npx plus native Bun/bunx consumer acceptance.
 - All five production files still matched their independently verified byte restoration hashes after certification.
+
+Fix commit for all four threads and both dogfood corrections: [defdd9078d6ed88d6fafcd42437920108f755984](https://github.com/unbraind/pm-review/commit/defdd9078d6ed88d6fafcd42437920108f755984). Each current thread item records that SHA in review_commit.
