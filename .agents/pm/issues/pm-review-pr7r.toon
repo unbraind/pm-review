@@ -6,14 +6,22 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-12T12:35:57.295Z"
-updated_at: "2026-10-12T12:36:06.883Z"
+updated_at: "2026-10-13T19:39:08.079Z"
 author: claude-orchestrator
 acceptance_criteria: All three notice shapes import as informational; a title never starts with a GitHub admonition marker; the regression test fails with the classifier change reverted; npm and bun release gates pass at unchanged coverage.
 parent: pm-review-epic
-comments[1]{created_at,author,text}:
+comments[4]{created_at,author,text}:
   "2026-10-12T12:36:00.426Z",claude-orchestrator,"Revert proof: with src/findings.ts restored to HEAD, test/core.test.ts fails 1 of 11; with the change, 11 of 11 pass. Real notice bodies come from pm-vcs#104 (Sourcery budget and guide, CodeRabbit manual-review notice)."
-files[1]{path,scope}:
+  "2026-10-13T19:26:21.027Z",codex-agent,"PR 1 finding 3 accepted: cover real provider budget, limit, access and setup notice shapes while preserving substantive findings about limits and scanning. Regression fixtures and behavioral revert proof required."
+  "2026-10-13T19:33:27.623Z",codex-agent,"Accepted findings have passing real-tracker regressions. Reverting only the relevant dispatch, classification, import or apply function makes each targeted test fail on the original behavior; fixed functions restored. See docs/pr-1-review-round.md for per-finding evidence and packed dogfood UX."
+  "2026-10-13T19:39:06.792Z",codex-agent,"Fix round complete: isolated npm run release:check and bun run release:check each passed 91/91 tests, 100% statements/branches/functions/lines across 17 sources, zero duplication, production audit, pack, changelog, release attestation and packed npm/native Bun acceptance. All five latest function-only revert proofs fail as expected; fixed functions restored. Packed dogfood re-import created zero duplicates, preserves five explicit fix verdicts, repairs notice and legacy major classifications, and supports repo-only precedent search. Identity gate and added-line privacy checks report zero. See docs/pr-1-review-round.md. Live review actions were not applied."
+files[2]{path,scope}:
   src/findings.ts,project
-tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  test/review-regressions.test.ts,project
+tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test test/core.test.ts,project,claude-orchestrator,"2026-10-12T12:35:58.713Z",local_mutation,feat/review
+  "node --test --test-name-pattern=\"provider limit and setup\" test/review-regressions.test.ts",project,codex-agent,"2026-10-13T19:33:22.088Z",local_mutation,feat/review
+docs[2]{path,scope}:
+  docs/pr-1-review-round.md,project
+  README.md,project
 body: ""

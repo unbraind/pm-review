@@ -45,8 +45,8 @@ export async function decide(client: PmClient, transport: GitHubTransport | unde
     await transport.reply(thread.id, reply);
     receipt.replied = true;
   }
-  const reaction = input.verdict === 'refuse' ? 'THUMBS_DOWN' : input.verdict === 'fix' || input.verdict === 'informational' ? 'THUMBS_UP' : undefined;
-  if (reaction && !source.reactions.some(/** Existing reactions from other users do not satisfy the applying account. */ existing => existing.user.toLowerCase() === viewer.toLowerCase() && existing.content === reaction)) {
+  const reaction = input.verdict === 'refuse' ? 'THUMBS_DOWN' : 'THUMBS_UP';
+  if (!source.reactions.some(/** Existing reactions from other users do not satisfy the applying account. */ existing => existing.user.toLowerCase() === viewer.toLowerCase() && existing.content === reaction)) {
     await transport.react(source.id, reaction);
     receipt.reacted = true;
   }

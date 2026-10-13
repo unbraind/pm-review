@@ -6,20 +6,27 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-12T10:47:29.809Z"
-updated_at: "2026-10-12T13:32:37.675Z"
+updated_at: "2026-10-13T19:39:10.468Z"
 author: codex-sol
 acceptance_criteria: Typed verdict vocabulary and required reason; local durable comment plus fields; optional commit; apply replies and reactions without duplicates; resolve thread; synthetic remote mutations only.
 parent: pm-review-epic
 release: 2026.10.12
-comments[3]{created_at,author,text}:
+comments[6]{created_at,author,text}:
   "2026-10-12T11:23:56.804Z",codex-sol,"Behavioral revert proof: removing the replay check inside decide makes node --test --test-name-pattern=\"apply writes only synthetic\" test/core.test.ts fail because the repeat application posts a duplicate reply. Restored byte-for-byte. All remote write fixtures are synthetic."
   "2026-10-12T13:22:58.767Z",codex-sol,Review round 1 confirms pending --apply can reply and resolve a thread. Reject before local or remote writes; retain local pending verdict support.
   "2026-10-12T13:30:30.992Z",codex-sol,"Finding 4248463316: pending --apply rejects before transport reads or tracker writes; local pending remains supported. node --test --test-name-pattern=\"pending apply fails\" test/core.test.ts passes with a real tracker; reverting only the pending guard fails (exit 1)."
-files[2]{path,scope}:
+  "2026-10-13T19:26:22.692Z",codex-agent,"PR 1 finding 5 accepted: duplicate and stale need an author vote on first apply. Test both final verdicts on fresh synthetic threads with round voting and retry deduplication. Live dogfood verdicts stay local without apply."
+  "2026-10-13T19:33:37.460Z",codex-agent,"Accepted findings have passing real-tracker regressions. Reverting only the relevant dispatch, classification, import or apply function makes each targeted test fail on the original behavior; fixed functions restored. See docs/pr-1-review-round.md for per-finding evidence and packed dogfood UX."
+  "2026-10-13T19:39:09.364Z",codex-agent,"Fix round complete: isolated npm run release:check and bun run release:check each passed 91/91 tests, 100% statements/branches/functions/lines across 17 sources, zero duplication, production audit, pack, changelog, release attestation and packed npm/native Bun acceptance. All five latest function-only revert proofs fail as expected; fixed functions restored. Packed dogfood re-import created zero duplicates, preserves five explicit fix verdicts, repairs notice and legacy major classifications, and supports repo-only precedent search. Identity gate and added-line privacy checks report zero. See docs/pr-1-review-round.md. Live review actions were not applied."
+files[4]{path,scope}:
+  src/tracker.ts,project
   src/verdict.ts,project
   test/core.test.ts,project
-tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  test/review-regressions.test.ts,project
+tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test test/core.test.ts,project,codex-sol,"2026-10-12T11:03:45.010Z",local_mutation,feat/review
-docs[1]{path,scope}:
+  "node --test --test-name-pattern=\"duplicate and stale first\" test/review-regressions.test.ts",project,codex-agent,"2026-10-13T19:33:31.504Z",local_mutation,feat/review
+docs[2]{path,scope}:
+  docs/pr-1-review-round.md,project
   README.md,project
 body: ""

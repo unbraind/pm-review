@@ -2,8 +2,8 @@ import type { Contribution, Finding, FindingKind, PullRequest, ReviewThread } fr
 
 /** Recognize bot noise that provides context without requesting a code change. */
 export function isInformational(body: string): boolean {
-  if (/(?:^|[\s_*])potential issue(?:$|[\s_*])|_nitpick_|nitpick comments \(\d+\)|outside diff range comments \(\d+\)|refactor suggestion|_\s*[🔴🟠🟡]\s*(?:critical|major|minor)_|!\[(?:high|medium|low)[-_]priority\]|\bseverity\s*[:=]\s*(?:critical|high|medium|low|major|minor)\b/iu.test(body)) return false;
-  return /rate[- ]limit|quota (?:exceeded|exhausted)|trial (?:has )?ended|review failed|failed to (?:review|generate)|full review finished|walkthrough|no actionable (?:comments|issues)|actionable comments posted:|review skipped|summary of (?:changes|pull request)|review budget|does not receive automatic reviews|reviewer's guide/i.test(body);
+  if (/\*{2}\s*[🔴🟠🟡🔵]?\s*(?:critical|major|minor|high|medium|low)\s*\*{2}|(?:^|[\s_*])potential issue(?:$|[\s_*])|_nitpick_|nitpick comments \(\d+\)|outside diff range comments \(\d+\)|refactor suggestion|_\s*[🔴🟠🟡]\s*(?:critical|major|minor)_|!\[(?:high|medium|low)[-_]priority\]|\bseverity\s*[:=]\s*(?:critical|high|medium|low|major|minor)\b/iu.test(body)) return false;
+  return /rate[- ]limit|quota (?:exceeded|exhausted)|trial (?:has )?ended|review failed|failed to (?:review|generate)|full review finished|walkthrough|no actionable (?:comments|issues)|actionable comments posted:|review skipped|summary of (?:changes|pull request)|you've used your own review budget|(?:^|\n)(?:Sorry [^\n,]+,\s*)?your (?:pull request is larger than the review limit|private repo does not have access)|(?:^|\n)[>\t ]*\d+ files exceed the limit of 100\b|(?:^|\n)[>\t ]*(?:You are seeing this message because GitHub Code Scanning has recently been set up|this pull request contains the workflow file for the Code Scanning tool)|does not receive automatic reviews|reviewer's guide/i.test(body);
 }
 
 /** Extract explicit severity markers used by CodeRabbit, Greptile, Gemini and Sourcery. */

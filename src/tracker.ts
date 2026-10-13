@@ -12,6 +12,7 @@ export const REVIEW_FIELDS: SchemaFieldDefinition[] = [
   ...['bot', 'path', 'severity', 'summary', 'url', 'node_id', 'head', 'repo', 'thread_id', 'reason', 'commit', 'commits', 'head_source'].map(/** Register textual provenance without clashing with built-in fields. */ name => ({ name: `review_${name}`, type: 'string' as const, optional: true })),
   { name: 'review_kind', type: 'string', optional: true, values: ['thread', 'review', 'comment'] },
   { name: 'review_verdict', type: 'string', optional: true, values: [...VERDICTS] },
+  { name: 'review_verdict_source', type: 'string', optional: true, values: ['import', 'local'] },
   { name: 'review_pr', type: 'number', optional: true },
   { name: 'review_line', type: 'number', optional: true },
   { name: 'review_resolved', type: 'boolean', optional: true },
@@ -51,8 +52,10 @@ export async function importFindings(client: PmClient, pr: PullRequest, findings
   const receipt: ImportReceipt = { repo: pr.repo, pr: pr.number, head: pr.head, created: 0, updated: 0, items: [] };
   for (const finding of findings) {
     const prior = existing.get(finding.id);
-    const verdict = prior ? String(prior.review_verdict) : finding.verdict;
-    const fields = fieldOptions({ review_bot: finding.bot, review_kind: finding.kind, review_path: finding.path, review_line: finding.line ?? 0, review_severity: finding.severity, review_summary: finding.summary, review_url: finding.url, review_node_id: finding.id, review_head: finding.head ?? '', review_head_source: finding.head === null ? 'unknown' : 'github', review_verdict: verdict, review_resolved: finding.resolved, review_repo: pr.repo, review_pr: pr.number, review_thread_id: finding.thread, review_commits: pr.commits.map(/** Retain both commit identity and its public source link. */ commit => `${commit.sha} ${commit.url}`).join('\n') });
+    // Legacy explicit decisions always retained a reason; final actionable verdicts also remain local.
+    const local = prior !== undefined && (prior.review_verdict_source === 'local' || Boolean(prior.review_reason) || Boolean(prior.review_commit) || !['pending', 'informational'].includes(String(prior.review_verdict)));
+    const verdict = local ? String(prior.review_verdict) : finding.verdict;
+    const fields = fieldOptions({ review_bot: finding.bot, review_kind: finding.kind, review_path: finding.path, review_line: finding.line ?? 0, review_severity: finding.severity, review_summary: finding.summary, review_url: finding.url, review_node_id: finding.id, review_head: finding.head ?? '', review_head_source: finding.head === null ? 'unknown' : 'github', review_verdict: verdict, review_verdict_source: local ? 'local' : 'import', review_resolved: finding.resolved, review_repo: pr.repo, review_pr: pr.number, review_thread_id: finding.thread, review_commits: pr.commits.map(/** Retain both commit identity and its public source link. */ commit => `${commit.sha} ${commit.url}`).join('\n') });
     const options = { ...fields, title: `${finding.bot}: ${finding.summary}`, description: finding.body, body: `Source: ${finding.url}\n\n${finding.body}\n\nPR commits:\n${pr.commits.map(/** Commit links connect the review context to the code under discussion. */ commit => `- [${commit.sha}](${commit.url})`).join('\n')}` };
     let item: ItemMetadata;
     if (prior) {
@@ -72,7 +75,7 @@ export async function importFindings(client: PmClient, pr: PullRequest, findings
 /** Persist a local verdict and replay-safe audit comment through the SDK mutation pipeline. */
 export async function recordVerdict(client: PmClient, item: ItemMetadata, verdict: Verdict, reason: string, commit: string): Promise<void> {
   await client.comments(item.id, { add: `pm-review ${verdict}: ${reason}${commit ? `\nCommit: ${commit}` : ''}`, ifAbsent: true });
-  await client.update(item.id, fieldOptions({ review_verdict: verdict, review_reason: reason, review_commit: commit }));
+  await client.update(item.id, fieldOptions({ review_verdict: verdict, review_verdict_source: 'local', review_reason: reason, review_commit: commit }));
 }
 
 /** Search every prior fix or refusal using all query words across source text and retained reasoning. */

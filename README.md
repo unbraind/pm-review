@@ -51,11 +51,11 @@ Example structured output (counts depend on the PR snapshot):
 }
 ```
 
-The item array above is shortened to the first of 50 identities from read-only acceptance; actual output includes every imported identity. Re-importing the same nodes creates zero duplicates and updates source text, resolution and provenance while preserving verdicts, reasons, commits and audit comments.
+The item array above is shortened to the first of 50 identities from read-only acceptance; actual output includes every imported identity. Re-importing the same nodes creates zero duplicates and updates source text, resolution and provenance while preserving explicit local verdicts, reasons, commits and audit comments. Import-assigned classifications are refreshed from the current source, so a notice that becomes actionable returns to `pending`.
 
 All GitHub connections are paginated, including nested thread replies, reactions and check runs. A changed PR head or incomplete/malformed response aborts the snapshot before import. One item represents a bot thread using its thread node id and first bot finding. Subsequent replies remain available for application and vote checks. Nonempty bot review bodies and bot issue comments use their own node ids. Human-only threads and empty review bodies are not imported as bot findings.
 
-Fields are namespaced as `review_*`: bot, kind, path, line, severity, summary, URL, node id, original head, verdict, resolved state, repository, PR, thread id, decision reason and decision commit. Every import also links the observed PR commits in the body and metadata. `review_line=0` means GitHub supplied no line. Unknown severity is explicit. CodeRabbit, Greptile, Gemini and Sourcery severity/priority markers are parsed when available.
+Fields are namespaced as `review_*`: bot, kind, path, line, severity, summary, URL, node id, original head, verdict, verdict source, resolved state, repository, PR, thread id, decision reason and decision commit. Every import also links the observed PR commits in the body and metadata. `review_line=0` means GitHub supplied no line. Unknown severity is explicit. CodeRabbit, Greptile, Gemini and Sourcery severity/priority markers are parsed when available.
 
 Thread comments use GitHub's `originalCommit`; reviews use their `commit`. Issue comments have no original-commit property, so their head is empty and `review_head_source=unknown`. The current head in the import receipt describes the snapshot, without assigning that commit to older comments.
 
@@ -78,6 +78,8 @@ reacted: false
 resolved: false
 ```
 
+The `review_verdict_source` field distinguishes `import` classifications from `local` decisions. Legacy findings with a decision reason, decision commit or final actionable verdict retain their local decision; undecided legacy notices are reclassified on import.
+
 Every verdict requires a nonempty reason. The command records an idempotent pm comment and typed decision fields. An optional `--commit <sha>` links the implementing or explanatory commit. Without `--apply`, it changes only the local tracker and does not need a GitHub token.
 
 For an authorized thread action:
@@ -97,7 +99,7 @@ reacted: true
 resolved: true
 ```
 
-`--apply` checks the live thread and authenticated account, posts the reason as a marked reply, adds 👍 for `fix` or `informational` and 👎 for `refuse`, then resolves the thread. Other verdicts post a reason and resolve without inventing a reaction. Repeating the same decision checks its exact marked reply and that account's reactions; existing replies, reactions and resolutions are retained without duplicate writes. A partial network failure can be retried with the same decision. The local decision is durable before remote actions begin.
+`--apply` checks the live thread and authenticated account, posts the reason as a marked reply, adds 👍 for `fix`, `informational`, `duplicate` or `stale` and 👎 for `refuse`, then resolves the thread. Repeating the same decision checks its exact marked reply and that account's reactions; existing replies, reactions and resolutions are retained without duplicate writes. A partial network failure can be retried with the same decision. The local decision is durable before remote actions begin.
 
 Application is supported for final verdicts on thread items. A pending verdict remains local and cannot be applied. Review-body and issue-comment verdicts remain local because they have no review-thread reply/resolution target. The item must belong to the supplied repository and PR. Never use a real PR for unapproved mutation testing; the package's write tests use synthetic responses.
 
@@ -139,6 +141,7 @@ The gate reads GitHub again each time. A local `review_resolved` field is never 
 
 ```sh
 pm review precedents "schema validation"
+pm review precedents "schema validation" --repo unbraind/pm-rl
 pm review precedents "schema validation" --repo unbraind/pm-rl --pr 68 --json
 pm search "validation" --type ReviewFinding
 ```

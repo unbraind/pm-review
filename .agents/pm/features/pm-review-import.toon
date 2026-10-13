@@ -6,12 +6,12 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-12T10:47:29.083Z"
-updated_at: "2026-10-12T13:32:36.666Z"
+updated_at: "2026-10-13T19:39:05.244Z"
 author: codex-sol
 acceptance_criteria: Paginate all connections and nested replies; stable GitHub node IDs; typed schema fields; commit links; preserve verdicts; informational noise classification; pm search visibility.
 parent: pm-review-epic
 release: 2026.10.12
-comments[10]{created_at,author,text}:
+comments[13]{created_at,author,text}:
   "2026-10-12T10:52:32.558Z",codex-sol,"SDK design: ReviewFinding type and namespaced typed fields are registered on activation and persisted through schema APIs during import. Complete-corpus reads include terminal items. Thread identity is the thread node, with all replies available to the transport; review and issue-comment identities remain distinct. Missing issue-comment commit provenance stays unknown rather than being guessed."
   "2026-10-12T11:23:54.616Z",codex-sol,"Behavioral revert proof for this new package: disabling prior-verdict preservation in importFindings makes node --test --test-name-pattern=\"real SDK upsert\" test/core.test.ts fail. Restoring the function returns the regression to green; real SDK comments and fields survive re-import."
   "2026-10-12T12:14:00.257Z",codex-sol,"Explicit finding/priority/severity markers now take precedence over noise words. An actionable rate-limit or walkthrough-generator finding stays pending; genuine unmarked quota/trial/failure/walkthrough notices remain informational. Removing this guard alone makes node --test --test-name-pattern=\"marker parsing\" test/core.test.ts fail. Correct behavior restored before full gates."
@@ -22,13 +22,19 @@ comments[10]{created_at,author,text}:
   "2026-10-12T13:30:24.693Z",codex-sol,"CodeQL 1 / 4248090349: priority separator regex now has disjoint delimiter/whitespace groups. node --test --test-name-pattern=\"severity parsing bounds\" test/core.test.ts passes with 150000 tabs; reverting only severityOf times out after 5000ms and fails (exit 1)."
   "2026-10-12T13:30:25.712Z",codex-sol,"CodeQL 2 / 4248090369: title markup and Markdown trims now use linear scanning. node --test --test-name-pattern=\"title parsing bounds\" test/core.test.ts passes with 150000 open brackets and spaces; reverting only summaryOf times out after 5000ms and fails (exit 1)."
   "2026-10-12T13:30:26.982Z",codex-sol,"CodeQL 3 / 4248090384: scanner removes complete, nested and truncated tag delimiters from summaries, with raw body preserved separately. node --test --test-name-pattern=\"title parsing removes\" test/core.test.ts passes; reverting only summaryOf fails on the truncated script tag (exit 1). No alert dismissed; plain-text storage does not establish an exploitable HTML sink."
-files[4]{path,scope}:
+  "2026-10-13T19:26:19.616Z",codex-agent,"PR 1 findings 2 and 4 accepted: bold severity must outrank quoted notices; import-assigned verdicts must track source changes without overwriting explicit local decisions. Add provenance for automatic versus local verdicts, migrate legacy automatic informational items conservatively, and verify pending round membership through real tracker re-imports."
+  "2026-10-13T19:33:17.458Z",codex-agent,"Accepted findings have passing real-tracker regressions. Reverting only the relevant dispatch, classification, import or apply function makes each targeted test fail on the original behavior; fixed functions restored. See docs/pr-1-review-round.md for per-finding evidence and packed dogfood UX."
+  "2026-10-13T19:39:04.124Z",codex-agent,"Fix round complete: isolated npm run release:check and bun run release:check each passed 91/91 tests, 100% statements/branches/functions/lines across 17 sources, zero duplication, production audit, pack, changelog, release attestation and packed npm/native Bun acceptance. All five latest function-only revert proofs fail as expected; fixed functions restored. Packed dogfood re-import created zero duplicates, preserves five explicit fix verdicts, repairs notice and legacy major classifications, and supports repo-only precedent search. Identity gate and added-line privacy checks report zero. See docs/pr-1-review-round.md. Live review actions were not applied."
+files[5]{path,scope}:
   src/findings.ts,project
   src/tracker.ts,project
   src/types.ts,project
   test/core.test.ts,project
-tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  test/review-regressions.test.ts,project
+tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test test/core.test.ts,project,codex-sol,"2026-10-12T11:03:40.012Z",local_mutation,feat/review
-docs[1]{path,scope}:
+  "node --test --test-name-pattern=\"bold severity badges|re-import reclassifies\" test/review-regressions.test.ts",project,codex-agent,"2026-10-13T19:33:09.030Z",local_mutation,feat/review
+docs[2]{path,scope}:
+  docs/pr-1-review-round.md,project
   README.md,project
 body: ""

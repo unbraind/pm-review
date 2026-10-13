@@ -8,12 +8,21 @@ import { importFindings, precedents, reviewItems } from './tracker.ts';
 import { decide, parseVerdict } from './verdict.ts';
 import type { GitHubTransport } from './types.ts';
 
+/** Validate a provided repository filter independently of a pull request number. */
+function repositoryOf(value: string): string {
+  if (!/^[A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9_.-]+$/.test(value)) throw new Error('--repo owner/name and a positive --pr N are required');
+  return value;
+}
+
+/** Validate a provided pull request filter independently of a repository. */
+function pullRequestOf(value: string): number {
+  if (!/^[1-9]\d*$/.test(value) || !Number.isSafeInteger(Number(value))) throw new Error('--repo owner/name and a positive --pr N are required');
+  return Number(value);
+}
+
 /** Validate explicit PR coordinates before reading or mutating either system. */
 export function targetOf(options: Record<string, unknown>): { repo: string; pr: number } {
-  const repo = readStringOption(options, 'repo') ?? '';
-  const number = readStringOption(options, 'pr') ?? '';
-  if (!/^[A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9_.-]+$/.test(repo) || !/^[1-9]\d*$/.test(number) || !Number.isSafeInteger(Number(number))) throw new Error('--repo owner/name and a positive --pr N are required');
-  return { repo, pr: Number(number) };
+  return { repo: repositoryOf(readStringOption(options, 'repo') ?? ''), pr: pullRequestOf(readStringOption(options, 'pr') ?? '') };
 }
 
 /** Dispatch package commands using host workspace coordinates and the injected SDK client. */
@@ -30,9 +39,9 @@ export async function runReviewCommand(ctx: CommandHandlerContext, provided?: Gi
 async function dispatchReviewCommand(ctx: CommandHandlerContext, provided?: GitHubTransport): Promise<unknown> {
   const client = ctx.sdk?.client ?? new PmClient({ cwd: ctx.source_workspace_root ?? ctx.repo_root, pmRoot: ctx.pm_root, author: ctx.global.author });
   if (ctx.command === 'review precedents') {
-    const scoped = readStringOption(ctx.options, 'repo') !== undefined || readStringOption(ctx.options, 'pr') !== undefined;
-    const target = scoped ? targetOf(ctx.options) : undefined;
-    const items = await precedents(client, ctx.args[0] ?? '', target?.repo, target?.pr);
+    const repo = readStringOption(ctx.options, 'repo');
+    const pr = readStringOption(ctx.options, 'pr');
+    const items = await precedents(client, ctx.args[0] ?? '', repo === undefined ? undefined : repositoryOf(repo), pr === undefined ? undefined : pullRequestOf(pr));
     return { query: ctx.args[0], count: items.length, items };
   }
   const target = targetOf(ctx.options);
