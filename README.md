@@ -59,7 +59,7 @@ Fields are namespaced as `review_*`: bot, kind, path, line, severity, summary, U
 
 Thread comments use GitHub's `originalCommit`; reviews use their `commit`. Issue comments have no original-commit property, so their head is empty and `review_head_source=unknown`. The current head in the import receipt describes the snapshot, without assigning that commit to older comments.
 
-Rate-limit notices, ended trials, failed/skipped reviews, full-review confirmations and walkthrough summaries are imported with an `informational` verdict. They remain searchable context and do not establish a finished substantive review.
+Rate-limit notices, ended trials, failed/skipped reviews, full-review confirmations and walkthrough summaries are imported with an `informational` verdict. They are closed with resolution `informational` and structured expected/actual evidence. They remain searchable and eligible for source voting, without appearing in open findings, and do not establish a finished substantive review.
 
 ## Verdict
 
@@ -99,7 +99,7 @@ reacted: true
 resolved: true
 ```
 
-`--apply` checks the live thread and authenticated account, posts the reason as a marked reply, adds 👍 for `fix`, `informational`, `duplicate` or `stale` and 👎 for `refuse`, then resolves the thread. Repeating the same decision checks its exact marked reply and that account's reactions; existing replies, reactions and resolutions are retained without duplicate writes. A partial network failure can be retried with the same decision. The local decision is durable before remote actions begin.
+`--apply` checks the live thread and authenticated account, posts the reason as a marked reply, adds 👍 for `fix`, `informational`, `duplicate` or `stale` and 👎 for `refuse`, then resolves the thread. Repeating the same decision checks its exact marked reply and that account's reactions; existing replies, reactions and resolutions are retained without duplicate writes. A partial network failure can be retried with the same decision. The local decision is durable before remote actions begin. Successful application closes the finding with the verdict, reason and commit evidence through one SDK close call; partial failures leave actionable items active for retry. Applying `fix` requires `--commit`. `fixed` and `refused` are accepted aliases for `fix` and `refuse`. Local verdicts without `--apply` do not close actionable findings.
 
 Application is supported for final verdicts on all imported findings. A pending verdict remains local and cannot be applied. For review bodies and issue comments, `--apply` votes on the selected source only: 👍 for review content, including summaries and guides; 👎 for unavailable or incomplete review notices (ended trials, access limits, rate limits, skipped reviews and actions not completed). Threads retain verdict-based votes, replies and resolution. Re-applying adds no duplicate reaction from the applying account. The item must belong to the supplied repository and PR. Never use a real PR for unapproved mutation testing; the package's write tests use synthetic responses.
 
@@ -111,6 +111,19 @@ Application is supported for final verdicts on all imported findings. A pending 
 | `duplicate` | Covered by another finding; identify that context in the reason. |
 | `stale` | No longer applies to the current code; explain why. |
 | `informational` | Context without an actionable code change. |
+
+## Reconcile
+
+```sh
+pm review reconcile --repo unbraind/pm-review --pr 1 --dry-run --json
+pm review reconcile --repo unbraind/pm-review --pr 1 --json
+```
+
+Reconcile reads live GitHub state and closes active findings from resolved bot threads, fixed or dismissed linked code-scanning alerts, and merged PRs. Informational source context is closed as well, including legacy notices. The receipt lists planned closures and their evidence, plus before/after active finding counts. `--dry-run` writes nothing and reports zero applied closures. Repeating an applied reconciliation produces zero further closures and no new closure history.
+
+All GitHub operations are read-only. Reads complete before any tracker write; unreadable or malformed GitHub state aborts reconciliation. Alert links must belong to the same repository. Code-scanning links require permission to read those alerts. Missing, null (unknown) or open alert evidence alone cannot close a finding. A merged PR retires all remaining findings for that PR, including source nodes that disappeared, without claiming each individual issue was fixed. Closure preserves local verdicts and reasons and records source resolution separately. It never changes findings for another PR or repository, ordinary work items or canceled findings. Closed findings no longer count as pending in a round; live thread and vote requirements still apply.
+
+Import-derived closed notices reopen if their source becomes actionable on re-import; explicit local closures stay closed. Titles omit static-analysis and AI-agent prompt wrappers to expose the actionable heading.
 
 ## Round
 

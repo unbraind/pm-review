@@ -11,7 +11,7 @@
  * without touching the network.
  */
 import { execFileSync } from 'node:child_process';
-import type { Check, Commit, Contribution, GitHubTransport, PullRequest, Reaction, Review, ReviewThread } from './types.ts';
+import type { Check, Commit, Contribution, GitHubTransport, PullRequest, Reaction, Review, ReviewThread, SourceLifecycle } from './types.ts';
 
 /** Fixed production GraphQL endpoint; it is never configurable. */
 const GRAPHQL_URL = 'https://api.github.com/graphql';
@@ -341,7 +341,29 @@ export function createGitHubTransport(options: GitHubTransportOptions = {}): Git
     return { repo, number: pr, head: head!, headDate: headDate!, author: author!, threads, reviews, comments: issueComments, commits, checks: latestChecks(checks) };
   };
 
-  return { snapshot, viewer, reply, react, resolve };
+  /** Read a validated REST object without exposing response values in errors. */
+  const restObject = async (path: string): Promise<Record<string, unknown>> => {
+    const response = await send(`${REST_URL}/repos/${path}`, 'GET', { accept: 'application/vnd.github+json', 'x-github-api-version': '2022-11-28' }, null);
+    if (!response.ok) throw new Error(`github transport: lifecycle request failed with HTTP ${response.status}`);
+    return obj(parseJson(await response.text()), 'lifecycle');
+  };
+
+  /** Read merge and individually linked code-scanning alert states, never mutating GitHub. */
+  const lifecycle = async (repo: string, pr: number, alerts: number[]): Promise<SourceLifecycle> => {
+    parseRepo(repo);
+    if (!Number.isSafeInteger(pr) || pr <= 0 || alerts.some(number => !Number.isSafeInteger(number) || number <= 0)) throw new Error('github transport: positive source numbers required');
+    const pull = await restObject(`${repo}/pulls/${pr}`);
+    const result: SourceLifecycle = { merged: flag(pull.merged, 'merged'), mergeCommit: optional(pull.merge_commit_sha, sha, 'merge_commit_sha'), alerts: [] };
+    for (const number of [...new Set(alerts)].sort((left, right) => left - right)) {
+      const alert = await restObject(`${repo}/code-scanning/alerts/${number}`);
+      const state = alert.state === null ? null : str(alert.state, 'alert.state');
+      if (state !== null && state !== 'open' && state !== 'fixed' && state !== 'dismissed') malformed('alert.state');
+      result.alerts.push({ number, state: state ?? 'unknown' });
+    }
+    return result;
+  };
+
+  return { snapshot, lifecycle, viewer, reply, react, resolve };
 }
 
 /** Split an "owner/repo" identifier, rejecting anything else. */

@@ -13,6 +13,8 @@ export { findingsOf } from './src/findings.ts';
 export { evaluateRound, compactRound } from './src/round.ts';
 /** Export durable decision application for typed clients. */
 export { decide } from './src/verdict.ts';
+/** Export read-only source reconciliation for typed hosts. */
+export { reconcile } from './src/reconcile.ts';
 /** Export contribution and receipt vocabulary for package consumers. */
 export type { GitHubTransport, PullRequest, Verdict } from './src/types.ts';
 

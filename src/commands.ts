@@ -5,6 +5,7 @@ import { findingsOf } from './findings.ts';
 import { createGitHubTransport } from './github.ts';
 import { compactRound, evaluateRound } from './round.ts';
 import { findReviewItems, importFindings, precedents, reviewItems } from './tracker.ts';
+import { reconcile } from './reconcile.ts';
 import { decide, parseVerdict } from './verdict.ts';
 import type { GitHubTransport } from './types.ts';
 
@@ -54,6 +55,7 @@ async function dispatchReviewCommand(ctx: CommandHandlerContext, provided?: GitH
     return decide(client, apply ? provided ?? createGitHubTransport() : undefined, { ...target, id: ctx.args[0] ?? '', verdict: parseVerdict(ctx.args[1] ?? ''), reason: readStringOption(ctx.options, 'reason') ?? '', commit: readStringOption(ctx.options, 'commit') ?? '', apply });
   }
   const transport = provided ?? createGitHubTransport();
+  if (ctx.command === 'review reconcile') return reconcile(client, transport, target.repo, target.pr, readBooleanOption(ctx.options, 'dryRun') === true);
   const snapshot = await transport.snapshot(target.repo, target.pr);
   if (ctx.command === 'review import') return importFindings(client, snapshot, findingsOf(snapshot));
   if (ctx.command !== 'review round') throw new Error('Unknown pm-review command');
@@ -75,6 +77,7 @@ const TARGET_FLAGS: FlagDefinition[] = [
 /** Register help, typed positional arguments and command handlers through the host API. */
 export function registerReviewCommands(api: ExtensionApi): void {
   const commands = [
+    { name: 'reconcile', description: 'Close findings from live resolved threads, terminal alerts and merged PRs (GitHub read-only)', arguments: [], flags: [...TARGET_FLAGS, { long: '--dry-run', type: 'boolean' as const, description: 'Report planned closures without tracker writes' }], example: 'pm review reconcile --repo unbraind/pm-review --pr 1 --dry-run' },
     { name: 'find', description: 'Find imported tracker items by GitHub thread id or review-comment URL', arguments: [], flags: [{ long: '--thread', type: 'string' as const, description: 'PRRT_ thread id or GitHub review-comment URL' }], example: 'pm review find --thread PRRT_example' },
     { name: 'import', description: 'Import every bot thread, review body and issue comment as durable pm context', arguments: [], flags: TARGET_FLAGS, example: 'pm review import --repo unbraind/pm-rl --pr 68' },
     { name: 'verdict', description: 'Record a verdict and reason; apply only when explicitly requested', arguments: [{ name: 'item', required: true, description: 'Imported ReviewFinding item id' }, { name: 'verdict', required: true, description: 'pending|fix|refuse|duplicate|stale|informational' }], flags: [...TARGET_FLAGS, { long: '--reason', type: 'string' as const, description: 'Durable decision reasoning' }, { long: '--commit', type: 'string' as const, description: 'Commit SHA implementing or explaining this decision' }, { long: '--apply', type: 'boolean' as const, description: 'Vote on source content; also reply and resolve threads; requires write access' }], example: 'pm review verdict sample-gh-abcd refuse --repo unbraind/pm-rl --pr 68 --reason "Existing validation covers this input"' },

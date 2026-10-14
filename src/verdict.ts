@@ -1,12 +1,13 @@
 import { createHash } from 'node:crypto';
 import { PmClient } from '@unbrained/pm-cli/sdk';
-import { fieldOptions, recordVerdict, reviewItems } from './tracker.ts';
+import { closeFinding, fieldOptions, recordVerdict, reviewItems } from './tracker.ts';
 import { isReviewNotice } from './findings.ts';
 import { VERDICTS } from './types.ts';
 import type { Contribution, GitHubTransport, Verdict } from './types.ts';
 
 /** Validate vocabulary before the SDK or GitHub receives any mutation. */
 export function parseVerdict(value: string): Verdict {
+  value = value === 'fixed' ? 'fix' : value === 'refused' ? 'refuse' : value;
   const verdict = VERDICTS.find(/** Runtime input must exactly match a registered decision. */ candidate => candidate === value);
   if (!verdict) throw new Error(`Invalid verdict: choose ${VERDICTS.join('|')}`);
   return verdict;
@@ -37,7 +38,9 @@ export async function decide(client: PmClient, transport: GitHubTransport | unde
     return receipt;
   }
   if (input.verdict === 'pending') throw new Error('--apply requires a final verdict; pending decisions stay local');
+  if (input.verdict === 'fix' && !input.commit) throw new Error('--apply fix requires --commit evidence');
   if (!transport) throw new Error('GitHub transport is required for --apply');
+  const evidence = `${input.verdict}: ${input.reason}${input.commit ? `; commit ${input.commit}` : ''}`;
   const snapshot = await transport.snapshot(input.repo, input.pr);
   if (item.review_kind !== 'thread') {
     const sources = item.review_kind === 'review' ? snapshot.reviews : snapshot.comments;
@@ -47,6 +50,7 @@ export async function decide(client: PmClient, transport: GitHubTransport | unde
     const reaction = isReviewNotice(source.body) ? 'THUMBS_DOWN' : 'THUMBS_UP';
     await recordVerdict(client, item, input.verdict, input.reason, input.commit);
     receipt.reacted = await voteSource(transport, source, viewer, reaction);
+    await closeFinding(client, item, evidence);
     receipt.applied = true;
     return receipt;
   }
@@ -70,6 +74,7 @@ export async function decide(client: PmClient, transport: GitHubTransport | unde
     receipt.resolved = true;
   }
   await client.update(item.id, fieldOptions({ review_resolved: true }));
+  await closeFinding(client, item, evidence);
   receipt.applied = true;
   return receipt;
 }

@@ -31,6 +31,7 @@ export interface PullRequest {
 /** Single network boundary; implementation owns all GitHub GraphQL and REST operations. */
 export interface GitHubTransport {
   snapshot(repo: string, pr: number): Promise<PullRequest>;
+  lifecycle(repo: string, pr: number, alerts: number[]): Promise<SourceLifecycle>;
   viewer(): Promise<string>;
   reply(thread: string, body: string): Promise<void>;
   react(node: string, content: 'THUMBS_UP' | 'THUMBS_DOWN'): Promise<void>;
@@ -41,3 +42,6 @@ export interface Finding extends Contribution {
   kind: FindingKind; thread: string; path: string; line: number | null;
   severity: string; summary: string; verdict: Verdict; resolved: boolean;
 }
+
+/** Live terminal source evidence, obtained only through read-only GitHub requests. */
+export interface SourceLifecycle { merged: boolean; mergeCommit: string | null; alerts: { number: number; state: 'open' | 'fixed' | 'dismissed' | 'unknown' }[] }

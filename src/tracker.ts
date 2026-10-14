@@ -67,6 +67,11 @@ export async function importFindings(client: PmClient, pr: PullRequest, findings
       receipt.created++;
       existing.set(finding.id, item);
     }
+    if (finding.verdict === 'informational') {
+      await closeFinding(client, item, `informational: ${finding.url}`);
+    } else if (prior?.status === 'closed' && prior.review_verdict_source === 'import' && String(prior.resolution).startsWith('informational:')) {
+      await client.update(item.id, { status: 'open' });
+    }
     receipt.items.push({ id: item.id, node_id: finding.id, verdict });
   }
   return receipt;
@@ -89,4 +94,10 @@ export async function precedents(client: PmClient, query: string, repo?: string,
 export async function findReviewItems(client: PmClient, source: string): Promise<ItemMetadata[]> {
   if (!/^PRRT_[A-Za-z0-9_-]+$/.test(source) && !/^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/pull\/[1-9]\d*#(?:discussion_r|issuecomment-|pullrequestreview-)\d+$/.test(source)) throw new Error('--thread requires a PRRT_ thread id or a GitHub review-comment URL');
   return (await reviewItems(client)).filter(/** URLs identify the imported root comment; ids identify its thread. */ item => item.review_thread_id === source || item.review_url === source);
+}
+
+/** Close source context once, retaining structured lifecycle evidence in one SDK call. */
+export async function closeFinding(client: PmClient, item: ItemMetadata, evidence: string): Promise<void> {
+  if (item.status === 'closed') return;
+  await client.close(item.id, evidence, { resolution: evidence, expectedResult: 'Review source requires no further action', actualResult: evidence });
 }

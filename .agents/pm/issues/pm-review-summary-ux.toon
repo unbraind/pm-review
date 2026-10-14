@@ -2,13 +2,22 @@ id: pm-review-summary-ux
 title: Prefer the actionable heading over CodeRabbit static-analysis wrapper text
 description: Dogfood import of PR 1 thread 4258284088 chooses Supported by static analysis as the review summary instead of Parse the pack manifest after npm 10 prepare output. The full body remains retained. Follow up summaryOf handling of details summary wrappers with a recorded public fixture.
 type: Issue
-status: open
+status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-13T12:49:28.477Z"
-updated_at: "2026-10-13T12:49:28.477Z"
+updated_at: "2026-10-14T06:49:33.801Z"
 author: codex-agent
 parent: pm-review-epic
-files[1]{path,scope}:
+comments[3]{created_at,author,text}:
+  "2026-10-14T06:28:16.796Z",pi-agent,HTTP import now skips static-analysis and AI-agent prompt wrappers and titles the actionable heading. Restoring only summaryOf from origin/main failed with the wrapper title instead of the actionable heading. Restored linked heading test passed 1/1.
+  "2026-10-14T06:33:52.403Z",pi-agent,The retained bodies include static-analysis script receipts before the actionable heading. The parser now prefers an eligible bold heading over those receipts. Dogfood titles now read Parse the pack manifest after npm 10 prepare output and Enforce the identity baseline in a required CI check. The HTTP regression includes intervening script receipt text.
+  "2026-10-14T06:49:33.801Z",pi-agent,Final heading-only revert still fails with severity and intervening script receipts in the fixture. Restored heading test passes 1/1. Both final isolated release gates pass 105/105 tests with 100% coverage; real retained tracker titles now name the actionable changes. Claim released for orchestrator verification.
+files[2]{path,scope}:
   src/findings.ts,project
+  test/github.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  "node --test --test-name-pattern=\"lifecycle actionable headings\" test/github.test.ts",project,pi-agent,"2026-10-14T06:24:26.133Z",local_mutation,feat/finding-lifecycle
+docs[1]{path,scope}:
+  README.md,project
 body: ""
