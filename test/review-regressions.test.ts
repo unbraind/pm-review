@@ -8,7 +8,57 @@ import { findingsOf, isInformational, isReviewNotice, severityOf } from '../src/
 import { ensureReviewSchema, fieldOptions, findReviewItems, importFindings, reviewItems } from '../src/tracker.ts';
 import { evaluateRound } from '../src/round.ts';
 import { decide } from '../src/verdict.ts';
+import { reconcile } from '../src/reconcile.ts';
 import { contribution, pullRequest, syntheticTransport, tracker } from './helpers.ts';
+
+test('reconcile requires persisted coordinates and source identity before terminal closures', async t => {
+  const { client } = await tracker(t);
+  await ensureReviewSchema(client);
+  const pr = pullRequest({ reviews: [], comments: [] });
+  pr.threads[0].id = 'PRRT_shared';
+  pr.threads[0].resolved = true;
+  const imported = await importFindings(client, pr, findingsOf(pr));
+  const guarded = [];
+  const identities: Record<string, string | number | boolean>[] = [
+    {},
+    { review_thread_id: 'PRRT_shared' },
+    { review_repo: pr.repo, review_pr: pr.number },
+    { review_repo: pr.repo, review_pr: 2, review_node_id: 'PRRT_shared', review_thread_id: 'PRRT_shared' },
+    { review_repo: 'other/package', review_pr: pr.number, review_node_id: 'PRRT_shared' },
+    { review_repo: pr.repo, review_pr: pr.number, review_node_id: 'PRRT_shared', review_thread_id: 'PRRT_different' },
+  ];
+  for (const fields of identities) guarded.push((await client.create({ title: 'Preserve identity guard', description: 'Review skipped', type: 'ReviewFinding', ...fieldOptions(fields) })).item.id);
+  // A legacy thread identity alone is sufficient when its persisted coordinates match.
+  const legacy = (await client.create({ title: 'Matched legacy thread', type: 'ReviewFinding', ...fieldOptions({ review_repo: pr.repo, review_pr: pr.number, review_thread_id: 'PRRT_shared' }) })).item.id;
+  const transport = syntheticTransport(pr);
+  transport.lifecycle = async () => ({ merged: true, mergeCommit: null, alerts: [] });
+  const result = await reconcile(client, transport, pr.repo, pr.number, false);
+  assert.deepEqual(result.items.map(item => item.id).sort(), [imported.items[0].id, legacy].sort());
+  for (const id of guarded) assert.equal((await client.get(id)).item.status, 'open');
+  for (const snapshot of [{ ...pr, repo: 'other/package' }, { ...pr, number: 2 }]) {
+    await assert.rejects(reconcile(client, syntheticTransport(snapshot), pr.repo, pr.number, false), /snapshot does not match/);
+  }
+});
+
+test('reconcile orphan notices respect persisted verdicts and actionable legacy severity', async t => {
+  const { client } = await tracker(t);
+  await ensureReviewSchema(client);
+  const pr = pullRequest({ threads: [], reviews: [], comments: [] });
+  const cases = [
+    { verdict: 'pending', severity: 'unknown', body: 'Review skipped', closed: false },
+    { verdict: 'fix', severity: 'unknown', body: 'Review skipped', closed: false },
+    { verdict: 'refuse', severity: 'unknown', body: 'Review skipped', closed: false },
+    { verdict: 'informational', severity: 'high', body: 'Retained context', closed: true },
+    ...['critical', 'high', 'medium', 'low', 'major', 'minor'].map(severity => ({ verdict: '', severity, body: 'Review skipped', closed: false })),
+    { verdict: '', severity: 'unknown', body: 'Review skipped', closed: true },
+    { verdict: '', severity: '', body: 'Review skipped', closed: true },
+    { verdict: '', severity: '', body: 'Validate inputs', closed: false },
+  ];
+  const ids = [];
+  for (const [index, entry] of cases.entries()) ids.push((await client.create({ title: 'Orphan source', description: entry.body, type: 'ReviewFinding', ...fieldOptions({ review_repo: pr.repo, review_pr: pr.number, review_node_id: `orphan-${index}`, review_verdict: entry.verdict, review_severity: entry.severity }) })).item.id);
+  assert.equal((await reconcile(client, syntheticTransport(pr), pr.repo, pr.number, false)).closed, 3);
+  for (const [index, entry] of cases.entries()) assert.equal((await client.get(ids[index])).item.status, entry.closed ? 'closed' : 'open', `${entry.verdict}/${entry.severity}`);
+});
 
 test('repository-only precedent filters work independently and still validate coordinates', async t => {
   const { client, cwd, pmRoot } = await tracker(t);

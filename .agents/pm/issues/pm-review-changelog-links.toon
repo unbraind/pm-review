@@ -1,0 +1,24 @@
+id: pm-review-changelog-links
+title: Preserve custom ReviewFinding folders in changelog item links
+description: Generated CHANGELOG.md links for closed ReviewFinding items use reviewfindings instead of the schema folder review-findings. Follow up on the pinned changelog generator custom-type mapping; retain generated output and unchanged dependency pins in the lifecycle PR.
+type: Issue
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-14T06:31:46.125Z"
+updated_at: "2026-10-14T09:08:21.600Z"
+author: pi-agent
+parent: pm-review-epic
+comments[3]{created_at,author,text}:
+  "2026-10-14T08:55:41.698Z",codex-agent,"PR 9 round 1: verified generated ReviewFinding URLs use reviewfindings while the persisted schema uses review-findings. Inspecting the pinned generator and applying a repo-side mapping fix with an executable link regression and behavioural revert proof."
+  "2026-10-14T08:59:32.135Z",codex-agent,"Behavioural revert proof: replacing only canonicalFindingLinks with an identity function makes node --test --test-name-pattern=\"changelog maps\" test/changelog.test.ts fail 0/1 because the generated URL still uses reviewfindings. Restored mapping passes. Minimal pinned pm-changelog 2026.10.5 repro: createChangelog({items:[{id:\"synthetic\",title:\"Finding\",type:\"ReviewFinding\",status:\"closed\"}],itemUrlBase:\"https://github.com/unbraind/pm-review/blob/main/.agents/pm\"}).markdown emits reviewfindings/synthetic.toon; REVIEW_TYPE.folder is review-findings. Repo wrapper applies that canonical folder before writes, drift checks and release summaries and verifies every tracker link exists in the branch. Dependency pins unchanged."
+  "2026-10-14T09:08:17.901Z",codex-agent,"Final verification: node --test test/changelog.test.ts passed 2/2 through pm test --run --progress. Isolated npm run release:check and bun run release:check each passed 109/109 suite tests and 1/1 packed acceptance test with zero failures/skips/cancellations/todos. Coverage is 100% statements/branches/functions/lines over all 19 source files; duplication is 0%; production audit has zero vulnerabilities. Isolation prefix: env -u PM_PATH -u PM_AUTHOR HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1. All 36 changelog item links resolve to branch files. The first npm gate stopped at changelog ordering drift after evidence writes; regeneration and the full rerun passed. Work remains in progress for orchestrator verification; claim released at delivery."
+files[3]{path,scope}:
+  package.json,project
+  scripts/changelog.ts,project
+  test/changelog.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test test/changelog.test.ts,project,codex-agent,"2026-10-14T08:59:29.604Z",local_mutation,feat/finding-lifecycle
+docs[1]{path,scope}:
+  CHANGELOG.md,project
+body: ""

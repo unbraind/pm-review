@@ -17,10 +17,14 @@ import {
   checkOutcome, createGitHubTransport, ghAuthToken, isBotAuthor, resolveGitHubToken,
   type FetchLike, type TransportResponse, type TransportRequestInit,
 } from '../src/github.ts';
-import { findingsOf, isInformational, severityOf } from '../src/findings.ts';
-import { importFindings, reviewItems } from '../src/tracker.ts';
+import { findingsOf, isInformational, severityOf, summaryOf } from '../src/findings.ts';
+import { importFindings, reviewItems, fieldOptions } from '../src/tracker.ts';
 import { evaluateRound } from '../src/round.ts';
-import { decide } from '../src/verdict.ts';
+import { decide, parseVerdict } from '../src/verdict.ts';
+import { reconcile, alertNumbers } from '../src/reconcile.ts';
+import { runReviewCommand } from '../src/commands.ts';
+import { createExtensionCommandSdk } from '@unbrained/pm-cli/sdk';
+import type { CommandHandlerContext } from '@unbrained/pm-cli/sdk/authoring';
 import { tracker } from './helpers.ts';
 import type { Contribution, GitHubTransport, PullRequest } from '../src/types.ts';
 
@@ -43,6 +47,7 @@ interface Scripted {
   link?: string | null;
   match?: RegExp;
   variables?: Record<string, unknown>;
+  url?: string;
 }
 
 /** One request/response pair recorded from the real GitHub API. */
@@ -96,6 +101,7 @@ function scriptFetch(script: Scripted[], token = TOKEN): FetchLike {
     const next = script[index];
     index++;
     checkEnvelope(url, init, next.match, token);
+    if (next.url !== undefined) equal(url, next.url);
     if (next.variables !== undefined) deepEqual(JSON.parse(init.body!).variables, next.variables);
     if (init.method === 'POST') equal(url, GRAPHQL_URL);
     return respond(next.status ?? 200, next.text ?? JSON.stringify(next.body ?? null), next.link ?? null);
@@ -781,6 +787,7 @@ test('non-thread apply votes review bodies, summaries, guides and denial notices
     const retry = await decide(client, transport, input);
     equal(retry.reacted, false);
     equal(retry.applied, true);
+    equal((await client.get(input.id)).item.status, 'closed');
     equal((await client.comments(input.id)).comments.length, 1);
     const voted = structuredClone(pr);
     (kind === 'review' ? voted.reviews[0] : voted.comments[0]).reactions.push({ content, user: 'maintainer' });
@@ -796,7 +803,7 @@ test('non-thread apply rejects missing and human source nodes before recording d
     const importedTransport = syntheticTransport(sourceScenario(id, kind, bot));
     const originalSnapshot = await importedTransport.snapshot('example/package', 1);
     const { items } = await importFindings(client, originalSnapshot, findingsOf(originalSnapshot));
-    const input = { id: items[0].id, repo: 'example/package', pr: 1, verdict: 'fix' as const, reason: 'Source disappeared.', commit: '', apply: true };
+    const input = { id: items[0].id, repo: 'example/package', pr: 1, verdict: 'fix' as const, reason: 'Source disappeared.', commit: HEAD_B, apply: true };
     await rejects(decide(client, syntheticTransport(scenario()), input), /no longer exists/);
     const human = { author: { login: 'reviewer', __typename: 'User' } };
     await rejects(decide(client, syntheticTransport(sourceScenario(id, kind, human)), input), /no longer exists/);
@@ -828,4 +835,211 @@ test('all recorded fixture bodies retain their original informational and severi
     equal(isInformational(body), original.informational, hash);
     equal(severityOf(body), original.severity, hash);
   }
+});
+
+/** Synthetic source actor shared by lifecycle fixtures. */
+const LIFECYCLE_BOT = { login: 'coderabbitai', __typename: 'Bot' };
+
+/** Serve one bot thread through the complete HTTP snapshot fixture harness. */
+function lifecycleThread(id: string, body: string, resolved = false): Scripted[] {
+  return scenario({ threads: gql(prPage(HEAD_A, { reviewThreads: pageOf([thread(id, [threadComment('source', { body, author: LIFECYCLE_BOT })], { isResolved: resolved })]) })) });
+}
+
+test('action performed notice format preserves substantive findings as pending and open', async t => {
+  const { client } = await tracker(t);
+  for (const [id, body, verdict, status] of [
+    ['action-notice', '<!-- This is an auto-generated reply by CodeRabbit -->\n<details>\n<summary>✅ Action performed</summary>\n\nFull review finished.\n\n</details>', 'informational', 'closed'],
+    ['action-finding', 'Prevent an action performed without authorization.', 'pending', 'open'],
+    ['action-heading-finding', '**An action performed without authorization must be rejected.**', 'pending', 'open'],
+    ['action-notice-only', '### ✅ Action performed\n', 'informational', 'closed'],
+    ['action-summary-only', '<summary>✅ Action performed</summary>', 'informational', 'closed'],
+  ]) {
+    const pr = await syntheticTransport(sourceScenario(id, 'comment', { body, author: LIFECYCLE_BOT })).snapshot('example/package', 1);
+    equal(findingsOf(pr)[0].verdict, verdict);
+    const imported = await importFindings(client, pr, findingsOf(pr));
+    const item = (await client.get(imported.items[0].id)).item;
+    equal(item.status, status);
+    equal(item.review_verdict, verdict);
+  }
+});
+
+test('applied verdict replaces imported informational closure evidence and keeps explicit closures terminal', async t => {
+  const { client } = await tracker(t);
+  const reads = sourceScenario('imported-action', 'comment', { body: '✅ Action performed', author: LIFECYCLE_BOT });
+  const pr = await syntheticTransport(reads).snapshot('example/package', 1);
+  const itemId = (await importFindings(client, pr, findingsOf(pr))).items[0].id;
+  const input = { id: itemId, repo: pr.repo, pr: 1, verdict: 'fix' as const, reason: 'Verified applied correction', commit: HEAD_B, apply: true };
+  const remote = (): GitHubTransport => syntheticTransport([...reads, gql({ viewer: { login: 'maintainer' } }), gql({ addReaction: {} })]);
+  await rejects(decide(client, syntheticTransport([...reads, gql({ viewer: { login: 'maintainer' } }), { status: 503 }]), input), /HTTP 503/);
+  const failed = (await client.get(itemId)).item;
+  match(String(failed.resolution), /^informational:/);
+  equal(failed.review_verdict_source, 'local');
+  await decide(client, remote(), input);
+  const item = (await client.get(itemId)).item;
+  equal(item.status, 'closed');
+  equal(item.review_verdict, 'fix');
+  equal(item.resolution, `fix: ${input.reason}; commit ${HEAD_B}`);
+  equal(item.actual_result, item.resolution);
+  const terminal = item.resolution;
+  await decide(client, remote(), { ...input, reason: 'Later different decision' });
+  equal((await client.get(itemId)).item.resolution, terminal);
+});
+
+test('reconcile closes merged findings without requesting linked alerts', async t => {
+  const { client } = await tracker(t);
+  const reads = lifecycleThread('merged-alert', 'Fix https://github.com/example/package/security/code-scanning/1');
+  const pr = await syntheticTransport(reads).snapshot('example/package', 1);
+  const id = (await importFindings(client, pr, findingsOf(pr))).items[0].id;
+  const receipt = await reconcile(client, syntheticTransport([...reads, { body: { merged: true, merge_commit_sha: HEAD_B } }]), pr.repo, 1, false);
+  equal(receipt.closed, 1);
+  deepEqual(receipt.skipped, []);
+  match(String((await client.get(id)).item.resolution), /merged PR:/);
+});
+
+test('reconcile reports denied alert closures and still closes resolved threads', async t => {
+  const { client } = await tracker(t);
+  const originals = [1, 2, 3].map(number => thread(`denied-alert-${number}`, [threadComment(`denied-comment-${number}`, { body: `Fix https://github.com/example/package/security/code-scanning/${number}`, author: LIFECYCLE_BOT })], { isResolved: number === 1 }));
+  const reads = scenario({ threads: gql(prPage(HEAD_A, { reviewThreads: pageOf(originals) })) });
+  const pr = await syntheticTransport(reads).snapshot('example/package', 1);
+  const imported = await importFindings(client, pr, findingsOf(pr));
+  const remote = (): GitHubTransport => syntheticTransport([...reads, { body: { merged: false } }, { status: 403 }, { status: 404 }, { body: { state: 'fixed' } }]);
+  const dry = await reconcile(client, remote(), pr.repo, 1, true);
+  equal(dry.closed, 0);
+  equal(dry.items.length, 2);
+  deepEqual(dry.skipped, [{ id: imported.items[1].id, reason: 'code-scanning closure skipped: 2 HTTP 404' }]);
+  const receipt = await reconcile(client, remote(), pr.repo, 1, false);
+  equal(receipt.closed, 2);
+  equal(receipt.after_open, 1);
+  deepEqual(receipt.skipped, dry.skipped);
+  equal((await client.get(imported.items[1].id)).item.status, 'open');
+  // Other transport failures retain fail-closed behaviour before tracker writes.
+  await rejects(reconcile(client, syntheticTransport([...reads, { body: { merged: false } }, { status: 503 }]), pr.repo, 1, false), /HTTP 503/);
+});
+
+test('lifecycle notices import closed, keep voting context and reopen when source becomes actionable', async t => {
+  const { client } = await tracker(t);
+  for (const [index, body] of ['✅ Action performed', 'Summary by CodeRabbit', 'Actionable comments posted: 4', 'Review skipped', 'You are seeing this message because GitHub Code Scanning has recently been set up'].entries()) {
+    const id = `lifecycle-notice-${index}`;
+    const transport = syntheticTransport(sourceScenario(id, 'comment', { body, author: LIFECYCLE_BOT }));
+    const pr = await transport.snapshot('example/package', 1);
+    const imported = await importFindings(client, pr, findingsOf(pr));
+    const item = (await client.get(imported.items[0].id)).item;
+    equal(item.status, 'closed');
+    match(String(item.resolution), /^informational:/);
+    ok(item.expected_result);
+    ok(item.actual_result);
+    equal(evaluateRound(pr, await reviewItems(client)).unvoted_bot_comments.length, 1);
+    await importFindings(client, pr, findingsOf(pr));
+    pr.comments[0].body = '**High**\n**Validate inputs.**';
+    await importFindings(client, pr, findingsOf(pr));
+    equal((await client.get(item.id)).item.status, 'open');
+    // A local closure must survive later source edits and reimports.
+    await client.close(item.id, 'Verified fix', { resolution: 'fix: verified', expectedResult: 'No work', actualResult: 'No work' });
+    await importFindings(client, pr, findingsOf(pr));
+    equal((await client.get(item.id)).item.status, 'closed');
+  }
+});
+
+test('lifecycle actionable headings replace static analysis and agent prompt wrappers through HTTP import', async t => {
+  const { client } = await tracker(t);
+  for (const wrapper of ['<summary>🔎 Supported by static analysis</summary>', '<summary>🤖 Prompt for AI Agents</summary>']) {
+    const body = `${wrapper}\n**High**\n_⚠️ Potential issue_ | _🟠 Major_\n\n🏁 Script executed:\nScript receipt context\n\n**Validate the input before writing.**\nMore context`;
+    equal(summaryOf(body), 'Validate the input before writing.');
+    const pr = await syntheticTransport(lifecycleThread(wrapper, body)).snapshot('example/package', 1);
+    const imported = await importFindings(client, pr, findingsOf(pr));
+    equal((await client.get(imported.items[0].id)).item.title, 'coderabbitai: Validate the input before writing.');
+  }
+});
+
+test('lifecycle applied final verdicts close once with evidence; partial remote failures remain active', async t => {
+  const { client } = await tracker(t);
+  for (const verdict of ['fix', 'refuse', 'informational'] as const) {
+    const id = `lifecycle-${verdict}`;
+    const reads = lifecycleThread(id, '**High**\nValidate the input.');
+    const sourceSnapshot = await syntheticTransport(reads).snapshot('example/package', 1);
+    const itemId = (await importFindings(client, sourceSnapshot, findingsOf(sourceSnapshot))).items[0].id;
+    const input = { id: itemId, repo: sourceSnapshot.repo, pr: sourceSnapshot.number, verdict, reason: 'Verified source decision', commit: HEAD_B, apply: true };
+    const viewer = gql({ viewer: { login: 'maintainer' } });
+    const reply = gql({ addPullRequestReviewThreadReply: {} });
+    const reaction = gql({ addReaction: {} });
+    // Fail after replying and voting, before resolving. A retry can still close the item.
+    await rejects(decide(client, syntheticTransport([...reads, viewer, reply, reaction, { status: 503 }]), input), /HTTP 503/);
+    equal((await client.get(input.id)).item.status, 'open');
+    await decide(client, syntheticTransport([...reads, viewer, reply, reaction, gql({ resolveReviewThread: {} })]), input);
+    const item = (await client.get(input.id)).item;
+    equal(item.status, 'closed');
+    match(String(item.resolution), new RegExp(`^${verdict}:`));
+    match(String(item.resolution), new RegExp(HEAD_B));
+    ok(item.expected_result); ok(item.actual_result);
+    if (verdict === 'fix') await rejects(decide(client, undefined, { ...input, commit: '' }), /requires --commit/);
+    deepEqual(evaluateRound(sourceSnapshot, await reviewItems(client)).pending_items, []);
+  }
+  equal(parseVerdict('fixed'), 'fix');
+  equal(parseVerdict('refused'), 'refuse');
+});
+
+test('lifecycle reconciliation plans read-only closures, preserves unrelated items and is idempotent', async t => {
+  const { client, cwd, pmRoot } = await tracker(t);
+  const bodies = ['Validate a resolved thread.', 'Fix alert https://github.com/example/package/security/code-scanning/1', 'Fix alert https://github.com/example/package/security/code-scanning/2', 'Keep alert https://github.com/example/package/security/code-scanning/3', 'Missing alert https://github.com/example/package/security/code-scanning/4', 'Legacy Review skipped', 'Untouched work'];
+  const originals = bodies.map((body, index) => thread(`reconcile-${index}`, [threadComment(`comment-${index}`, { body, author: LIFECYCLE_BOT })]));
+  /** Build live source pages, deliberately omitting a legacy notice to exercise retained context. */
+  const reads = (): Scripted[] => scenario({ threads: gql(prPage(HEAD_A, { reviewThreads: pageOf(originals.filter((_value, index) => index !== 5).map((value, index) => ({ ...value, isResolved: index === 0 }))) })) });
+  const pr = await syntheticTransport(scenario({ threads: gql(prPage(HEAD_A, { reviewThreads: pageOf(originals) })) })).snapshot('example/package', 1);
+  const imported = await importFindings(client, pr, findingsOf(pr));
+  await client.update(imported.items[5].id, { status: 'open' });
+  const unrelated = await client.create({ title: 'Other PR finding', type: 'ReviewFinding', ...fieldOptions({ review_repo: pr.repo, review_pr: 2 }) });
+  /** Serve complete REST lifecycle evidence after the source snapshot. */
+  const remote = (merged: boolean): GitHubTransport => syntheticTransport([...reads(), { body: { merged, merge_commit_sha: merged ? HEAD_B : null } }, ...(merged ? ['open', 'open'] : ['fixed', 'dismissed', 'open', 'open']).map(state => ({ body: { state } }))]);
+  const ctx: CommandHandlerContext = { command: 'review reconcile', args: [], options: { repo: pr.repo, pr: '1', dryRun: true }, global: { json: true }, repo_root: cwd, pm_root: pmRoot, sdk: createExtensionCommandSdk(pmRoot, client, 'test-agent') };
+  const dry = await runReviewCommand(ctx, remote(false)) as Awaited<ReturnType<typeof reconcile>>;
+  equal(dry.items.length, 4); equal(dry.closed, 0); equal(dry.after_open, dry.before_open);
+  const applied = await runReviewCommand({ ...ctx, options: { repo: pr.repo, pr: '1' } }, remote(false)) as Awaited<ReturnType<typeof reconcile>>;
+  equal(applied.closed, 4); equal(applied.after_open, 3);
+  ok(applied.items.some(item => /resolved thread/.test(item.resolution)));
+  ok(applied.items.some(item => /1 fixed/.test(item.resolution)));
+  ok(applied.items.some(item => /2 dismissed/.test(item.resolution)));
+  equal((await client.get(unrelated.item.id)).item.status, 'open');
+  const merged = await reconcile(client, remote(true), pr.repo, 1, false);
+  equal(merged.closed, 3); equal(merged.after_open, 0);
+  deepEqual(evaluateRound(pr, await reviewItems(client)).pending_items, []);
+  ok(merged.items.every(item => item.resolution.includes(HEAD_B)));
+  const retry = await reconcile(client, syntheticTransport([...reads(), { body: { merged: true, merge_commit_sha: null } }]), pr.repo, 1, false);
+  equal(retry.closed, 0);
+  // Merged PRs close even orphaned source nodes, with head evidence if merge SHA is unavailable.
+  await client.update(imported.items[6].id, { status: 'open' });
+  const fallback = await reconcile(client, syntheticTransport([...scenario(), { body: { merged: true } }]), pr.repo, 1, false);
+  match(fallback.items[0].resolution, new RegExp(HEAD_A));
+  deepEqual(alertNumbers({ ...unrelated.item, description: 'https://github.com/other/package/security/code-scanning/1' }, pr.repo), []);
+  // Missing alert evidence leaves an active PR finding open.
+  await client.update(imported.items[4].id, { status: 'open' });
+  const incomplete = syntheticTransport(reads());
+  incomplete.lifecycle = async () => ({ merged: false, mergeCommit: null, alerts: [{ number: 4, state: 'unknown' }] });
+  equal((await reconcile(client, incomplete, pr.repo, 1, false)).closed, 0);
+  const missing = syntheticTransport(reads());
+  missing.lifecycle = async () => ({ merged: false, mergeCommit: null, alerts: [] });
+  equal((await reconcile(client, missing, pr.repo, 1, false)).closed, 0);
+});
+
+test('lifecycle REST state validation fails closed before any tracker mutation', async () => {
+  for (const [repo, pr, alerts] of [['invalid', 1, []], ['example/package', 0, []], ['example/package', 1, [0]], ['example/package', 1, [1.2]]] as const) await rejects(syntheticTransport([]).lifecycle(repo, pr, [...alerts]), /repository|positive/);
+  for (const script of [[{ status: 403 }], [{ body: null }], [{ body: { merged: 'yes' } }], [{ body: { merged: true, merge_commit_sha: 'invalid' } }], [{ body: { merged: false } }, { body: { state: 'unknown' } }]]) await rejects(syntheticTransport(script).lifecycle('example/package', 1, script.length > 1 ? [1] : []), /HTTP 403|malformed/);
+  const result = await syntheticTransport([{ url: 'https://api.github.com/repos/example/package/pulls/1', body: { merged: false, merge_commit_sha: null } }, { url: 'https://api.github.com/repos/example/package/code-scanning/alerts/1', body: { state: 'fixed' } }]).lifecycle('example/package', 1, [1, 1]);
+  equal(result.alerts.length, 1);
+  const unknown = await syntheticTransport([{ body: { merged: false } }, { body: { state: null } }]).lifecycle('example/package', 1, [1]);
+  equal(unknown.alerts[0].state, 'unknown');
+});
+
+test('lifecycle non-thread verdict closes after a successful vote and retains failures for retry', async t => {
+  const { client } = await tracker(t);
+  const reads = sourceScenario('lifecycle-vote', 'comment', { body: '**High**\nValidate the input.', author: LIFECYCLE_BOT });
+  const snapshot = await syntheticTransport(reads).snapshot('example/package', 1);
+  const itemId = (await importFindings(client, snapshot, findingsOf(snapshot))).items[0].id;
+  const input = { id: itemId, repo: snapshot.repo, pr: snapshot.number, verdict: 'refuse' as const, reason: 'Existing validation covers the input.', commit: '', apply: true };
+  const viewer = gql({ viewer: { login: 'maintainer' } });
+  await rejects(decide(client, syntheticTransport([...reads, viewer, { status: 503 }]), input), /HTTP 503/);
+  equal((await client.get(itemId)).item.status, 'open');
+  await decide(client, syntheticTransport([...reads, viewer, gql({ addReaction: {} })]), input);
+  const item = (await client.get(itemId)).item;
+  equal(item.status, 'closed');
+  match(String(item.resolution), /refuse: Existing validation/);
 });

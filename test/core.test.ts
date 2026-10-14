@@ -146,7 +146,7 @@ test('pending apply fails before transport reads and tracker writes', async t =>
   const { client } = await tracker(t);
   const pr = pullRequest();
   const imported = await importFindings(client, pr, findingsOf(pr));
-  const input = { id: imported.items[0].id, repo: pr.repo, pr: pr.number, verdict: parseVerdict('fix'), reason: 'Validated', commit: '', apply: false };
+  const input = { id: imported.items[0].id, repo: pr.repo, pr: pr.number, verdict: parseVerdict('fix'), reason: 'Validated', commit: 'b'.repeat(40), apply: false };
   assert.throws(() => parseVerdict('unknown'), /Invalid verdict/);
   await assert.rejects(decide(client, undefined, { ...input, reason: ' ' }), /nonempty/);
   await assert.rejects(decide(client, undefined, { ...input, commit: 'invalid' }), /SHA/);
@@ -242,7 +242,7 @@ test('pending apply fails before transport reads and tracker writes', async t =>
   ctx.sdk = createExtensionCommandSdk(pmRoot, client, 'test-agent');
   await runReviewCommand(ctx, transport);
   ctx.command = 'review invalid'; await assert.rejects(runReviewCommand(ctx, transport), /Unknown/);
-  ctx.command = 'review verdict'; ctx.args = [id, 'fix']; ctx.options.reason = 'New validation'; ctx.options.apply = true;
+  ctx.command = 'review verdict'; ctx.args = [id, 'fix']; ctx.options.reason = 'New validation'; ctx.options.commit = 'b'.repeat(40); ctx.options.apply = true;
   await runReviewCommand(ctx, transport);
  });
 
@@ -250,7 +250,7 @@ test('pending apply fails before transport reads and tracker writes', async t =>
   const { client, pmRoot } = await tracker(t);
   const activation = await activateExtensionForTest(extension, { name: 'pm-review', capabilities: ['commands', 'schema'] });
   assert.deepEqual(activation.failed, []);
-  assert.equal(activation.commands.handlers.length, 5);
+  assert.equal(activation.commands.handlers.length, 6);
   const result = await runRegisteredCommandForTest(activation.commands, { command: 'review precedents', args: ['validation'], pmRoot, sdk: createExtensionCommandSdk(pmRoot, client, 'test-agent') });
   assert.equal(result.handled, true);
   assert.deepEqual(result.result, { query: 'validation', count: 0, items: [] });
@@ -271,7 +271,7 @@ test('extension failures leave as host-expected errors so the CLI renders the re
   const { client, cwd, pmRoot } = await tracker(t);
   const pr = pullRequest();
   const imported = await importFindings(client, pr, findingsOf(pr));
-  const ctx: CommandHandlerContext = { command: 'review verdict', args: [], options: { repo: pr.repo, pr: '1', reason: 'Synthetic decision' }, global: { json: true }, pm_root: pmRoot, source_workspace_root: cwd };
+  const ctx: CommandHandlerContext = { command: 'review verdict', args: [], options: { repo: pr.repo, pr: '1', reason: 'Synthetic decision', commit: 'b'.repeat(40) }, global: { json: true }, pm_root: pmRoot, source_workspace_root: cwd };
   await assert.rejects(runReviewCommand(ctx), error => isPmCliExpectedError(error) && /Invalid verdict/.test(error.message));
   await assert.rejects(runReviewCommand({ ...ctx, args: [imported.items[0].id, 'bogus'] }), error => isPmCliExpectedError(error) && /Invalid verdict/.test(error.message));
   await assert.rejects(runReviewCommand({ ...ctx, args: [imported.items[0].id, 'fix'], options: { ...ctx.options, reason: '' } }), error => isPmCliExpectedError(error) && /nonempty/.test(error.message));
