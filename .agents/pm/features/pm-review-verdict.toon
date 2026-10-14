@@ -2,15 +2,20 @@ id: pm-review-verdict
 title: Record verdicts and apply replay-safe thread actions
 description: ""
 type: Feature
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-12T10:47:29.809Z"
-updated_at: "2026-10-13T19:39:10.468Z"
+updated_at: "2026-10-13T22:24:47.174Z"
+closed_at: "2026-10-13T22:24:47.144Z"
+completed_at: "2026-10-13T22:24:47.144Z"
 author: codex-sol
 acceptance_criteria: Typed verdict vocabulary and required reason; local durable comment plus fields; optional commit; apply replies and reactions without duplicates; resolve thread; synthetic remote mutations only.
 parent: pm-review-epic
 release: 2026.10.12
+resolution: Implemented and merged in #1 (fcf34e5).
+expected_result: The change described by this item is on main.
+actual_result: "Merged in #1 as fcf34e5; checks successful at head 3161974: CodeQL, codeql, test (22), test (26)."
 comments[6]{created_at,author,text}:
   "2026-10-12T11:23:56.804Z",codex-sol,"Behavioral revert proof: removing the replay check inside decide makes node --test --test-name-pattern=\"apply writes only synthetic\" test/core.test.ts fail because the repeat application posts a duplicate reply. Restored byte-for-byte. All remote write fixtures are synthetic."
   "2026-10-12T13:22:58.767Z",codex-sol,Review round 1 confirms pending --apply can reply and resolve a thread. Reject before local or remote writes; retain local pending verdict support.
@@ -29,4 +34,5 @@ tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
 docs[2]{path,scope}:
   docs/pr-1-review-round.md,project
   README.md,project
+close_reason: "Delivered by #1 \"pm-review: bot review threads as tracked pm items with verdicts, precedents and exact-head round gates\" (merged as fcf34e5). Checks successful at the PR head 3161974: CodeQL, codeql, test (22), test (26)."
 body: ""

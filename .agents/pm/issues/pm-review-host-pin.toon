@@ -2,15 +2,20 @@ id: pm-review-host-pin
 title: Pin the host so history verifies and keep CodeRabbit under the file cap
 description: CI health fails because the pinned host drops per-test updated_by and updated_at when hashing history written by pm 2026.10.13. CodeRabbit also skips the pull request once changed files exceed 100. Raise the pinned host to 2026.10.13 and exclude the append-only history ledger from review counts without hiding the toon items.
 type: Issue
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-13T14:50:30.150Z"
-updated_at: "2026-10-13T15:06:56.636Z"
+updated_at: "2026-10-13T22:24:39.501Z"
+closed_at: "2026-10-13T22:24:39.487Z"
+completed_at: "2026-10-13T22:24:39.487Z"
 author: pi-grok
 acceptance_criteria: "Pinned devDependency, peer floor and manifest floor are 2026.10.13; pinned pm health --strict-exit --require-merge-drivers exits 0; pinned pm history pm-review-round --verify exits 0; CodeRabbit path filter excludes history JSONL and leaves toon items reviewable; reviewable pull-request file count is under 100; npm and Bun release checks pass."
 parent: pm-review-epic
 release: 2026.10.12
+resolution: Implemented and merged in #1 (fcf34e5).
+expected_result: The change described by this item is on main.
+actual_result: "Merged in #1 as fcf34e5; checks successful at head 3161974: CodeQL, codeql, test (22), test (26)."
 comments[5]{created_at,author,text}:
   "2026-10-13T14:50:40.314Z",pi-grok,"Pinned @unbrained/pm-cli devDependency to 2026.10.13, peer floor to >=2026.10.13, and manifest pm_min_version to 2026.10.13. README states the same floor. pm-ops stays at 2026.10.6: its peer is >=2026.8.20, so the pin does not require a bump. Did not rewrite history. Before further tracker writes, the pinned host verified pm-review-round (25 entries, current hash matches latest) and pm health --strict-exit --require-merge-drivers exited 0 with history_drift ok."
   "2026-10-13T14:53:22.511Z",pi-grok,"CodeRabbit path filter excludes .agents/pm/history while leaving toon items reviewable. After this change the pull request has 119 changed paths, 36 history ledgers, and 83 reviewable files, under the 100-file cap. Linked health and history verification both passed on the pinned host. pm-ops was not bumped."
@@ -68,4 +73,5 @@ tests[4]:
 docs[2]{path,scope}:
   .coderabbit.yaml,project
   README.md,project
+close_reason: "Delivered by #1 \"pm-review: bot review threads as tracked pm items with verdicts, precedents and exact-head round gates\" (merged as fcf34e5). Checks successful at the PR head 3161974: CodeQL, codeql, test (22), test (26)."
 body: ""

@@ -2,15 +2,20 @@ id: pm-review-round
 title: Compute exact-head review round completion
 description: ""
 type: Feature
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-12T10:47:30.490Z"
-updated_at: "2026-10-13T13:27:31.105Z"
+updated_at: "2026-10-13T22:24:43.669Z"
+closed_at: "2026-10-13T22:24:43.653Z"
+completed_at: "2026-10-13T22:24:43.653Z"
 author: codex-sol
 acceptance_criteria: Aggregate checks; submitted and completed CodeRabbit review associated with the exact current head; unresolved threads; missing author reactions; pending imported items; fail closed on incomplete data; compact line and exit code.
 parent: pm-review-epic
 release: 2026.10.12
+resolution: Implemented and merged in #1 (fcf34e5).
+expected_result: The change described by this item is on main.
+actual_result: "Merged in #1 as fcf34e5; checks successful at head 3161974: CodeQL, codeql, test (22), test (26)."
 comments[8]{created_at,author,text}:
   "2026-10-12T11:23:58.598Z",codex-sol,"Behavioral revert proof: dropping exact-head comparison inside coderabbitFinished makes node --test --test-name-pattern=\"round requires current\" test/core.test.ts fail on old-head evidence. Restored byte-for-byte. Skipped and neutral checks remain pending."
   "2026-10-12T11:41:11.741Z",codex-sol,"Final semantic review found and corrected the completion fallback: a timed full-review reply supplements only a head with no CodeRabbit review object. A pending or failed object for that head remains incomplete even when a later full-review text exists. The real-tracker regression now includes that case. Transport reads all visible reviews rather than filtering pending objects out."
@@ -29,4 +34,5 @@ tests[1]{command,scope,timeout_seconds,provenance{author,created_at,source_kind,
   node --test test/core.test.ts,project,600,codex-sol,"2026-10-12T11:03:49.350Z",local_mutation,feat/review,codex-agent,"2026-10-13T12:56:35.894Z"
 docs[1]{path,scope}:
   README.md,project
+close_reason: "Delivered by #1 \"pm-review: bot review threads as tracked pm items with verdicts, precedents and exact-head round gates\" (merged as fcf34e5). Checks successful at the PR head 3161974: CodeQL, codeql, test (22), test (26)."
 body: ""
