@@ -2,13 +2,18 @@ id: pm-review-summary-ux
 title: Prefer the actionable heading over CodeRabbit static-analysis wrapper text
 description: Dogfood import of PR 1 thread 4258284088 chooses Supported by static analysis as the review summary instead of Parse the pack manifest after npm 10 prepare output. The full body remains retained. Follow up summaryOf handling of details summary wrappers with a recorded public fixture.
 type: Issue
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-13T12:49:28.477Z"
-updated_at: "2026-10-14T06:49:33.801Z"
+updated_at: "2026-10-14T15:27:16.267Z"
+closed_at: "2026-10-14T15:27:16.247Z"
+completed_at: "2026-10-14T15:27:16.247Z"
 author: codex-agent
 parent: pm-review-epic
+resolution: Implemented and merged in #9 (07ec807).
+expected_result: The change described by this item is on main.
+actual_result: "Merged in #9 as 07ec807; checks successful at head f193992: CodeQL, codeql, test (22), test (26)."
 comments[3]{created_at,author,text}:
   "2026-10-14T06:28:16.796Z",pi-agent,HTTP import now skips static-analysis and AI-agent prompt wrappers and titles the actionable heading. Restoring only summaryOf from origin/main failed with the wrapper title instead of the actionable heading. Restored linked heading test passed 1/1.
   "2026-10-14T06:33:52.403Z",pi-agent,The retained bodies include static-analysis script receipts before the actionable heading. The parser now prefers an eligible bold heading over those receipts. Dogfood titles now read Parse the pack manifest after npm 10 prepare output and Enforce the identity baseline in a required CI check. The HTTP regression includes intervening script receipt text.
@@ -20,4 +25,5 @@ tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   "node --test --test-name-pattern=\"lifecycle actionable headings\" test/github.test.ts",project,pi-agent,"2026-10-14T06:24:26.133Z",local_mutation,feat/finding-lifecycle
 docs[1]{path,scope}:
   README.md,project
+close_reason: "Delivered by #9 \"Close findings when their source resolves: verdict-driven and reconciled finding lifecycle\" (merged as 07ec807). Checks successful at the PR head f193992: CodeQL, codeql, test (22), test (26)."
 body: ""

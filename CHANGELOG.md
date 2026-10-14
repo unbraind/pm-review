@@ -14,12 +14,12 @@
 
 - Find durable fix and refusal precedents ([pm-review-precedents](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-precedents.toon))
 - Pin the host so history verifies and keep CodeRabbit under the file cap ([pm-review-host-pin](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-host-pin.toon))
+- Prefer the actionable heading over CodeRabbit static-analysis wrapper text ([pm-review-summary-ux](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-summary-ux.toon))
 - Close review findings when their source resolves ([pm-review-finding-lifecycle](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-finding-lifecycle.toon))
 - Preserve custom ReviewFinding folders in changelog item links ([pm-review-changelog-links](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-changelog-links.toon))
-- Prefer the actionable heading over CodeRabbit static-analysis wrapper text ([pm-review-summary-ux](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-summary-ux.toon))
+- Linear bot classification, mapped rounds and non-thread voting ([pm-review-round-ux](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-round-ux.toon))
 - coderabbitai: Fix the tracking link in the automated release PR body. ([pm-review-gh-300d404ccc6050b4b5da589a](https://github.com/unbraind/pm-review/blob/main/.agents/pm/review-findings/pm-review-gh-300d404ccc6050b4b5da589a.toon))
 - Fix repeated extension value placeholders and duplicate help flags ([pm-review-help-ux](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-help-ux.toon))
-- Linear bot classification, mapped rounds and non-thread voting ([pm-review-round-ux](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-round-ux.toon))
 - Classify Sourcery budget, Sourcery guide and CodeRabbit manual-review notices as informational ([pm-review-pr7r](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-pr7r.toon))
 
 ### Removed

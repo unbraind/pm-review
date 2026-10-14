@@ -2,13 +2,18 @@ id: pm-review-finding-lifecycle
 title: Close review findings when their source resolves
 description: ""
 type: Issue
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-14T06:16:20.368Z"
-updated_at: "2026-10-14T10:30:04.163Z"
+updated_at: "2026-10-14T15:26:56.597Z"
+closed_at: "2026-10-14T15:26:56.573Z"
+completed_at: "2026-10-14T15:26:56.573Z"
 author: pi-agent
 parent: pm-review-epic
+resolution: Implemented and merged in #9 (07ec807).
+expected_result: The change described by this item is on main.
+actual_result: "Merged in #9 as 07ec807; checks successful at head f193992: CodeQL, codeql, test (22), test (26)."
 comments[11]{created_at,author,text}:
   "2026-10-14T06:16:31.738Z",pi-agent,"Retain informational imports as closed context with structured resolution evidence, preserving source votes. Close applied verdicts only after successful remote operations. Reconcile live resolved threads, fixed/dismissed code-scanning alerts and merged PRs with dry-run and append-only closure history. Work items remain for orchestrator verification."
   "2026-10-14T06:25:06.337Z",pi-agent,"Dogfood: review reconcile --repo unbraind/pm-review --pr 1 through the built command dispatcher with the repo-pinned SDK. Dry-run planned 22 closures and wrote none. Applied reconciliation changed open ReviewFinding counts 22 -> 0; 22 closures. Retry applied 0 closures. GitHub reads only; tracker transitions use append-only history and structured resolution/expected/actual evidence."
@@ -45,4 +50,5 @@ tests[4]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
 docs[2]{path,scope}:
   CHANGELOG.md,project
   README.md,project
+close_reason: "Delivered by #9 \"Close findings when their source resolves: verdict-driven and reconciled finding lifecycle\" (merged as 07ec807). Checks successful at the PR head f193992: CodeQL, codeql, test (22), test (26)."
 body: ""

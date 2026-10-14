@@ -2,13 +2,18 @@ id: pm-review-round-ux
 title: "Linear bot classification, mapped rounds and non-thread voting"
 description: "Fix CodeQL alert 4 and dogfood gaps with bounded bot marker matching, unresolved thread details, local source lookup and replay-safe review-body and notice votes."
 type: Issue
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-14T04:27:23.447Z"
-updated_at: "2026-10-14T04:54:45.372Z"
+updated_at: "2026-10-14T15:26:52.647Z"
+closed_at: "2026-10-14T15:26:52.634Z"
+completed_at: "2026-10-14T15:26:52.634Z"
 author: codex-agent
 parent: pm-review-epic
+resolution: Implemented and merged in #8 (7ac4a21).
+expected_result: The change described by this item is on main.
+actual_result: "Merged in #8 as 7ac4a21; checks successful at head e0082b7: CodeQL, codeql, test (22), test (26)."
 comments[4]{created_at,author,text}:
   "2026-10-14T04:27:40.097Z",codex-agent,"Plan: preserve fixture classifications, add a 100k-character timing regression, map current unresolved threads to tracker items, add local review find, apply non-thread votes through addReaction, and prove each regression by reverting its changed function. All remote tests use synthetic transport fixtures; live dogfood is read-only."
   "2026-10-14T04:42:26.581Z",codex-agent,"Behavioural revert proof: replacing only isInformational with its origin/main function makes the 100k timing test fail by ETIMEDOUT. Replacing only evaluateRound loses unresolved_thread_details; replacing only dispatchReviewCommand breaks review find; replacing only decide restores the non-thread apply rejection. Each regression fails with that single function reverted. All functions restored and package rebuilt. All 76 unique recorded fixture bodies retain their baseline informational and severity classifications."
@@ -29,4 +34,5 @@ tests[1]{command,scope,timeout_seconds,provenance{author,created_at,source_kind,
   node --test test/review-regressions.test.ts,project,300,codex-agent,"2026-10-14T04:41:58.199Z",local_mutation,fix/redos-safe-findings-and-round-mapping
 docs[1]{path,scope}:
   README.md,project
+close_reason: "Delivered by #8 \"Linear-time bot classification, thread-mapped review rounds and notice voting\" (merged as 7ac4a21). Checks successful at the PR head e0082b7: CodeQL, codeql, test (22), test (26)."
 body: ""

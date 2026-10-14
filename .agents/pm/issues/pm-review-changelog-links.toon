@@ -2,13 +2,18 @@ id: pm-review-changelog-links
 title: Preserve custom ReviewFinding folders in changelog item links
 description: Generated CHANGELOG.md links for closed ReviewFinding items use reviewfindings instead of the schema folder review-findings. Follow up on the pinned changelog generator custom-type mapping; retain generated output and unchanged dependency pins in the lifecycle PR.
 type: Issue
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-14T06:31:46.125Z"
-updated_at: "2026-10-14T09:08:21.600Z"
+updated_at: "2026-10-14T15:26:55.145Z"
+closed_at: "2026-10-14T15:26:55.130Z"
+completed_at: "2026-10-14T15:26:55.130Z"
 author: pi-agent
 parent: pm-review-epic
+resolution: Implemented and merged in #9 (07ec807).
+expected_result: The change described by this item is on main.
+actual_result: "Merged in #9 as 07ec807; checks successful at head f193992: CodeQL, codeql, test (22), test (26)."
 comments[3]{created_at,author,text}:
   "2026-10-14T08:55:41.698Z",codex-agent,"PR 9 round 1: verified generated ReviewFinding URLs use reviewfindings while the persisted schema uses review-findings. Inspecting the pinned generator and applying a repo-side mapping fix with an executable link regression and behavioural revert proof."
   "2026-10-14T08:59:32.135Z",codex-agent,"Behavioural revert proof: replacing only canonicalFindingLinks with an identity function makes node --test --test-name-pattern=\"changelog maps\" test/changelog.test.ts fail 0/1 because the generated URL still uses reviewfindings. Restored mapping passes. Minimal pinned pm-changelog 2026.10.5 repro: createChangelog({items:[{id:\"synthetic\",title:\"Finding\",type:\"ReviewFinding\",status:\"closed\"}],itemUrlBase:\"https://github.com/unbraind/pm-review/blob/main/.agents/pm\"}).markdown emits reviewfindings/synthetic.toon; REVIEW_TYPE.folder is review-findings. Repo wrapper applies that canonical folder before writes, drift checks and release summaries and verifies every tracker link exists in the branch. Dependency pins unchanged."
@@ -21,4 +26,5 @@ tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test test/changelog.test.ts,project,codex-agent,"2026-10-14T08:59:29.604Z",local_mutation,feat/finding-lifecycle
 docs[1]{path,scope}:
   CHANGELOG.md,project
+close_reason: "Delivered by #9 \"Close findings when their source resolves: verdict-driven and reconciled finding lifecycle\" (merged as 07ec807). Checks successful at the PR head f193992: CodeQL, codeql, test (22), test (26)."
 body: ""
