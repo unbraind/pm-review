@@ -2,15 +2,20 @@ id: pm-review-import
 title: "Import every bot thread, review and issue comment idempotently"
 description: ""
 type: Feature
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-12T10:47:29.083Z"
-updated_at: "2026-10-13T19:39:05.244Z"
+updated_at: "2026-10-13T22:24:40.952Z"
+closed_at: "2026-10-13T22:24:40.915Z"
+completed_at: "2026-10-13T22:24:40.915Z"
 author: codex-sol
 acceptance_criteria: Paginate all connections and nested replies; stable GitHub node IDs; typed schema fields; commit links; preserve verdicts; informational noise classification; pm search visibility.
 parent: pm-review-epic
 release: 2026.10.12
+resolution: Implemented and merged in #1 (fcf34e5).
+expected_result: The change described by this item is on main.
+actual_result: "Merged in #1 as fcf34e5; checks successful at head 3161974: CodeQL, codeql, test (22), test (26)."
 comments[13]{created_at,author,text}:
   "2026-10-12T10:52:32.558Z",codex-sol,"SDK design: ReviewFinding type and namespaced typed fields are registered on activation and persisted through schema APIs during import. Complete-corpus reads include terminal items. Thread identity is the thread node, with all replies available to the transport; review and issue-comment identities remain distinct. Missing issue-comment commit provenance stays unknown rather than being guessed."
   "2026-10-12T11:23:54.616Z",codex-sol,"Behavioral revert proof for this new package: disabling prior-verdict preservation in importFindings makes node --test --test-name-pattern=\"real SDK upsert\" test/core.test.ts fail. Restoring the function returns the regression to green; real SDK comments and fields survive re-import."
@@ -37,4 +42,5 @@ tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
 docs[2]{path,scope}:
   docs/pr-1-review-round.md,project
   README.md,project
+close_reason: "Delivered by #1 \"pm-review: bot review threads as tracked pm items with verdicts, precedents and exact-head round gates\" (merged as fcf34e5). Checks successful at the PR head 3161974: CodeQL, codeql, test (22), test (26)."
 body: ""
