@@ -6,7 +6,7 @@ import { REVIEW_FIELDS, REVIEW_TYPE } from './src/tracker.ts';
 /** Export typed SDK consumers without exposing a second GitHub network boundary. */
 export { createGitHubTransport } from './src/github.ts';
 /** Export core decisions for SDK hosts and real-tracker acceptance. */
-export { importFindings, precedents, ensureReviewSchema } from './src/tracker.ts';
+export { findReviewItems, importFindings, precedents, ensureReviewSchema } from './src/tracker.ts';
 /** Export bot marker parsing and exact-head gate computation. */
 export { findingsOf } from './src/findings.ts';
 /** Export round computation with the same semantics as the registered command. */

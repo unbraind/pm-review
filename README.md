@@ -101,7 +101,7 @@ resolved: true
 
 `--apply` checks the live thread and authenticated account, posts the reason as a marked reply, adds 👍 for `fix`, `informational`, `duplicate` or `stale` and 👎 for `refuse`, then resolves the thread. Repeating the same decision checks its exact marked reply and that account's reactions; existing replies, reactions and resolutions are retained without duplicate writes. A partial network failure can be retried with the same decision. The local decision is durable before remote actions begin.
 
-Application is supported for final verdicts on thread items. A pending verdict remains local and cannot be applied. Review-body and issue-comment verdicts remain local because they have no review-thread reply/resolution target. The item must belong to the supplied repository and PR. Never use a real PR for unapproved mutation testing; the package's write tests use synthetic responses.
+Application is supported for final verdicts on all imported findings. A pending verdict remains local and cannot be applied. For review bodies and issue comments, `--apply` votes on the selected source only: 👍 for review content, including summaries and guides; 👎 for unavailable or incomplete review notices (ended trials, access limits, rate limits, skipped reviews and actions not completed). Threads retain verdict-based votes, replies and resolution. Re-applying adds no duplicate reaction from the applying account. The item must belong to the supplied repository and PR. Never use a real PR for unapproved mutation testing; the package's write tests use synthetic responses.
 
 | Verdict | Meaning |
 | --- | --- |
@@ -125,7 +125,7 @@ Example compact host-rendered output:
 "review unbraind/pm-rl#68 head=14669bcf58229e7226eed958470babc06c88d570 complete=false checks=pending coderabbit=finished unresolved=0 unvoted=0 pending=14 unimported=0"
 ```
 
-The full TOON/JSON receipt lists unresolved thread ids, bot comments without a PR-author reaction, pending pm item ids and missing import node ids. Exit code `0` means complete; `1` means incomplete. With both `--compact` and global `--json`, JSON retains the complete receipt.
+The full TOON/JSON receipt keeps unresolved thread ids and adds `unresolved_thread_details` with the item id, bot, current path/line, severity and one-line summary for each blocker. An unimported or human-only thread has a null item id. It also lists bot comments without a PR-author reaction, pending pm item ids and missing import node ids. Exit code `0` means complete; `1` means incomplete. With both `--compact` and global `--json`, JSON retains the complete receipt.
 
 Completion requires:
 
@@ -136,6 +136,15 @@ Completion requires:
 - No pending imported findings and no current source nodes missing from the tracker.
 
 The gate reads GitHub again each time. A local `review_resolved` field is never accepted as live resolution evidence. A completed round describes these measured conditions; it does not grant merge, release or deployment authority.
+
+## Find
+
+```sh
+pm review find --thread PRRT_example
+pm review find --thread https://github.com/example/package/pull/1#discussion_r1 --json
+```
+
+Lookup reads the complete local tracker, including terminal items, and returns matching items without GitHub authentication. Thread ids and imported source comment URLs identify the durable item directly. No matches returns an empty item list.
 
 ## Precedents
 

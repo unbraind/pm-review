@@ -1,0 +1,32 @@
+id: pm-review-round-ux
+title: "Linear bot classification, mapped rounds and non-thread voting"
+description: "Fix CodeQL alert 4 and dogfood gaps with bounded bot marker matching, unresolved thread details, local source lookup and replay-safe review-body and notice votes."
+type: Issue
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-14T04:27:23.447Z"
+updated_at: "2026-10-14T04:54:45.372Z"
+author: codex-agent
+parent: pm-review-epic
+comments[4]{created_at,author,text}:
+  "2026-10-14T04:27:40.097Z",codex-agent,"Plan: preserve fixture classifications, add a 100k-character timing regression, map current unresolved threads to tracker items, add local review find, apply non-thread votes through addReaction, and prove each regression by reverting its changed function. All remote tests use synthetic transport fixtures; live dogfood is read-only."
+  "2026-10-14T04:42:26.581Z",codex-agent,"Behavioural revert proof: replacing only isInformational with its origin/main function makes the 100k timing test fail by ETIMEDOUT. Replacing only evaluateRound loses unresolved_thread_details; replacing only dispatchReviewCommand breaks review find; replacing only decide restores the non-thread apply rejection. Each regression fails with that single function reverted. All functions restored and package rebuilt. All 76 unique recorded fixture bodies retain their baseline informational and severity classifications."
+  "2026-10-14T04:54:32.128Z",codex-agent,"Read-only built-package dogfood: initialized a scratch tracker with pm init, installed the packed build, imported public bot context and ran pm review round --repo unbraind/pm-review --pr 7 (JSON and compact, no --apply). PR state is MERGED. Output excerpt: review unbraind/pm-review#7 head=1da5e10d3ccc6046dfea0cf67dfcffa4e3026a59 complete=false checks=pending coderabbit=missing unresolved=0 unvoted=0 pending=2 unimported=0. Existing author votes were observed without remote mutations; merged state does not substitute for exact-head review evidence or durable decisions in a fresh tracker."
+  "2026-10-14T04:54:38.137Z",codex-agent,"Gates passed: env -u PM_PATH -u PM_AUTHOR HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 npm run release:check; the same isolated environment with bun run release:check. Each runs 99/99 tests, 100/100/100/100 coverage over 17 source files, zero fail/skip/cancel/todo, zero duplicated lines, clean production audit and 1/1 packed npm/npx plus native Bun/bunx acceptance. Linked node --test test/review-regressions.test.ts passed 9/9 via pm test --run --progress. Local CodeQL CLI is unavailable; the PR GitHub CodeQL analysis supplies scanner proof. Delivery branch: fix/redos-safe-findings-and-round-mapping; items stay in progress for orchestrator verification."
+files[10]{path,scope}:
+  index.ts,project
+  src/commands.ts,project
+  src/findings.ts,project
+  src/round.ts,project
+  src/tracker.ts,project
+  src/verdict.ts,project
+  test/core.test.ts,project
+  test/fixtures/pm-rl-68/classification.json,project
+  test/github.test.ts,project
+  test/review-regressions.test.ts,project
+tests[1]{command,scope,timeout_seconds,provenance{author,created_at,source_kind,source_ref}}:
+  node --test test/review-regressions.test.ts,project,300,codex-agent,"2026-10-14T04:41:58.199Z",local_mutation,fix/redos-safe-findings-and-round-mapping
+docs[1]{path,scope}:
+  README.md,project
+body: ""

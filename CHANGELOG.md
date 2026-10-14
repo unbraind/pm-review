@@ -14,6 +14,8 @@
 
 - Find durable fix and refusal precedents ([pm-review-precedents](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-precedents.toon))
 - Pin the host so history verifies and keep CodeRabbit under the file cap ([pm-review-host-pin](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-host-pin.toon))
+- Fix repeated extension value placeholders and duplicate help flags ([pm-review-help-ux](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-help-ux.toon))
+- Linear bot classification, mapped rounds and non-thread voting ([pm-review-round-ux](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-round-ux.toon))
 - Classify Sourcery budget, Sourcery guide and CodeRabbit manual-review notices as informational ([pm-review-pr7r](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-pr7r.toon))
 
 ### Other
