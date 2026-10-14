@@ -40,6 +40,12 @@ function command(cwd: string, name: string, args: string[], pmRoot: string, home
     command(cwd, runner, [...prefix, 'init', 'consumer', '--defaults', '--agent-guidance', 'skip', '--json'], pmRoot);
     command(cwd, runner, [...prefix, 'install', tarball, '--project', '--json'], pmRoot);
     for (const action of ['import', 'verdict', 'round', 'precedents']) assert.match(command(cwd, runner, [...prefix, 'review', action, '--help'], pmRoot), /review/);
+    const verdictHelp = command(cwd, runner, [...prefix, 'review', 'verdict', '--help'], pmRoot);
+    assert.doesNotMatch(verdictHelp, /<value>\s+<value>/);
+    for (const flag of ['repo', 'pr', 'reason', 'commit', 'apply']) assert.equal((verdictHelp.split('Intent:')[0].match(new RegExp(`--${flag}\\b`, 'g')) ?? []).length, 1, verdictHelp);
+    assert.match(command(cwd, runner, [...prefix, 'review', 'find', '--help'], pmRoot), /--thread/);
+    const lookup = JSON.parse(command(cwd, runner, [...prefix, 'review', 'find', '--thread', 'PRRT_missing', '--json'], pmRoot)) as { count: number };
+    assert.equal(lookup.count, 0);
     const precedents = JSON.parse(command(cwd, runner, [...prefix, 'review', 'precedents', 'validation', '--json'], pmRoot)) as { count: number };
     assert.equal(precedents.count, 0);
     const schema = JSON.parse(command(cwd, runner, [...prefix, 'schema', 'list', '--json'], pmRoot)) as { extension: { name: string }[] };

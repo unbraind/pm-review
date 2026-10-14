@@ -84,3 +84,9 @@ export async function precedents(client: PmClient, query: string, repo?: string,
   if (!query.trim()) throw new Error('A nonempty precedent query is required');
   return (await reviewItems(client)).filter(/** Current and terminal decisions are eligible; optional PR flags narrow only on request. */ item => (item.review_verdict === 'fix' || item.review_verdict === 'refuse') && (repo === undefined || item.review_repo === repo) && (pr === undefined || item.review_pr === pr) && words.every(/** Match source findings and decision reasoning without contacting a provider. */ word => `${item.title} ${item.description} ${String(item.review_reason)}`.toLowerCase().includes(word))).map(/** Return a compact precedent that links back to both item and source. */ item => ({ id: item.id, verdict: String(item.review_verdict), summary: String(item.review_summary), reason: String(item.review_reason), url: String(item.review_url), commit: String(item.review_commit) }));
 }
+
+/** Find imported source identities locally across the complete tracker, without GitHub reads. */
+export async function findReviewItems(client: PmClient, source: string): Promise<ItemMetadata[]> {
+  if (!/^PRRT_[A-Za-z0-9_-]+$/.test(source) && !/^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/pull\/[1-9]\d*#(?:discussion_r|issuecomment-|pullrequestreview-)\d+$/.test(source)) throw new Error('--thread requires a PRRT_ thread id or a GitHub review-comment URL');
+  return (await reviewItems(client)).filter(/** URLs identify the imported root comment; ids identify its thread. */ item => item.review_thread_id === source || item.review_url === source);
+}

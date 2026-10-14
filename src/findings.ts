@@ -2,14 +2,27 @@ import type { Contribution, Finding, FindingKind, PullRequest, ReviewThread } fr
 
 /** Recognize bot noise that provides context without requesting a code change. */
 export function isInformational(body: string): boolean {
-  if (/\*{2}\s*[🔴🟠🟡🔵]?\s*(?:critical|major|minor|high|medium|low)\s*\*{2}|(?:^|[\s_*])potential issue(?:$|[\s_*])|_nitpick_|nitpick comments \(\d+\)|outside diff range comments \(\d+\)|refactor suggestion|_\s*[🔴🟠🟡]\s*(?:critical|major|minor)_|!\[(?:high|medium|low)[-_]priority\]|\bseverity\s*[:=]\s*(?:critical|high|medium|low|major|minor)\b/iu.test(body)) return false;
-  return /rate[- ]limit|quota (?:exceeded|exhausted)|trial (?:has )?ended|review failed|failed to (?:review|generate)|full review finished|walkthrough|no actionable (?:comments|issues)|actionable comments posted:|review skipped|summary of (?:changes|pull request)|you've used your own review budget|(?:^|\n)(?:Sorry [^\n,]+,\s*)?your (?:pull request is larger than the review limit|private repo does not have access)|(?:^|\n)[>\t ]*\d+ files exceed the limit of 100\b|(?:^|\n)[>\t ]*(?:You are seeing this message because GitHub Code Scanning has recently been set up|this pull request contains the workflow file for the Code Scanning tool)|does not receive automatic reviews|reviewer's guide/i.test(body);
+  // Collapse whitespace once, then bound every optional marker separator. Adjacent
+  // whitespace stars on untrusted bodies otherwise explore quadratic partitions.
+  if (/critical|major|minor|high|medium|low/iu.test(body)) {
+    const markers = body.replace(/\s+/gu, ' ');
+    if (/\*{2} ?[🔴🟠🟡🔵]? ?(?:critical|major|minor|high|medium|low) ?\*{2}|_ ?[🔴🟠🟡] ?(?:critical|major|minor)_|\bseverity ?[:=] ?(?:critical|high|medium|low|major|minor)\b/iu.test(markers)) return false;
+  }
+  if (/(?:^|[\s_*])potential issue(?:$|[\s_*])|_nitpick_|nitpick comments \(\d+\)|outside diff range comments \(\d+\)|refactor suggestion|!\[(?:high|medium|low)[-_]priority\]/iu.test(body)) return false;
+  return /rate[- ]limit|quota (?:exceeded|exhausted)|trial (?:has )?ended|review failed|action not completed|no access to (?:this repository|reviews)|failed to (?:review|generate)|full review finished|walkthrough|no actionable (?:comments|issues)|actionable comments posted:|review skipped|summary of (?:changes|pull request)|you've used your own review budget|(?:^|\n)(?:Sorry [^\n,]+,\s*)?your (?:pull request is larger than the review limit|private repo does not have access)|(?:^|\n)[>\t ]*\d+ files exceed the limit of 100\b|(?:^|\n)[>\t ]*(?:You are seeing this message because GitHub Code Scanning has recently been set up|this pull request contains the workflow file for the Code Scanning tool)|(?:^|\n)[>\t ]*(?:no access\b|you (?:do not|don't) have access\b)|does not receive automatic reviews|reviewer's guide/i.test(body);
+}
+
+/** Distinguish unavailable or incomplete review notices from useful review summaries. */
+export function isReviewNotice(body: string): boolean {
+  return isInformational(body) && /rate[- ]limit|quota (?:exceeded|exhausted)|trial (?:has )?ended|review failed|failed to (?:review|generate)|review skipped|action not completed|no access|(?:do|does) not have access|don't have access|does not receive automatic reviews|review budget|larger than the review limit|files exceed the limit of 100/i.test(body);
 }
 
 /** Extract explicit severity markers used by CodeRabbit, Greptile, Gemini and Sourcery. */
 export function severityOf(body: string): string {
-  const marked = body.match(/(?:[🔴🟠🟡]\s*|severity\s*[:=]\s*|priority[\s_-]*(?:[:=]\s*)?)(critical|high|medium|low|major|minor)/iu)
-    ?? body.match(/(?:_\s*[🟠🟡🔵]\s*|\[\s*)(critical|high|medium|low|major|minor)/iu)
+  if (!/critical|major|minor|high|medium|low/iu.test(body)) return 'unknown';
+  const markers = body.replace(/\s+/gu, ' ');
+  const marked = markers.match(/(?:[🔴🟠🟡] ?|severity ?[:=] ?|priority[ _-]*(?:[:=] ?)?)(critical|high|medium|low|major|minor)/iu)
+    ?? markers.match(/(?:_ ?[🟠🟡🔵] ?|\[ ?)(critical|high|medium|low|major|minor)/iu)
     ?? body.match(/(?:\/|\b)(high|medium|low)[-_]priority(?:\.|\b)/i);
   if (!marked) return 'unknown';
   const level = marked[1].toLowerCase();

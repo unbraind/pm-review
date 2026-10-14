@@ -10,12 +10,18 @@
  * transport) and token resolution.
  */
 import { deepEqual, equal, match, ok, rejects, throws } from 'node:assert';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
   checkOutcome, createGitHubTransport, ghAuthToken, isBotAuthor, resolveGitHubToken,
   type FetchLike, type TransportResponse, type TransportRequestInit,
 } from '../src/github.ts';
+import { findingsOf, isInformational, severityOf } from '../src/findings.ts';
+import { importFindings, reviewItems } from '../src/tracker.ts';
+import { evaluateRound } from '../src/round.ts';
+import { decide } from '../src/verdict.ts';
+import { tracker } from './helpers.ts';
 import type { Contribution, GitHubTransport, PullRequest } from '../src/types.ts';
 
 /** Token injected into every synthetic transport; assertions prove it never leaks into errors. */
@@ -727,4 +733,99 @@ test('latest retries are selected per GitHub app and name even when older runs a
   const another = { ...run('build', 'FAILURE'), databaseId: 30, checkSuite: { app: { id: 'app-two' } } };
   const transport = syntheticTransport(scenario({ checks: gql({ repository: { object: commitObject(pageOf([checkSuite('new', [newest]), checkSuite('old', [older]), checkSuite('other', [another])])) } }) }));
   deepEqual((await transport.snapshot('synth/repo', 7)).checks, [{ name: 'build', state: 'pass' }, { name: 'build', state: 'fail' }]);
+});
+
+
+/** Build a single-source bot snapshot using the existing scripted HTTP fixture boundary. */
+function sourceScenario(id: string, kind: 'review' | 'comment', extra: Record<string, unknown>): Scripted[] {
+  const actor = { login: 'maintainer' };
+  return scenario({
+    reviews: gql(prPage(HEAD_A, { reviews: pageOf(kind === 'review' ? [review(id, extra)] : []) }, actor)),
+    comments: gql(prPage(HEAD_A, { comments: pageOf(kind === 'comment' ? [issueComment(id, extra)] : []) }, actor)),
+    threads: gql(prPage(HEAD_A, { reviewThreads: pageOf([]) }, actor)),
+    commits: gql(prPage(HEAD_A, { commits: pageOf([]) }, actor)),
+  });
+}
+
+test('non-thread apply votes review bodies, summaries, guides and denial notices through GitHub addReaction', async t => {
+  const { client } = await tracker(t);
+  const cases = [
+    ['review', 'Actionable comments posted: 0', 'THUMBS_UP'],
+    ['comment', 'Summary of changes', 'THUMBS_UP'],
+    ['comment', "Reviewer's guide", 'THUMBS_UP'],
+    ['comment', 'Your trial has ended.', 'THUMBS_DOWN'],
+    ['comment', 'Your private repo does not have access to reviews.', 'THUMBS_DOWN'],
+    ['comment', 'Rate limited: review skipped', 'THUMBS_DOWN'],
+    ['comment', 'Action not completed', 'THUMBS_DOWN'],
+    ['comment', 'This repository does not receive automatic reviews.', 'THUMBS_DOWN'],
+    ['review', '**High**\nFix rate-limit handling.', 'THUMBS_UP'],
+  ] as const;
+  for (const [index, [kind, body, content]] of cases.entries()) {
+    const id = `source-${index}`;
+    /** Serve the selected bot source with reactions before or after applying. */
+    const snapshotScript = (voted: boolean): Scripted[] => {
+      const extra = { body, author: { login: 'review-service', __typename: 'Bot' }, reactions: pageOf([{ content, user: { login: 'other-reviewer' } }, ...(voted ? [{ content, user: { login: 'MAINTAINER' } }] : [])]) };
+      return sourceScenario(id, kind, extra);
+    };
+    const viewer = gql({ viewer: { login: 'maintainer' } });
+    const transport = syntheticTransport([
+      ...snapshotScript(false), ...snapshotScript(false), viewer,
+      { variables: { node: id, content }, body: { data: { addReaction: { clientMutationId: null } } }, match: /addReaction\(input:\{ subjectId:\$node,content:\$content \}\)/ },
+      ...snapshotScript(true), viewer,
+    ]);
+    const pr = await transport.snapshot('example/package', 1);
+    const imported = await importFindings(client, pr, findingsOf(pr));
+    const input = { id: imported.items[0].id, repo: pr.repo, pr: pr.number, verdict: 'informational' as const, reason: 'Reviewed source content.', commit: '', apply: true };
+    const receipt = await decide(client, transport, input);
+    deepEqual(receipt, { item: input.id, verdict: 'informational', applied: true, replied: false, reacted: true, resolved: false });
+    const retry = await decide(client, transport, input);
+    equal(retry.reacted, false);
+    equal(retry.applied, true);
+    equal((await client.comments(input.id)).comments.length, 1);
+    const voted = structuredClone(pr);
+    (kind === 'review' ? voted.reviews[0] : voted.comments[0]).reactions.push({ content, user: 'maintainer' });
+    deepEqual(evaluateRound(voted, await reviewItems(client)).unvoted_bot_comments, []);
+  }
+});
+
+test('non-thread apply rejects missing and human source nodes before recording decisions', async t => {
+  const { client } = await tracker(t);
+  for (const kind of ['review', 'comment'] as const) {
+    const id = `missing-${kind}`;
+    const bot = { author: { login: 'review-service', __typename: 'Bot' } };
+    const importedTransport = syntheticTransport(sourceScenario(id, kind, bot));
+    const originalSnapshot = await importedTransport.snapshot('example/package', 1);
+    const { items } = await importFindings(client, originalSnapshot, findingsOf(originalSnapshot));
+    const input = { id: items[0].id, repo: 'example/package', pr: 1, verdict: 'fix' as const, reason: 'Source disappeared.', commit: '', apply: true };
+    await rejects(decide(client, syntheticTransport(scenario()), input), /no longer exists/);
+    const human = { author: { login: 'reviewer', __typename: 'User' } };
+    await rejects(decide(client, syntheticTransport(sourceScenario(id, kind, human)), input), /no longer exists/);
+    equal((await client.comments(input.id)).comments.length, 0);
+  }
+});
+
+
+test('all recorded fixture bodies retain their original informational and severity classifications', () => {
+  const bodies = new Set<string>();
+  /** Decode recorded response envelopes and retain each unique source body. */
+  function collect(value: unknown): void {
+    if (typeof value !== 'object' || value === null) return;
+    for (const [key, child] of Object.entries(value)) {
+      if (key === 'body' && typeof child === 'string') {
+        try { collect(JSON.parse(child)); } catch { bodies.add(child); }
+      } else collect(child);
+    }
+  }
+  collect(loadFixture('snapshot.json'));
+  collect(loadFixture('viewer.json'));
+  const golden = JSON.parse(readFileSync(new URL('./fixtures/pm-rl-68/classification.json', import.meta.url), 'utf8')) as { hash: string; informational: boolean; severity: string }[];
+  const expected = new Map(golden.map(entry => [entry.hash, entry]));
+  equal(bodies.size, expected.size);
+  for (const body of bodies) {
+    const hash = createHash('sha256').update(body).digest('hex');
+    const original = expected.get(hash);
+    ok(original, 'every recorded body must have a baseline classification');
+    equal(isInformational(body), original.informational, hash);
+    equal(severityOf(body), original.severity, hash);
+  }
 });

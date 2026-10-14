@@ -4,7 +4,7 @@ import type { CommandHandlerContext, ExtensionApi, FlagDefinition } from '@unbra
 import { findingsOf } from './findings.ts';
 import { createGitHubTransport } from './github.ts';
 import { compactRound, evaluateRound } from './round.ts';
-import { importFindings, precedents, reviewItems } from './tracker.ts';
+import { findReviewItems, importFindings, precedents, reviewItems } from './tracker.ts';
 import { decide, parseVerdict } from './verdict.ts';
 import type { GitHubTransport } from './types.ts';
 
@@ -38,6 +38,10 @@ export async function runReviewCommand(ctx: CommandHandlerContext, provided?: Gi
 /** Run one dispatched package command; separated so the wrapper above stays the single error boundary. */
 async function dispatchReviewCommand(ctx: CommandHandlerContext, provided?: GitHubTransport): Promise<unknown> {
   const client = ctx.sdk?.client ?? new PmClient({ cwd: ctx.source_workspace_root ?? ctx.repo_root, pmRoot: ctx.pm_root, author: ctx.global.author });
+  if (ctx.command === 'review find') {
+    const items = await findReviewItems(client, readStringOption(ctx.options, 'thread') ?? '');
+    return { count: items.length, items };
+  }
   if (ctx.command === 'review precedents') {
     const repo = readStringOption(ctx.options, 'repo');
     const pr = readStringOption(ctx.options, 'pr');
@@ -64,15 +68,16 @@ async function dispatchReviewCommand(ctx: CommandHandlerContext, provided?: GitH
 
 /** Flags shared by all commands that identify a public or private GitHub PR. */
 const TARGET_FLAGS: FlagDefinition[] = [
-  { long: '--repo <value>', type: 'string', description: 'Repository owner/name' },
-  { long: '--pr <value>', type: 'string', description: 'Positive pull request number' },
+  { long: '--repo', type: 'string', description: 'Repository owner/name' },
+  { long: '--pr', type: 'string', description: 'Positive pull request number' },
 ];
 
 /** Register help, typed positional arguments and command handlers through the host API. */
 export function registerReviewCommands(api: ExtensionApi): void {
   const commands = [
+    { name: 'find', description: 'Find imported tracker items by GitHub thread id or review-comment URL', arguments: [], flags: [{ long: '--thread', type: 'string' as const, description: 'PRRT_ thread id or GitHub review-comment URL' }], example: 'pm review find --thread PRRT_example' },
     { name: 'import', description: 'Import every bot thread, review body and issue comment as durable pm context', arguments: [], flags: TARGET_FLAGS, example: 'pm review import --repo unbraind/pm-rl --pr 68' },
-    { name: 'verdict', description: 'Record a verdict and reason; apply only when explicitly requested', arguments: [{ name: 'item', required: true, description: 'Imported ReviewFinding item id' }, { name: 'verdict', required: true, description: 'pending|fix|refuse|duplicate|stale|informational' }], flags: [...TARGET_FLAGS, { long: '--reason <value>', type: 'string' as const, description: 'Durable decision reasoning' }, { long: '--commit <value>', type: 'string' as const, description: 'Commit SHA implementing or explaining this decision' }, { long: '--apply', type: 'boolean' as const, description: 'Post a thread reply, vote and resolve; requires write access' }], example: 'pm review verdict sample-gh-abcd refuse --repo unbraind/pm-rl --pr 68 --reason "Existing validation covers this input"' },
+    { name: 'verdict', description: 'Record a verdict and reason; apply only when explicitly requested', arguments: [{ name: 'item', required: true, description: 'Imported ReviewFinding item id' }, { name: 'verdict', required: true, description: 'pending|fix|refuse|duplicate|stale|informational' }], flags: [...TARGET_FLAGS, { long: '--reason', type: 'string' as const, description: 'Durable decision reasoning' }, { long: '--commit', type: 'string' as const, description: 'Commit SHA implementing or explaining this decision' }, { long: '--apply', type: 'boolean' as const, description: 'Vote on source content; also reply and resolve threads; requires write access' }], example: 'pm review verdict sample-gh-abcd refuse --repo unbraind/pm-rl --pr 68 --reason "Existing validation covers this input"' },
     { name: 'round', description: 'Gate the current head on finished review, checks, threads, votes and durable decisions', arguments: [], flags: [...TARGET_FLAGS, { long: '--compact', type: 'boolean' as const, description: 'Emit one host-rendered script line (JSON retains the full receipt)' }], example: 'pm review round --repo unbraind/pm-rl --pr 68 --compact' },
     { name: 'precedents', description: 'Find earlier fix and refuse reasoning across the complete tracker', arguments: [{ name: 'query', required: true, description: 'Words from a finding or its decision' }], flags: TARGET_FLAGS, example: 'pm review precedents "input validation"' },
   ];

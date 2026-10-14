@@ -1,8 +1,9 @@
 import { createHash } from 'node:crypto';
 import { PmClient } from '@unbrained/pm-cli/sdk';
 import { fieldOptions, recordVerdict, reviewItems } from './tracker.ts';
+import { isReviewNotice } from './findings.ts';
 import { VERDICTS } from './types.ts';
-import type { GitHubTransport, Verdict } from './types.ts';
+import type { Contribution, GitHubTransport, Verdict } from './types.ts';
 
 /** Validate vocabulary before the SDK or GitHub receives any mutation. */
 export function parseVerdict(value: string): Verdict {
@@ -16,6 +17,13 @@ export interface VerdictInput { id: string; verdict: Verdict; reason: string; co
 /** Application receipt reports only mutations actually performed by this invocation. */
 export interface VerdictReceipt { item: string; verdict: Verdict; applied: boolean; replied: boolean; reacted: boolean; resolved: boolean }
 
+/** Add only a missing vote from the applying account through the existing API boundary. */
+async function voteSource(transport: GitHubTransport, source: Contribution, viewer: string, reaction: 'THUMBS_UP' | 'THUMBS_DOWN'): Promise<boolean> {
+  if (source.reactions.some(/** Another account's reaction cannot deduplicate this actor's vote. */ existing => existing.user.toLowerCase() === viewer.toLowerCase() && existing.content === reaction)) return false;
+  await transport.react(source.id, reaction);
+  return true;
+}
+
 /** Record a decision and optionally replay-safe thread reply, vote and resolution. */
 export async function decide(client: PmClient, transport: GitHubTransport | undefined, input: VerdictInput): Promise<VerdictReceipt> {
   if (!input.reason.trim()) throw new Error('A nonempty --reason is required');
@@ -28,10 +36,20 @@ export async function decide(client: PmClient, transport: GitHubTransport | unde
     await recordVerdict(client, item, input.verdict, input.reason, input.commit);
     return receipt;
   }
-  if (item.review_kind !== 'thread') throw new Error('--apply requires a thread finding; review and issue-comment verdicts are local');
   if (input.verdict === 'pending') throw new Error('--apply requires a final verdict; pending decisions stay local');
   if (!transport) throw new Error('GitHub transport is required for --apply');
   const snapshot = await transport.snapshot(input.repo, input.pr);
+  if (item.review_kind !== 'thread') {
+    const sources = item.review_kind === 'review' ? snapshot.reviews : snapshot.comments;
+    const source = sources.find(/** Validate source provenance against the current PR before voting. */ candidate => candidate.id === item.review_node_id && candidate.isBot);
+    if (!source) throw new Error('Bot review content no longer exists on this PR');
+    const viewer = await transport.viewer();
+    const reaction = isReviewNotice(source.body) ? 'THUMBS_DOWN' : 'THUMBS_UP';
+    await recordVerdict(client, item, input.verdict, input.reason, input.commit);
+    receipt.reacted = await voteSource(transport, source, viewer, reaction);
+    receipt.applied = true;
+    return receipt;
+  }
   const thread = snapshot.threads.find(/** Source identity must still exist in the requested PR before remote writes. */ candidate => candidate.id === item.review_thread_id);
   if (!thread) throw new Error('Review thread no longer exists on this PR');
   const source = thread.comments.find(/** The first bot contribution is the thread finding imported by this package. */ comment => comment.isBot);
@@ -46,10 +64,7 @@ export async function decide(client: PmClient, transport: GitHubTransport | unde
     receipt.replied = true;
   }
   const reaction = input.verdict === 'refuse' ? 'THUMBS_DOWN' : 'THUMBS_UP';
-  if (!source.reactions.some(/** Existing reactions from other users do not satisfy the applying account. */ existing => existing.user.toLowerCase() === viewer.toLowerCase() && existing.content === reaction)) {
-    await transport.react(source.id, reaction);
-    receipt.reacted = true;
-  }
+  receipt.reacted = await voteSource(transport, source, viewer, reaction);
   if (!thread.resolved) {
     await transport.resolve(thread.id);
     receipt.resolved = true;

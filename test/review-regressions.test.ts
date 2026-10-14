@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import { createExtensionCommandSdk } from '@unbrained/pm-cli/sdk';
 import type { CommandHandlerContext } from '@unbrained/pm-cli/sdk/authoring';
 import { runReviewCommand } from '../src/commands.ts';
-import { findingsOf, isInformational } from '../src/findings.ts';
-import { ensureReviewSchema, fieldOptions, importFindings, reviewItems } from '../src/tracker.ts';
+import { findingsOf, isInformational, isReviewNotice, severityOf } from '../src/findings.ts';
+import { ensureReviewSchema, fieldOptions, findReviewItems, importFindings, reviewItems } from '../src/tracker.ts';
 import { evaluateRound } from '../src/round.ts';
 import { decide } from '../src/verdict.ts';
 import { contribution, pullRequest, syntheticTransport, tracker } from './helpers.ts';
@@ -126,4 +127,59 @@ test('duplicate and stale first apply vote and retries satisfy the round voting 
     assert.equal(retry.resolved, false);
     assert.equal(transport.calls.length, 3);
   }
+});
+
+
+test('bot classification handles 100k spaces and asterisks in under 50 ms', () => {
+  const moduleUrl = new URL('../src/findings.ts', import.meta.url).href;
+  const script = `import assert from 'node:assert/strict'; import { performance } from 'node:perf_hooks'; import { isInformational, severityOf } from ${JSON.stringify(moduleUrl)};
+    for (let i = 0; i < 20; i++) { isInformational('**' + ' '.repeat(200)); severityOf('priority' + ' '.repeat(200)); isInformational('* '.repeat(100)); severityOf('* '.repeat(100)); }
+    const bodies = ['**' + ' '.repeat(99998), '* '.repeat(50000), 'priority' + ' '.repeat(100000), '**' + ' '.repeat(99991) + 'medium!'];
+    for (const body of bodies) { const start = performance.now(); assert.equal(isInformational(body), false); assert.equal(severityOf(body), 'unknown'); const elapsed = performance.now() - start; assert.ok(elapsed < 50, 'classification took ' + elapsed + ' ms'); console.log(elapsed); }`;
+  const result = spawnSync(process.execPath, ['--input-type=module', '-e', script], { timeout: 5000, encoding: 'utf8' });
+  assert.equal(result.error, undefined);
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test('marker normalization preserves whitespace and literal phrase classification', () => {
+  for (const body of ['**' + ' '.repeat(100000) + '🟠' + '\t'.repeat(100000) + 'Major' + '\n'.repeat(100000) + '**', '_\t🟡\nMinor_', 'Severity\t=\ncritical']) assert.equal(isInformational(body + '\nWalkthrough'), false);
+  assert.equal(isInformational('Potential\tissue\nWalkthrough'), true);
+  for (const [body, expected] of [['priority_-_-=\tmajor', 'high'], ['[\nmedium]', 'medium'], ['_\t🔵\nlow', 'low'], ['severity\t=\nminor', 'low']] as const) assert.equal(severityOf(body), expected);
+  assert.equal(isReviewNotice('Walkthrough and summary of changes'), false);
+  assert.equal(isReviewNotice('**High**\nFix rate-limit handling'), false);
+  for (const body of ['Action not completed', 'No access to this repository', 'No access', 'You do not have access to this repository.', 'Review failed', 'Review skipped']) assert.equal(isReviewNotice(body), true);
+});
+
+test('round maps unresolved threads to items with bot, location, severity and summary', async t => {
+  const { client } = await tracker(t);
+  const pr = pullRequest({ reviews: [], comments: [] });
+  const imported = await importFindings(client, pr, findingsOf(pr));
+  pr.threads.push({ id: 'human-only', path: 'src/human.ts', line: null, resolved: false, comments: [contribution({ isBot: false, bot: 'reviewer', body: 'Check the boundary.' })] }, { id: 'empty', path: 'src/empty.ts', line: null, resolved: false, comments: [] });
+  const items = await reviewItems(client);
+  const result = evaluateRound(pr, items);
+  assert.deepEqual(result.unresolved_thread_details, [
+    { thread_id: 'thread-one', item_id: imported.items[0].id, bot: 'coderabbitai[bot]', path: 'src/input.ts', line: 12, severity: 'high', summary: 'Validate the input before writing.' },
+    { thread_id: 'human-only', item_id: null, bot: 'reviewer', path: 'src/human.ts', line: null, severity: 'unknown', summary: 'Check the boundary.' },
+    { thread_id: 'empty', item_id: null, bot: 'unknown', path: 'src/empty.ts', line: null, severity: 'unknown', summary: 'Bot review context' },
+  ]);
+  assert.equal(evaluateRound(pr, []).unresolved_thread_details[0].item_id, null);
+  items[0].review_repo = 'other/package';
+  assert.equal(evaluateRound(pr, items).unresolved_thread_details[0].item_id, null);
+});
+
+test('review find resolves thread ids and comment URLs locally across terminal items', async t => {
+  const { client, cwd, pmRoot } = await tracker(t);
+  const pr = pullRequest();
+  pr.threads[0].id = 'PRRT_synthetic';
+  pr.reviews[0].url = 'https://github.com/example/package/pull/1#pullrequestreview-2';
+  pr.comments[0].url = 'https://github.com/example/package/pull/1#issuecomment-3';
+  const imported = await importFindings(client, pr, findingsOf(pr));
+  await client.update(imported.items[0].id, { status: 'closed', closeReason: 'Synthetic historical context' });
+  const ctx: CommandHandlerContext = { command: 'review find', args: [], options: { thread: 'PRRT_synthetic' }, global: { json: true }, pm_root: pmRoot, repo_root: cwd, sdk: createExtensionCommandSdk(pmRoot, client, 'test-agent') };
+  const result = await runReviewCommand(ctx) as { count: number; items: { id: string }[] };
+  assert.equal(result.count, 1);
+  assert.equal(result.items[0].id, imported.items[0].id);
+  assert.equal((await findReviewItems(client, pr.threads[0].comments[0].url))[0].id, imported.items[0].id);
+  assert.deepEqual(await findReviewItems(client, 'PRRT_missing'), []);
+  for (const thread of [undefined, '', 'bad', 'https://example.test/package/pull/1#discussion_r1', 'https://github.com/example/package/pull/1']) await assert.rejects(runReviewCommand({ ...ctx, options: { thread } }), /PRRT_/);
 });
