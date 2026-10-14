@@ -98,6 +98,11 @@ export async function findReviewItems(client: PmClient, source: string): Promise
 
 /** Close source context once, retaining structured lifecycle evidence in one SDK call. */
 export async function closeFinding(client: PmClient, item: ItemMetadata, evidence: string): Promise<void> {
-  if (item.status === 'closed') return;
+  if (item.status === 'closed') {
+    if (item.resolution === `informational: ${String(item.review_url)}` && item.actual_result === item.resolution) {
+      await client.update(item.id, { resolution: evidence, actualResult: evidence });
+    }
+    return;
+  }
   await client.close(item.id, evidence, { resolution: evidence, expectedResult: 'Review source requires no further action', actualResult: evidence });
 }

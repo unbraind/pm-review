@@ -344,7 +344,7 @@ export function createGitHubTransport(options: GitHubTransportOptions = {}): Git
   /** Read a validated REST object without exposing response values in errors. */
   const restObject = async (path: string): Promise<Record<string, unknown>> => {
     const response = await send(`${REST_URL}/repos/${path}`, 'GET', { accept: 'application/vnd.github+json', 'x-github-api-version': '2022-11-28' }, null);
-    if (!response.ok) throw new Error(`github transport: lifecycle request failed with HTTP ${response.status}`);
+    if (!response.ok) throw Object.assign(new Error(`github transport: lifecycle request failed with HTTP ${response.status}`), { status: response.status });
     return obj(parseJson(await response.text()), 'lifecycle');
   };
 
@@ -354,8 +354,16 @@ export function createGitHubTransport(options: GitHubTransportOptions = {}): Git
     if (!Number.isSafeInteger(pr) || pr <= 0 || alerts.some(number => !Number.isSafeInteger(number) || number <= 0)) throw new Error('github transport: positive source numbers required');
     const pull = await restObject(`${repo}/pulls/${pr}`);
     const result: SourceLifecycle = { merged: flag(pull.merged, 'merged'), mergeCommit: optional(pull.merge_commit_sha, sha, 'merge_commit_sha'), alerts: [] };
+    if (result.merged) return result;
     for (const number of [...new Set(alerts)].sort((left, right) => left - right)) {
-      const alert = await restObject(`${repo}/code-scanning/alerts/${number}`);
+      let alert: Record<string, unknown>;
+      try {
+        alert = await restObject(`${repo}/code-scanning/alerts/${number}`);
+      } catch (error) {
+        if (!(error instanceof Error) || !('status' in error) || (error.status !== 403 && error.status !== 404)) throw error;
+        (result.skippedAlerts ??= []).push({ number, status: error.status });
+        continue;
+      }
       const state = alert.state === null ? null : str(alert.state, 'alert.state');
       if (state !== null && state !== 'open' && state !== 'fixed' && state !== 'dismissed') malformed('alert.state');
       result.alerts.push({ number, state: state ?? 'unknown' });

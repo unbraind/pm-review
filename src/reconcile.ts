@@ -11,7 +11,7 @@ export function alertNumbers(item: ItemMetadata, repo: string): number[] {
 }
 
 /** Reconciliation receipt lists exact closure evidence and distinguishes planning from mutation. */
-export interface ReconcileReceipt { repo: string; pr: number; dry_run: boolean; before_open: number; after_open: number; closed: number; items: { id: string; resolution: string }[] }
+export interface ReconcileReceipt { repo: string; pr: number; dry_run: boolean; before_open: number; after_open: number; closed: number; items: { id: string; resolution: string }[]; skipped: { id: string; reason: string }[] }
 
 /** Persisted decisions outrank notice-like text when the source is no longer available. */
 function isOrphanInformational(item: ItemMetadata): boolean {
@@ -28,6 +28,7 @@ export async function reconcile(client: PmClient, transport: GitHubTransport, re
   const lifecycle = await transport.lifecycle(repo, pr, items.flatMap(item => alertNumbers(item, repo)));
   const sources = new Map(findingsOf(snapshot).map(finding => [finding.id, finding]));
   const plan: ReconcileReceipt['items'] = [];
+  const skipped: ReconcileReceipt['skipped'] = [];
   for (const item of items) {
     const source = sources.get(String(item.review_node_id || item.review_thread_id));
     if (source && item.review_thread_id && item.review_thread_id !== source.thread) continue;
@@ -38,10 +39,14 @@ export async function reconcile(client: PmClient, transport: GitHubTransport, re
     else if (source?.resolved) resolution = `resolved thread: ${source.thread}; ${source.url}`;
     else if (lifecycle.merged) resolution = `merged PR: https://github.com/${repo}/pull/${pr}; ${lifecycle.mergeCommit ? `merge commit ${lifecycle.mergeCommit}` : `head ${snapshot.head}`}`;
     if (resolution) plan.push({ id: item.id, resolution });
+    else {
+      const unavailable = (lifecycle.skippedAlerts ?? []).filter(alert => alertNumbers(item, repo).includes(alert.number));
+      if (unavailable.length) skipped.push({ id: item.id, reason: `code-scanning closure skipped: ${unavailable.map(alert => `${alert.number} HTTP ${alert.status}`).join(', ')}` });
+    }
   }
   if (!dryRun) {
     const byId = new Map(items.map(item => [item.id, item]));
     for (const entry of plan) await closeFinding(client, byId.get(entry.id)!, entry.resolution);
   }
-  return { repo, pr, dry_run: dryRun, before_open: items.length, after_open: items.length - (dryRun ? 0 : plan.length), closed: dryRun ? 0 : plan.length, items: plan };
+  return { repo, pr, dry_run: dryRun, before_open: items.length, after_open: items.length - (dryRun ? 0 : plan.length), closed: dryRun ? 0 : plan.length, items: plan, skipped };
 }

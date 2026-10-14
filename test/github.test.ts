@@ -845,6 +845,77 @@ function lifecycleThread(id: string, body: string, resolved = false): Scripted[]
   return scenario({ threads: gql(prPage(HEAD_A, { reviewThreads: pageOf([thread(id, [threadComment('source', { body, author: LIFECYCLE_BOT })], { isResolved: resolved })]) })) });
 }
 
+test('action performed notice format preserves substantive findings as pending and open', async t => {
+  const { client } = await tracker(t);
+  for (const [id, body, verdict, status] of [
+    ['action-notice', '<!-- This is an auto-generated reply by CodeRabbit -->\n<details>\n<summary>✅ Action performed</summary>\n\nFull review finished.\n\n</details>', 'informational', 'closed'],
+    ['action-finding', 'Prevent an action performed without authorization.', 'pending', 'open'],
+    ['action-heading-finding', '**An action performed without authorization must be rejected.**', 'pending', 'open'],
+    ['action-notice-only', '### ✅ Action performed\n', 'informational', 'closed'],
+    ['action-summary-only', '<summary>✅ Action performed</summary>', 'informational', 'closed'],
+  ]) {
+    const pr = await syntheticTransport(sourceScenario(id, 'comment', { body, author: LIFECYCLE_BOT })).snapshot('example/package', 1);
+    equal(findingsOf(pr)[0].verdict, verdict);
+    const imported = await importFindings(client, pr, findingsOf(pr));
+    const item = (await client.get(imported.items[0].id)).item;
+    equal(item.status, status);
+    equal(item.review_verdict, verdict);
+  }
+});
+
+test('applied verdict replaces imported informational closure evidence and keeps explicit closures terminal', async t => {
+  const { client } = await tracker(t);
+  const reads = sourceScenario('imported-action', 'comment', { body: '✅ Action performed', author: LIFECYCLE_BOT });
+  const pr = await syntheticTransport(reads).snapshot('example/package', 1);
+  const itemId = (await importFindings(client, pr, findingsOf(pr))).items[0].id;
+  const input = { id: itemId, repo: pr.repo, pr: 1, verdict: 'fix' as const, reason: 'Verified applied correction', commit: HEAD_B, apply: true };
+  const remote = (): GitHubTransport => syntheticTransport([...reads, gql({ viewer: { login: 'maintainer' } }), gql({ addReaction: {} })]);
+  await rejects(decide(client, syntheticTransport([...reads, gql({ viewer: { login: 'maintainer' } }), { status: 503 }]), input), /HTTP 503/);
+  const failed = (await client.get(itemId)).item;
+  match(String(failed.resolution), /^informational:/);
+  equal(failed.review_verdict_source, 'local');
+  await decide(client, remote(), input);
+  const item = (await client.get(itemId)).item;
+  equal(item.status, 'closed');
+  equal(item.review_verdict, 'fix');
+  equal(item.resolution, `fix: ${input.reason}; commit ${HEAD_B}`);
+  equal(item.actual_result, item.resolution);
+  const terminal = item.resolution;
+  await decide(client, remote(), { ...input, reason: 'Later different decision' });
+  equal((await client.get(itemId)).item.resolution, terminal);
+});
+
+test('reconcile closes merged findings without requesting linked alerts', async t => {
+  const { client } = await tracker(t);
+  const reads = lifecycleThread('merged-alert', 'Fix https://github.com/example/package/security/code-scanning/1');
+  const pr = await syntheticTransport(reads).snapshot('example/package', 1);
+  const id = (await importFindings(client, pr, findingsOf(pr))).items[0].id;
+  const receipt = await reconcile(client, syntheticTransport([...reads, { body: { merged: true, merge_commit_sha: HEAD_B } }]), pr.repo, 1, false);
+  equal(receipt.closed, 1);
+  deepEqual(receipt.skipped, []);
+  match(String((await client.get(id)).item.resolution), /merged PR:/);
+});
+
+test('reconcile reports denied alert closures and still closes resolved threads', async t => {
+  const { client } = await tracker(t);
+  const originals = [1, 2, 3].map(number => thread(`denied-alert-${number}`, [threadComment(`denied-comment-${number}`, { body: `Fix https://github.com/example/package/security/code-scanning/${number}`, author: LIFECYCLE_BOT })], { isResolved: number === 1 }));
+  const reads = scenario({ threads: gql(prPage(HEAD_A, { reviewThreads: pageOf(originals) })) });
+  const pr = await syntheticTransport(reads).snapshot('example/package', 1);
+  const imported = await importFindings(client, pr, findingsOf(pr));
+  const remote = (): GitHubTransport => syntheticTransport([...reads, { body: { merged: false } }, { status: 403 }, { status: 404 }, { body: { state: 'fixed' } }]);
+  const dry = await reconcile(client, remote(), pr.repo, 1, true);
+  equal(dry.closed, 0);
+  equal(dry.items.length, 2);
+  deepEqual(dry.skipped, [{ id: imported.items[1].id, reason: 'code-scanning closure skipped: 2 HTTP 404' }]);
+  const receipt = await reconcile(client, remote(), pr.repo, 1, false);
+  equal(receipt.closed, 2);
+  equal(receipt.after_open, 1);
+  deepEqual(receipt.skipped, dry.skipped);
+  equal((await client.get(imported.items[1].id)).item.status, 'open');
+  // Other transport failures retain fail-closed behaviour before tracker writes.
+  await rejects(reconcile(client, syntheticTransport([...reads, { body: { merged: false } }, { status: 503 }]), pr.repo, 1, false), /HTTP 503/);
+});
+
 test('lifecycle notices import closed, keep voting context and reopen when source becomes actionable', async t => {
   const { client } = await tracker(t);
   for (const [index, body] of ['✅ Action performed', 'Summary by CodeRabbit', 'Actionable comments posted: 4', 'Review skipped', 'You are seeing this message because GitHub Code Scanning has recently been set up'].entries()) {

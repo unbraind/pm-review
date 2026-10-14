@@ -16,9 +16,9 @@ test('changelog maps the pinned generator custom-type link to the persisted file
   const base = 'https://github.com/unbraind/pm-review/blob/main/.agents/pm';
   const generated = createChangelog({ items: [{ id, title: 'Synthetic finding', type: 'ReviewFinding', status: 'closed' }], itemUrlBase: base }).markdown;
   assert.ok(generated.includes(`${base}/reviewfindings/${id}.toon`), 'minimal upstream reproduction');
-  const canonical = canonicalFindingLinks(generated);
+  const canonical = canonicalFindingLinks(generated, base);
   assert.ok(canonical.includes(`${base}/review-findings/${id}.toon`));
-  assert.equal(canonicalFindingLinks('ordinary text'), 'ordinary text');
+  assert.equal(canonicalFindingLinks('ordinary text', base), 'ordinary text');
   assert.ok(readFileSync(join(pmRoot, 'review-findings', `${id}.toon`), 'utf8'));
   const input = join(cwd, 'items.json');
   writeFileSync(input, JSON.stringify({ items: (await client.listAllComplete()).items }));
@@ -34,6 +34,44 @@ test('changelog maps the pinned generator custom-type link to the persisted file
   assert.equal(runChangelog(['--unknown-option'], cwd), 1);
   writeFileSync(input, JSON.stringify([{ id: 'missing-item', title: 'Missing finding', type: 'ReviewFinding', status: 'open' }]));
   assert.throws(() => runChangelog(args, cwd), /no branch file/);
+});
+
+test('changelog corrects and validates the configured alternate item URL base', async t => {
+  const { client, cwd, pmRoot } = await tracker(t);
+  const snapshot = pullRequest({ reviews: [], comments: [] });
+  const imported = await importFindings(client, snapshot, findingsOf(snapshot));
+  const id = imported.items[0].id;
+  const base = 'https://example.test/project/tracker';
+  assert.equal(canonicalFindingLinks(`[item](${base}/reviewfindings/${id}.toon)`, `${base}/`), `[item](${base}/review-findings/${id}.toon)`);
+  await client.update(id, { title: 'Finding with [external evidence](https://other.test/evidence.toon)' });
+  const input = join(cwd, 'items.json');
+  writeFileSync(input, JSON.stringify((await client.listAllComplete()).items));
+  const args = ['--input', input, '--status', 'open', `--item-url-base=${base}/`, '--pm-root', pmRoot];
+  assert.equal(runChangelog(args, cwd), 0);
+  assert.ok(readFileSync(join(cwd, 'CHANGELOG.md'), 'utf8').includes(`${base}/review-findings/${id}.toon`));
+  assert.ok(readFileSync(join(cwd, 'CHANGELOG.md'), 'utf8').includes('https://other.test/evidence.toon'));
+  assert.equal(runChangelog([...args, '--check'], cwd), 0);
+});
+
+test('changelog rejects missing branch files under an alternate configured base', async t => {
+  const { cwd } = await tracker(t);
+  const input = join(cwd, 'items.json');
+  writeFileSync(input, JSON.stringify([{ id: 'missing-item', title: 'Missing finding', type: 'ReviewFinding', status: 'open' }]));
+  assert.throws(() => runChangelog(['--input', input, '--status', 'open', '--item-url-base', 'https://example.test/tracker'], cwd), /no branch file/);
+});
+
+test('changelog writes and checks output larger than 1 MiB without truncation', async t => {
+  const { cwd } = await tracker(t);
+  const input = join(cwd, 'items.json');
+  const items = Array.from({ length: 12000 }, (_, index) => ({ id: `history-${index}`, title: `Historical change ${index}: ${'evidence '.repeat(16)}`, type: 'Issue', status: 'closed' }));
+  items[0].title += ' [external evidence](https://other.test/history.toon)';
+  writeFileSync(input, JSON.stringify(items));
+  const args = ['--input', input, '--status', 'closed', '--mode', 'replace'];
+  assert.equal(runChangelog(args, cwd), 0);
+  const markdown = readFileSync(join(cwd, 'CHANGELOG.md'), 'utf8');
+  assert.ok(Buffer.byteLength(markdown) > 1024 * 1024);
+  assert.ok(markdown.includes('history-11999'));
+  assert.equal(runChangelog([...args, '--check'], cwd), 0);
 });
 
 test('changelog CLI publishes canonical stdout and GitHub step summaries', async t => {

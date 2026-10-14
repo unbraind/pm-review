@@ -44,4 +44,4 @@ export interface Finding extends Contribution {
 }
 
 /** Live terminal source evidence, obtained only through read-only GitHub requests. */
-export interface SourceLifecycle { merged: boolean; mergeCommit: string | null; alerts: { number: number; state: 'open' | 'fixed' | 'dismissed' | 'unknown' }[] }
+export interface SourceLifecycle { merged: boolean; mergeCommit: string | null; alerts: { number: number; state: 'open' | 'fixed' | 'dismissed' | 'unknown' }[]; skippedAlerts?: { number: number; status: number }[] }
