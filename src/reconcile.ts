@@ -13,18 +13,27 @@ export function alertNumbers(item: ItemMetadata, repo: string): number[] {
 /** Reconciliation receipt lists exact closure evidence and distinguishes planning from mutation. */
 export interface ReconcileReceipt { repo: string; pr: number; dry_run: boolean; before_open: number; after_open: number; closed: number; items: { id: string; resolution: string }[] }
 
+/** Persisted decisions outrank notice-like text when the source is no longer available. */
+function isOrphanInformational(item: ItemMetadata): boolean {
+  if (item.review_verdict) return item.review_verdict === 'informational';
+  if (['critical', 'high', 'medium', 'low', 'major', 'minor'].includes(String(item.review_severity))) return false;
+  return isInformational(String(item.description));
+}
+
 /** Close terminal source context using live GitHub reads; all reads finish before any tracker write. */
 export async function reconcile(client: PmClient, transport: GitHubTransport, repo: string, pr: number, dryRun: boolean): Promise<ReconcileReceipt> {
-  const items = (await reviewItems(client)).filter(item => item.review_repo === repo && item.review_pr === pr && !['closed', 'canceled'].includes(item.status));
+  const items = (await reviewItems(client)).filter(item => item.review_repo === repo && item.review_pr === pr && Boolean(item.review_node_id || item.review_thread_id) && !['closed', 'canceled'].includes(item.status));
   const snapshot = await transport.snapshot(repo, pr);
+  if (snapshot.repo !== repo || snapshot.number !== pr) throw new Error('Review snapshot does not match the requested repository and PR');
   const lifecycle = await transport.lifecycle(repo, pr, items.flatMap(item => alertNumbers(item, repo)));
   const sources = new Map(findingsOf(snapshot).map(finding => [finding.id, finding]));
   const plan: ReconcileReceipt['items'] = [];
   for (const item of items) {
-    const source = sources.get(String(item.review_node_id));
+    const source = sources.get(String(item.review_node_id || item.review_thread_id));
+    if (source && item.review_thread_id && item.review_thread_id !== source.thread) continue;
     const alerts = alertNumbers(item, repo).map(number => lifecycle.alerts.find(alert => alert.number === number));
     let resolution = '';
-    if (source?.verdict === 'informational' || (!source && isInformational(String(item.description)))) resolution = `informational: ${String(item.review_url)}`;
+    if (source?.verdict === 'informational' || (!source && isOrphanInformational(item))) resolution = `informational: ${String(item.review_url)}`;
     else if (alerts.length > 0 && alerts.every(alert => alert !== undefined && (alert.state === 'fixed' || alert.state === 'dismissed'))) resolution = `code-scanning: ${alerts.map(alert => `${alert!.number} ${alert!.state}`).join(', ')}`;
     else if (source?.resolved) resolution = `resolved thread: ${source.thread}; ${source.url}`;
     else if (lifecycle.merged) resolution = `merged PR: https://github.com/${repo}/pull/${pr}; ${lifecycle.mergeCommit ? `merge commit ${lifecycle.mergeCommit}` : `head ${snapshot.head}`}`;

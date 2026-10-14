@@ -6,16 +6,19 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-14T06:16:20.368Z"
-updated_at: "2026-10-14T06:49:30.866Z"
+updated_at: "2026-10-14T09:08:24.283Z"
 author: pi-agent
 parent: pm-review-epic
-comments[5]{created_at,author,text}:
+comments[8]{created_at,author,text}:
   "2026-10-14T06:16:31.738Z",pi-agent,"Retain informational imports as closed context with structured resolution evidence, preserving source votes. Close applied verdicts only after successful remote operations. Reconcile live resolved threads, fixed/dismissed code-scanning alerts and merged PRs with dry-run and append-only closure history. Work items remain for orchestrator verification."
   "2026-10-14T06:25:06.337Z",pi-agent,"Dogfood: review reconcile --repo unbraind/pm-review --pr 1 through the built command dispatcher with the repo-pinned SDK. Dry-run planned 22 closures and wrote none. Applied reconciliation changed open ReviewFinding counts 22 -> 0; 22 closures. Retry applied 0 closures. GitHub reads only; tracker transitions use append-only history and structured resolution/expected/actual evidence."
   "2026-10-14T06:28:14.503Z",pi-agent,"Behavioral revert proof: replacing only importFindings, isInformational, decide or evaluateRound with their origin/main bodies made the lifecycle HTTP regression tests fail assertions (open instead of closed, or closed pending items still counted). Disabling only the new reconcile body also failed its dry-run/closure regression. Restoring the functions makes the linked suite pass. Existing 24 modified history streams preserve every original byte and append new transitions. Linked lifecycle tests passed 5/5 before adding the separate non-thread failure/retry scenario; final gates cover that scenario too."
   "2026-10-14T06:33:52.673Z",pi-agent,"Linked lifecycle test execution passed 6/6, including non-thread vote failure/retry. The pinned changelog generator emits custom ReviewFinding links under reviewfindings rather than the registered review-findings folder; follow-up pm-review-changelog-links records this documentation limitation. Null top-level code-scanning states remain unknown and do not independently close findings. Host help duplication remains pending the Dependabot 2026.10.14 bump."
   "2026-10-14T06:49:30.866Z",pi-agent,"Final gates passed on the completed implementation: env -u PM_PATH -u PM_AUTHOR HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 npm run release:check, and the equivalent bun run release:check. Each passed 105/105 suite tests with zero failures/skips/cancellations/todos, 100% statements/branches/functions/lines across all 18 authored source files, and 1/1 packed acceptance test covering npm/npx and native Bun/bunx. Typecheck, lint, docstrings, zero duplication, production audit, pack allowlist, changelog check and publish attestation passed. Changelog generation/check also passed separately. Work items remain for orchestrator verification; claims released. No dependency bump or GitHub source mutation."
-files[12]{path,scope}:
+  "2026-10-14T08:55:47.178Z",codex-agent,"PR 9 round 1: repo and PR filtering already exists, but orphan notices can override persisted actionable verdicts and missing source identity can still receive terminal closure. Add persisted identity guards and verdict/severity precedence, with real-tracker regressions for missing metadata, foreign PR/repo, conflicting thread identity and orphan classifications."
+  "2026-10-14T08:59:38.235Z",codex-agent,"Behavioural revert proof: restoring only reconcile to the pre-fix function makes node --test --test-name-pattern=\"reconcile requires|reconcile orphan\" test/review-regressions.test.ts fail 0/2. Identity regression closes extra items lacking source metadata or carrying conflicting thread identity; orphan regression closes 11 instead of 3, overriding pending/fix/refuse and legacy actionable severity. Restored implementation passes both, preserves missing-metadata and same-thread foreign PR/repo items, supports a matching legacy thread identity, and rejects mismatched live snapshot coordinates before mutation."
+  "2026-10-14T09:08:19.565Z",codex-agent,"Final verification: node --test --test-name-pattern=reconcile test/review-regressions.test.ts passed 2/2, and the existing lifecycle suite passed 6/6 through pm test --run --progress. Isolated npm run release:check and bun run release:check each passed 109/109 suite tests and 1/1 packed npm/npx plus native Bun/bunx acceptance test, with zero failures/skips/cancellations/todos. Coverage is 100% in all four dimensions over all 19 source files. Identity, typecheck, lint, docstrings, zero duplication, production audit, pack allowlist, changelog and publish attestation checks passed. Isolation prefix: env -u PM_PATH -u PM_AUTHOR HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1. Original history bytes remain intact and all new evidence is appended. Work remains in progress for orchestrator verification; claim released at delivery."
+files[13]{path,scope}:
   index.ts,project
   src/commands.ts,project
   src/github.ts,project
@@ -28,8 +31,10 @@ files[12]{path,scope}:
   test/github.test.ts,project
   test/helpers.ts,project
   test/install.acceptance.ts,project
-tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  test/review-regressions.test.ts,project
+tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test --test-name-pattern=lifecycle test/github.test.ts,project,pi-agent,"2026-10-14T06:24:22.775Z",local_mutation,feat/finding-lifecycle
+  node --test --test-name-pattern=reconcile test/review-regressions.test.ts,project,codex-agent,"2026-10-14T08:59:36.183Z",local_mutation,feat/finding-lifecycle
 docs[1]{path,scope}:
   README.md,project
 body: ""
