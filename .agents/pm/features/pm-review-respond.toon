@@ -1,0 +1,28 @@
+id: pm-review-respond
+title: Post recorded verdicts and gate unanswered review work
+description: Batch response command and read-only status gate reuse the complete GitHub transport and round evaluation; extends the delivered per-item verdict command.
+type: Feature
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-15T07:59:47.637Z"
+updated_at: "2026-10-15T08:13:28.816Z"
+assignee: codex-agent
+claim_principal: codex-agent
+author: codex-agent
+acceptance_criteria: "respond is dry-run by default; apply posts concise verdict-only inline replies with fixing SHA, no bot mentions or private data, and a finding-id marker deduplicates retries; optional resolve defaults off; Vote every unvoted known review bot issue comment, review body and thread comment; configurable bot list and notice classifier; notices down and review content including accepted refusal up; never vote humans; receipt lists every vote; status lists unvoted items, missing verdicts, missing replies and unresolved threads; reuses exact-head round completion and exits zero only when clear; complete pagination fails closed; HTTP fixture server and real temp trackers cover retries, privacy and partial failures; behavioural revert proofs for marker detection and both vote classifications; unchanged npm and Bun release gates; changelog regenerated; read-only pm-github PR 124 evidence"
+parent: pm-review-epic
+comments[4]{created_at,author,text}:
+  "2026-10-15T08:00:40.744Z",codex-agent,"No duplicate batch-response feature found. Reuse the paginated transport and exact-head round evaluator. Status audits imported decisions and all live threads/votes; an empty tracker cannot hide unresolved threads. Historical resolved manual replies do not require retroactive import. Reply markers bind finding id and applying account; plan all actions before writes, reject unsafe verdict text, and default thread resolution off. Config uses explicit bot-login and notice-pattern flags shared by respond/status."
+  "2026-10-15T08:08:10.981Z",codex-agent,"HTTP regression suite passed 5/5. Behavioural revert proofs each failed the same HTTP regression as expected: disabling only marker recognition reposted a reply; making the vote classifier always positive failed the trial notice downvote assertion; making it always negative failed the substantive review upvote assertion. Original implementation restored after all three proofs. No real GitHub mutations were made."
+  "2026-10-15T08:10:30.357Z",codex-agent,"Real packed CLI status exposed the pinned host result contract: explicit exit_code zero is rejected, although direct handler tests accept it. Clear status receipts now omit exit_code so the host exits normally; blocked receipts retain exit_code one. The existing round handler also emits zero on success and remains outside this feature scope; report this existing host integration gap for follow-up."
+  "2026-10-15T08:12:31.396Z",codex-agent,"Packed CLI live proof passed against merged public pm-github PR 124: status complete=true with empty unvoted, undecided, unreplied and unresolved lists and exact-head review complete; respond dry_run=true and actions empty. Both commands exited zero. No apply was run against a real repository. Existing round success host-contract gap tracked separately as pm-review-round-exit-contract. Linked test runner default 120-second timeout was too short under shared-host load; rerunning with a 600-second budget."
+files[2]{path,scope}:
+  src/respond.ts,project
+  test/respond.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test test/respond.test.ts,project,codex-agent,"2026-10-15T08:06:07.117Z",local_mutation,feat/review-respond
+docs[2]{path,scope}:
+  docs/respond.md,project
+  README.md,project
+body: ""

@@ -7,6 +7,7 @@ import { compactRound, evaluateRound } from './round.ts';
 import { findReviewItems, importFindings, precedents, reviewItems } from './tracker.ts';
 import { reconcile } from './reconcile.ts';
 import { decide, parseVerdict } from './verdict.ts';
+import { respond, reviewStatus } from './respond.ts';
 import type { GitHubTransport } from './types.ts';
 
 /** Validate a provided repository filter independently of a pull request number. */
@@ -55,6 +56,10 @@ async function dispatchReviewCommand(ctx: CommandHandlerContext, provided?: GitH
     return decide(client, apply ? provided ?? createGitHubTransport() : undefined, { ...target, id: ctx.args[0] ?? '', verdict: parseVerdict(ctx.args[1] ?? ''), reason: readStringOption(ctx.options, 'reason') ?? '', commit: readStringOption(ctx.options, 'commit') ?? '', apply });
   }
   const transport = provided ?? createGitHubTransport();
+  if (ctx.command === 'review respond' || ctx.command === 'review status') {
+    const options = { bots: readStringOption(ctx.options, 'bots'), noticePattern: readStringOption(ctx.options, 'noticePattern'), apply: readBooleanOption(ctx.options, 'apply'), resolve: readBooleanOption(ctx.options, 'resolve') };
+    return ctx.command === 'review respond' ? respond(client, transport, target.repo, target.pr, options) : reviewStatus(client, transport, target.repo, target.pr, options);
+  }
   if (ctx.command === 'review reconcile') return reconcile(client, transport, target.repo, target.pr, readBooleanOption(ctx.options, 'dryRun') === true);
   const snapshot = await transport.snapshot(target.repo, target.pr);
   if (ctx.command === 'review import') return importFindings(client, snapshot, findingsOf(snapshot));
@@ -74,9 +79,18 @@ const TARGET_FLAGS: FlagDefinition[] = [
   { long: '--pr', type: 'string', description: 'Positive pull request number' },
 ];
 
+/** Shared response policy keeps dry-run plans and the merge audit consistent. */
+const RESPONSE_FLAGS: FlagDefinition[] = [
+  ...TARGET_FLAGS,
+  { long: '--bots', type: 'string', description: 'Comma-separated review bot logins replacing defaults; human accounts are excluded' },
+  { long: '--notice-pattern', type: 'string', description: 'Additional case-insensitive notice regular expression (downvote)' },
+];
+
 /** Register help, typed positional arguments and command handlers through the host API. */
 export function registerReviewCommands(api: ExtensionApi): void {
   const commands = [
+    { name: 'respond', description: 'Plan recorded inline replies and missing bot votes; dry-run unless --apply', arguments: [], flags: [...RESPONSE_FLAGS, { long: '--apply', type: 'boolean' as const, description: 'Write planned replies and votes to GitHub' }, { long: '--resolve', type: 'boolean' as const, description: 'Also resolve threads with recorded final decisions; default off' }], example: 'pm review respond --repo unbraind/pm-review --pr 1' },
+    { name: 'status', description: 'Gate on unanswered findings, missing replies, bot votes, threads and exact-head review', arguments: [], flags: RESPONSE_FLAGS, example: 'pm review status --repo unbraind/pm-review --pr 1' },
     { name: 'reconcile', description: 'Close findings from live resolved threads, terminal alerts and merged PRs (GitHub read-only)', arguments: [], flags: [...TARGET_FLAGS, { long: '--dry-run', type: 'boolean' as const, description: 'Report planned closures without tracker writes' }], example: 'pm review reconcile --repo unbraind/pm-review --pr 1 --dry-run' },
     { name: 'find', description: 'Find imported tracker items by GitHub thread id or review-comment URL', arguments: [], flags: [{ long: '--thread', type: 'string' as const, description: 'PRRT_ thread id or GitHub review-comment URL' }], example: 'pm review find --thread PRRT_example' },
     { name: 'import', description: 'Import every bot thread, review body and issue comment as durable pm context', arguments: [], flags: TARGET_FLAGS, example: 'pm review import --repo unbraind/pm-rl --pr 68' },

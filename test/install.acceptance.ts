@@ -39,7 +39,7 @@ function command(cwd: string, name: string, args: string[], pmRoot: string, home
     const prefix = runtime === 'npm' ? ['--no-install', 'pm'] : ['--bun', '--no-install', 'pm'];
     command(cwd, runner, [...prefix, 'init', 'consumer', '--defaults', '--agent-guidance', 'skip', '--json'], pmRoot);
     command(cwd, runner, [...prefix, 'install', tarball, '--project', '--json'], pmRoot);
-    for (const action of ['import', 'verdict', 'round', 'precedents', 'reconcile']) assert.match(command(cwd, runner, [...prefix, 'review', action, '--help'], pmRoot), /review/);
+    for (const action of ['import', 'verdict', 'round', 'precedents', 'reconcile', 'respond', 'status']) assert.match(command(cwd, runner, [...prefix, 'review', action, '--help'], pmRoot), /review/);
     assert.match(command(cwd, runner, [...prefix, 'review', 'reconcile', '--help'], pmRoot), /--dry-run/);
     const verdictHelp = command(cwd, runner, [...prefix, 'review', 'verdict', '--help'], pmRoot);
     assert.doesNotMatch(verdictHelp, /<value>\s+<value>/);
