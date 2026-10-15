@@ -11,10 +11,15 @@
 - Import every bot thread, review and issue comment idempotently ([pm-review-import](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-import.toon))
 - Post recorded verdicts and gate unanswered review work ([pm-review-respond](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-respond.toon))
 
+### Changed
+
+- Enable the gated pm-github issue sync and remove the braces chain ([pm-review-gated-issue-sync](https://github.com/unbraind/pm-review/blob/main/.agents/pm/chores/pm-review-gated-issue-sync.toon))
+
 ### Fixed
 
 - Find durable fix and refusal precedents ([pm-review-precedents](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-precedents.toon))
 - Pin the host so history verifies and keep CodeRabbit under the file cap ([pm-review-host-pin](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-host-pin.toon))
+- Track development glob dependency advisory before publication ([pm-review-dev-audit](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-dev-audit.toon))
 - Prefer the actionable heading over CodeRabbit static-analysis wrapper text ([pm-review-summary-ux](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-summary-ux.toon))
 - Close review findings when their source resolves ([pm-review-finding-lifecycle](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-finding-lifecycle.toon))
 - Preserve custom ReviewFinding folders in changelog item links ([pm-review-changelog-links](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-changelog-links.toon))
@@ -37,6 +42,7 @@
 ### Other
 
 - Durable bot review context and exact-head round gates ([pm-review-epic](https://github.com/unbraind/pm-review/blob/main/.agents/pm/epics/pm-review-epic.toon))
+- Characterize the canonical attestation refusal in the release review-thread loop ([pm-review-release-scanner-blocker](https://github.com/unbraind/pm-review/blob/main/.agents/pm/tasks/pm-review-release-scanner-blocker.toon))
 - coderabbitai: Actionable comments posted: 8 ([pm-review-gh-62f3c6c9f2d29d92515c6046](https://github.com/unbraind/pm-review/blob/main/.agents/pm/review-findings/pm-review-gh-62f3c6c9f2d29d92515c6046.toon))
 - coderabbitai: Actionable comments posted: 4 ([pm-review-gh-62994f50a613b4005c178d77](https://github.com/unbraind/pm-review/blob/main/.agents/pm/review-findings/pm-review-gh-62994f50a613b4005c178d77.toon))
 - coderabbitai: Summary by CodeRabbit ([pm-review-gh-b0d87dd071a6a4f0cff46215](https://github.com/unbraind/pm-review/blob/main/.agents/pm/review-findings/pm-review-gh-b0d87dd071a6a4f0cff46215.toon))

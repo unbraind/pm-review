@@ -23,6 +23,7 @@ import { runCoverageGate } from "../scripts/coverage-gate.ts";
 import { runDocstringGate } from "../scripts/docstring-gate.ts";
 import { VERDICTS } from "../src/types.ts";
 import { auditIdentities, containsAbsoluteHomePath, runIdentityGate } from "../scripts/identity-gate.ts";
+import { resolveReleaseThreads } from "../scripts/resolve-release-threads.ts";
 
 import fleetConfig from '../eslint.config.ts';
 
@@ -251,10 +252,12 @@ test('release PR tracking link resolves to an existing epic', () => {
 });
 
 test('release PR auto-resolution only touches threads written entirely by the allowlisted review bot', () => {
-  const workflow = readFileSync(join(repositoryRoot, '.github/workflows/release.yml'), 'utf8');
-  // Extract the jq program passed to `--jq` for the unresolved-thread query (it spans several lines).
-  const match = workflow.match(/--jq '(\.data\.repository\.pullRequest\.reviewThreads\.nodes\[\]\?[\s\S]*?\| \.id)'/);
-  assert.ok(match, 'release.yml must keep the unresolved-thread jq filter');
+  let filter = '';
+  resolveReleaseThreads('example', 'package', '42', 'unused', args => {
+    filter = args[args.indexOf('--jq') + 1];
+    return { success: true, stdout: '' };
+  });
+  assert.ok(filter, 'release helper must retain the unresolved-thread jq filter');
   const thread = (id: string, authors: ReadonlyArray<readonly [string, string]>) => ({ id, isResolved: false, comments: { totalCount: authors.length, nodes: authors.map(([type, login]) => ({ author: { __typename: type, login } })) } });
   const fixture = { data: { repository: { pullRequest: { reviewThreads: { nodes: [
     thread('review-bot', [['Bot', 'coderabbitai']]),
@@ -262,7 +265,7 @@ test('release PR auto-resolution only touches threads written entirely by the al
     thread('mixed-bots', [['Bot', 'coderabbitai'], ['Bot', 'sourcery-ai']]),
     thread('human', [['User', 'maintainer']]),
   ] } } } } };
-  const outcome = spawnSync('jq', ['-r', match[1]], { input: JSON.stringify(fixture), encoding: 'utf8' });
+  const outcome = spawnSync('jq', ['-r', filter], { input: JSON.stringify(fixture), encoding: 'utf8' });
   assert.equal(outcome.status, 0, outcome.stderr);
   assert.deepEqual(outcome.stdout.trim().split('\n'), ['review-bot']);
 });

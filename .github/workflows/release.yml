@@ -515,28 +515,7 @@ jobs:
                 ;;
             esac
 
-            unresolved="$(gh api graphql \
-              -f query='query($o:String!,$r:String!,$n:Int!){repository(owner:$o,name:$r){pullRequest(number:$n){reviewThreads(first:100){nodes{id isResolved comments(first:100){totalCount nodes{author{login __typename}}}}}}}}' \
-              -F o="$owner" -F r="$repo" -F n="$pr_number" \
-              --jq '.data.repository.pullRequest.reviewThreads.nodes[]?
-                    | select(.isResolved==false)
-                    | select(.comments.totalCount ==
-                             ([.comments.nodes[]?] | length))
-                    | select([.comments.nodes[]?.author.__typename]
-                             | length > 0 and all(. == "Bot"))
-                    | select([.comments.nodes[]?.author.login]
-                             | all(. as $l | ["coderabbitai"] | index($l)))
-                    | .id' 2>/dev/null || true)"
-            if [[ -n "$unresolved" ]]; then
-              while IFS= read -r thread_id; do
-                [[ -z "$thread_id" ]] && continue
-                gh api graphql \
-                  -f query='mutation($t:ID!){resolveReviewThread(input:{threadId:$t}){thread{isResolved}}}' \
-                  -F t="$thread_id" >/dev/null 2>&1 \
-                  && echo "Auto-resolved bot review thread ${thread_id} on release PR #${pr_number}." >> "$GITHUB_STEP_SUMMARY" \
-                  || true
-              done <<< "$unresolved"
-            fi
+            node scripts/resolve-release-threads.ts "$owner" "$repo" "$pr_number" "$GITHUB_STEP_SUMMARY"
 
             merge_out="$(gh api --method PUT \
               "repos/${GITHUB_REPOSITORY}/pulls/${pr_number}/merge" \
