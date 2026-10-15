@@ -50,3 +50,16 @@ The packed CLI was run against merged public PR `unbraind/pm-github#124`. No rea
 Clear status results omit an explicit success code because the pinned host accepts only failure codes in extension results. The existing round command's explicit-zero result is tracked separately in [pm-review-round-exit-contract](../.agents/pm/issues/pm-review-round-exit-contract.toon).
 
 Concurrent apply invocations must be serialized. Marker detection makes sequential retries idempotent; GitHub does not expose an atomic conditional thread-reply mutation.
+
+## Release gates
+
+Runtime code commit: `01e3278`. The final receipt commit changes only documentation and tracker evidence.
+
+| Command | Suite | Packed consumer acceptance | Statements / branches / functions / lines |
+| --- | --- | --- | --- |
+| `npm run release:check` | 121 passed, 0 failed, 0 skipped | 1 passed | 100 / 100 / 100 / 100 |
+| `bun run release:check` | 121 passed, 0 failed, 0 skipped | 1 passed | 100 / 100 / 100 / 100 |
+
+Each command ran with a fresh HOME, `GIT_CONFIG_GLOBAL=/dev/null`, `GIT_CONFIG_NOSYSTEM=1` and `npm_config_ignore_scripts=true`. Install hooks were suppressed to avoid shared Git configuration changes; all explicit build and gate scripts ran. The coverage inventory contained 20 source files, thresholds were unchanged, duplication was zero and the production audit was clean. Identity, type, lint, docstring, package, changelog and attestation checks passed in both runs.
+
+The linked HTTP test command passed through `pm test` with a 600-second budget: 5 passed, 0 failed. Its initial 120-second runner budget timed out under shared-host load; increasing the budget required no test or implementation changes. Changelog generation and checking were repeated after the final tracker writes.
