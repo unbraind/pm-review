@@ -1,0 +1,14 @@
+id: pm-review-release-scanner-blocker
+title: Characterize the canonical attestation refusal in the release review-thread loop
+description: "Consuming published pm-ops 2026.10.14 removes the vulnerable glob chain but the canonical attestation scanner refuses the unchanged release workflow review-thread loop with cannot prove executable expansion. Reproduced by auditing the origin/main release.yml bytes directly with pm-ops/attestation. Related: ops-0u7l and pm-review-gated-issue-sync. Resolve through a reviewed canonical scanner repair or separately verified workflow change; do not weaken the gate."
+type: Task
+status: open
+priority: 1
+tags: []
+created_at: "2026-10-15T06:59:12.256Z"
+updated_at: "2026-10-15T06:59:14.343Z"
+author: codex-agent
+acceptance_criteria: Canonical attestation accepts the verified release workflow and both release checks pass without exemptions.
+files[1]{path,scope}:
+  .github/workflows/release.yml,project
+body: ""
