@@ -11,6 +11,10 @@
 - Import every bot thread, review and issue comment idempotently ([pm-review-import](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-import.toon))
 - Post recorded verdicts and gate unanswered review work ([pm-review-respond](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-respond.toon))
 
+### Changed
+
+- Enable the gated pm-github issue sync and remove the braces chain ([pm-review-gated-issue-sync](https://github.com/unbraind/pm-review/blob/main/.agents/pm/chores/pm-review-gated-issue-sync.toon))
+
 ### Fixed
 
 - Find durable fix and refusal precedents ([pm-review-precedents](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-precedents.toon))
@@ -26,7 +30,6 @@
 
 ### Removed
 
-- Enable the gated pm-github issue sync and remove the braces chain ([pm-review-gated-issue-sync](https://github.com/unbraind/pm-review/blob/main/.agents/pm/chores/pm-review-gated-issue-sync.toon))
 - coderabbitai: Remove the timed-reply completion criterion. ([pm-review-gh-b8d0ce4233d43151b6ae2029](https://github.com/unbraind/pm-review/blob/main/.agents/pm/review-findings/pm-review-gh-b8d0ce4233d43151b6ae2029.toon))
 
 ### Security
