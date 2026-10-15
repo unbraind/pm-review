@@ -4,7 +4,13 @@ Feature: [pm-review-respond](../.agents/pm/features/pm-review-respond.toon).
 
 Before this feature, recorded verdicts required individual application and a separate private voting loop. `respond` reads the complete tracker and GitHub snapshot, plans marked inline replies and missing votes, and applies only with an explicit flag. Thread resolution is opt-in. `status` exposes the unanswered work and reuses round evaluation for exact-head review evidence.
 
-The HTTP fixture server exercises the actual GraphQL transport and real temporary PM trackers, without SDK mocks. Connections use one-element pages, including nested replies and reactions. Five scenarios cover dry-run, fix/refusal replies, every contribution category, human exclusion, configurable policy, retries after partial failure, unsafe reasons, incomplete decisions and partial API responses. Packed npm and Bun consumers also discover both commands.
+The HTTP fixture server exercises the actual GraphQL transport and real temporary PM trackers, without SDK mocks. Connections use one-element pages, including nested replies and reactions. Seven scenarios cover dry-run, fix/refusal replies, every contribution category, human exclusion, configurable policy, retries after partial failure, unsafe reasons, incomplete decisions, partial API responses, changed-reason supersession and legacy-marker migration with changed fix commits. Packed npm and Bun consumers also discover both commands.
+
+## Decision fingerprints and stale replies
+
+Batch response markers use `<!-- pm-review:finding:<encoded-id> decision:<fingerprint> -->`. The fingerprint is the first 16 hexadecimal characters of SHA-256 over a JSON array containing the recorded verdict, reason and fix commit (empty for other verdicts). Only a matching marker from the authenticated account satisfies the current decision; changing the verdict, reason or fix commit requires a new reply.
+
+`status.stale_replies` lists finding IDs with an earlier marker but no current one. `verdicts_without_reply` lists findings with no marked reply from that account. Both lists block the gate. Legacy finding-ID markers without a fingerprint count as stale. Applying a correction appends a reply saying it supersedes the earlier reply; it never edits or deletes the earlier reply. Once a current reply exists, historical markers no longer block status, and sequential retries post nothing.
 
 ## Behavioural revert proofs
 
@@ -15,6 +21,8 @@ The HTTP fixture server exercises the actual GraphQL transport and real temporar
 - `responsePlan` selects negative votes for every source: substantive review content fails its upvote assertion.
 
 Each mutation exited 1. The implementation was restored after each proof. Full release gates run against the restored implementation.
+
+Round 1 fingerprint proof: `node --test --test-name-pattern='respond HTTP changed reason' test/respond.test.ts` fails when only `hasReply` discards the decision fingerprint before matching. The stale-status assertion receives an empty list instead of the finding ID (0 passed, 1 failed; exit 1). The exact implementation was restored before the release gates. The unchanged implementation passes the HTTP suite (7 passed, 0 failed).
 
 ## Public read-only proof
 
@@ -51,7 +59,7 @@ Clear status results omit an explicit success code because the pinned host accep
 
 Concurrent apply invocations must be serialized. Marker detection makes sequential retries idempotent; GitHub does not expose an atomic conditional thread-reply mutation.
 
-## Release gates
+## Initial feature release gates
 
 Runtime code commit: `01e3278`. The final receipt commit changes only documentation and tracker evidence.
 

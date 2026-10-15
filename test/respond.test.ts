@@ -98,7 +98,8 @@ test('respond HTTP dry-run, fix/refusal votes, pagination and finding markers ma
   assert.deepEqual(first.actions.map(action => action.kind), ['reply', 'vote', 'vote', 'vote', 'vote']);
   assert.equal(s.writes.length, 0);
   const reply = first.actions.find(action => action.kind === 'reply')!;
-  assert.match(reply.body, new RegExp(responseMarker(s.item.id)));
+  assert.ok(reply.body.includes(responseMarker((await s.client.get(s.item.id)).item)));
+  assert.match(reply.body, / decision:[a-f0-9]{16} -->$/);
   assert.match(reply.body, /fix\n\nValidate input before writes\.\n\nCommit: b{40}/);
   assert.doesNotMatch(reply.body, /Potential issue|synthetic-token|maintainer|@/);
   const applied = await respond(s.client, s.transport, s.pr.repo, 1, { apply: true });
@@ -110,17 +111,72 @@ test('respond HTTP dry-run, fix/refusal votes, pagination and finding markers ma
   assert.equal(s.writes.some(write => write.includes('human') || write.includes('custom')), false);
   assert.deepEqual((await respond(s.client, s.transport, s.pr.repo, 1, { apply: true })).actions, []);
   // Altering surrounding text cannot defeat the stable marker; another actor's marker cannot satisfy it.
-  s.pr.threads[0].comments.at(-1)!.body = 'Changed surrounding text\n' + responseMarker(s.item.id);
+  s.pr.threads[0].comments.at(-1)!.body = 'Changed surrounding text\n' + responseMarker((await s.client.get(s.item.id)).item);
   assert.deepEqual((await respond(s.client, s.transport, s.pr.repo, 1)).actions, []);
   s.pr.threads[0].comments.at(-1)!.bot = 'another-human';
   assert.equal((await respond(s.client, s.transport, s.pr.repo, 1)).actions[0].kind, 'reply');
   s.pr.threads[0].comments.at(-1)!.bot = s.pr.author;
   await recordVerdict(s.client, s.item, 'refuse', 'Existing validation covers this input.', '');
   s.pr.threads[0].comments[0].reactions = [];
-  assert.deepEqual((await respond(s.client, s.transport, s.pr.repo, 1, { apply: true, resolve: true })).actions.map(action => action.kind), ['resolve', 'vote']);
+  assert.deepEqual((await respond(s.client, s.transport, s.pr.repo, 1, { apply: true, resolve: true })).actions.map(action => action.kind), ['reply', 'resolve', 'vote']);
+  assert.match(s.pr.threads[0].comments.at(-1)!.body, /pm-review: refuse[\s\S]*supersedes the earlier reply/);
   assert.ok(s.pr.threads[0].resolved);
   assert.ok(s.writes.includes('React:comment-one:THUMBS_UP'));
   assert.deepEqual((await respond(s.client, s.transport, s.pr.repo, 1, { apply: true, resolve: true })).actions, []);
+});
+
+test('respond HTTP changed reason is stale until exactly one superseding reply; unchanged decisions stay inert', async t => {
+  const s = await scenario(t);
+  for (const item of await reviewItems(s.client)) {
+    await recordVerdict(s.client, item, 'refuse', 'Existing validation covers this input.', '');
+  }
+  await respond(s.client, s.transport, s.pr.repo, 1, { apply: true, resolve: true });
+  assert.equal((await reviewStatus(s.client, s.transport, s.pr.repo, 1)).complete, true);
+  assert.deepEqual((await respond(s.client, s.transport, s.pr.repo, 1, { apply: true })).actions, []);
+  const earlier = s.pr.threads[0].comments.at(-1)!;
+  const originalBody = earlier.body;
+  const writes = s.writes.length;
+  await recordVerdict(s.client, s.item, 'refuse', 'The boundary validator already rejects malformed input.', '');
+  const stale = await reviewStatus(s.client, s.transport, s.pr.repo, 1);
+  assert.deepEqual(stale.stale_replies, [s.item.id]);
+  assert.deepEqual(stale.verdicts_without_reply, []);
+  assert.equal(stale.complete, false);
+  assert.equal(stale.exit_code, 1);
+  assert.equal(s.writes.length, writes);
+  const correction = await respond(s.client, s.transport, s.pr.repo, 1, { apply: true });
+  assert.deepEqual(correction.actions.map(action => action.kind), ['reply']);
+  assert.deepEqual(s.writes.slice(writes), ['ReplyThread']);
+  const latest = s.pr.threads[0].comments.at(-1)!;
+  assert.match(latest.body, /The boundary validator already rejects malformed input\.[\s\S]*supersedes the earlier reply/);
+  assert.notEqual(latest.body, originalBody);
+  assert.ok(s.pr.threads[0].comments.includes(earlier));
+  assert.equal(earlier.body, originalBody);
+  const current = await reviewStatus(s.client, s.transport, s.pr.repo, 1);
+  assert.deepEqual(current.stale_replies, []);
+  assert.equal(current.complete, true);
+  assert.deepEqual((await respond(s.client, s.transport, s.pr.repo, 1, { apply: true })).actions, []);
+  assert.equal(s.writes.length, writes + 1);
+});
+
+test('respond HTTP legacy marker is stale and a changed fix commit requires a new reply', async t => {
+  const s = await scenario(t);
+  const legacyBody = `Earlier decision\n\n<!-- pm-review:finding:${encodeURIComponent(s.item.id)} -->`;
+  s.pr.threads[0].comments.push(contribution({ id: 'legacy-reply', bot: s.pr.author, isBot: false, body: legacyBody, reactions: [] }));
+  const stale = await reviewStatus(s.client, s.transport, s.pr.repo, 1);
+  assert.equal(stale.exit_code, 1);
+  assert.deepEqual(stale.stale_replies, [s.item.id]);
+  assert.deepEqual(stale.verdicts_without_reply, []);
+  const migrated = await respond(s.client, s.transport, s.pr.repo, 1, { apply: true });
+  assert.equal(migrated.actions.filter(action => action.kind === 'reply').length, 1);
+  assert.match(s.pr.threads[0].comments.at(-1)!.body, /supersedes the earlier reply/);
+  assert.equal(s.pr.threads[0].comments.find(comment => comment.id === 'legacy-reply')!.body, legacyBody);
+  assert.deepEqual((await reviewStatus(s.client, s.transport, s.pr.repo, 1)).stale_replies, []);
+  await recordVerdict(s.client, s.item, 'fix', 'Validate input before writes.', 'c'.repeat(40));
+  assert.deepEqual((await reviewStatus(s.client, s.transport, s.pr.repo, 1)).stale_replies, [s.item.id]);
+  const changed = await respond(s.client, s.transport, s.pr.repo, 1, { apply: true });
+  assert.deepEqual(changed.actions.map(action => action.kind), ['reply']);
+  assert.match(s.pr.threads[0].comments.at(-1)!.body, /Commit: c{40}[\s\S]*supersedes the earlier reply/);
+  assert.deepEqual((await respond(s.client, s.transport, s.pr.repo, 1, { apply: true })).actions, []);
 });
 
 test('respond configuration, status blockers and registered command exits share the same complete reads', async t => {
