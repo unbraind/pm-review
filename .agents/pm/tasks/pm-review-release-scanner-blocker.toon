@@ -2,13 +2,28 @@ id: pm-review-release-scanner-blocker
 title: Characterize the canonical attestation refusal in the release review-thread loop
 description: "Consuming published pm-ops 2026.10.14 removes the vulnerable glob chain but the canonical attestation scanner refuses the unchanged release workflow review-thread loop with cannot prove executable expansion. Reproduced by auditing the origin/main release.yml bytes directly with pm-ops/attestation. Related: ops-0u7l and pm-review-gated-issue-sync. Resolve through a reviewed canonical scanner repair or separately verified workflow change; do not weaken the gate."
 type: Task
-status: open
+status: in_progress
 priority: 1
 tags: []
 created_at: "2026-10-15T06:59:12.256Z"
-updated_at: "2026-10-15T06:59:14.343Z"
+updated_at: "2026-10-15T09:15:00.863Z"
 author: codex-agent
 acceptance_criteria: Canonical attestation accepts the verified release workflow and both release checks pass without exemptions.
-files[1]{path,scope}:
+comments[6]{created_at,author,text}:
+  "2026-10-15T08:51:51.146Z",codex-agent,"Investigating the canonical pm-ops attestation refusal in the release review-thread resolution loop. Plan: identify the exact parser boundary, extract a typed helper with fake-transport regression coverage, preserve surrounding workflow bytes, and verify isolated npm and Bun release gates before pushing PR #11."
+  "2026-10-15T08:56:05.083Z",codex-agent,"Cause: pm-ops 2026.10.14 readSubstitution resets single/double quote state at every newline. The multiline single-quoted jq filter contains parentheses spanning lines; later GraphQL mutation text is misclassified as unresolved executable expansion. This is a false positive: gh api graphql only queries/resolves review threads. Fix: replace exactly that workflow block with a plain node scripts/resolve-release-threads.ts invocation; helper retains the original GraphQL documents, jq policy, serial mutations, best-effort failures and summary text. Surrounding release workflow is unchanged. Focused helper tests pass 5/5 and the canonical verifier passes without changes or exemptions."
+  "2026-10-15T08:57:43.166Z",codex-agent,"Revert proof: restoring only the original workflow makes the tracked-repository attestation test fail 0/1; replacing only resolveReleaseThreads with a no-op makes the query/mutation regression fail 0/1. Both restored fixes pass. Byte comparison confirms that every workflow byte outside the extracted block is unchanged. Smaller reproduction confirms parentheses spanning lines are not required: multiline single-quoted --jq text inside a quoted command substitution followed by a redirected GraphQL mutation is sufficient; readSubstitution loses quote state at the newline."
+  "2026-10-15T09:05:17.133Z",codex-agent,"Initial linked release runs reached full 100/100/100/100 coverage with 120/121 tests passing; the sole failure was an existing test that extracted the jq program directly from release.yml. Updated that test to capture the unchanged filter through the typed helper transport, retaining its independent mixed-reviewer policy assertions. Focused rerun passes. Linked test-result tracking is disabled by existing policy, so durable gate results will be recorded here without changing configuration."
+  "2026-10-15T09:07:06.615Z",codex-agent,"Minimal scanner-only reproduction (never execute this shell fixture): pass the following text as repro.sh to auditPublishAttestation. It reports two recognized invocations and refuses executable expansion; changing only the jq string to one line reports the single attested npm invocation with zero failures.\n\nnpm publish --provenance\nids=\"$(gh api graphql --jq '.nodes[]\n| .id')\"\ngh api graphql -f query='mutation($t:ID!){resolveReviewThread(input:{threadId:$t}){thread{isResolved}}}' -F t=\"$ids\" >/dev/null 2>&1 && echo \"$ids\" >> \"$GITHUB_STEP_SUMMARY\" || true\n\nIsolated strict pm health with required merge drivers passes; history integrity passes. The default host identity sees a locally installed extension SDK-version skew, absent under the required isolated identity; no dependency pins, extension installs or telemetry configuration were changed."
+  "2026-10-15T09:14:57.125Z",codex-agent,"Final linked gates both pass completely: env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 npm run release:check (exit 0) and the same isolated environment with bun run release:check (exit 0). Each run passes 121/121 suite tests with zero skips, 100% statements/branches/functions/lines across all 20 measured source files, 1/1 packed npm/npx and native Bun/bunx acceptance, zero production vulnerabilities, the unchanged canonical attestation verifier, identity policy, lint, duplication, build, docstrings and changelog check. npm run changelog:full and changelog:check are rerun after these final tracker writes. Revert proofs and the minimal upstream scanner reproduction are recorded above. The item remains in progress for orchestrator verification; no upstream report was filed."
+files[4]{path,scope}:
   .github/workflows/release.yml,project
+  scripts/resolve-release-threads.ts,project
+  test/release-threads.test.ts,project
+  test/tooling.test.ts,project
+tests[2]{command,scope,timeout_seconds,pm_context_mode,workspace_context_mode,provenance{author,created_at,source_kind,source_ref}}:
+  "env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 npm run release:check",project,2400,schema,source,codex-agent,"2026-10-15T08:58:40.618Z",local_mutation,chore/gated-issue-sync-and-braces-free-gates
+  "env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 bun run release:check",project,2400,schema,source,codex-agent,"2026-10-15T08:58:45.028Z",local_mutation,chore/gated-issue-sync-and-braces-free-gates
+docs[1]{path,scope}:
+  CHANGELOG.md,project
 body: ""
