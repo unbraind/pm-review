@@ -4,9 +4,9 @@ description: "Adopt the pinned gated issue sync caller, preserve CI dispatch, an
 type: Chore
 status: in_progress
 priority: 2
-tags: []
+tags[1]: changed
 created_at: "2026-10-15T06:54:05.453Z"
-updated_at: "2026-10-15T07:03:11.923Z"
+updated_at: "2026-10-15T12:26:44.125Z"
 author: codex-agent
 comments[3]{created_at,author,text}:
   "2026-10-15T06:54:29.619Z",codex-agent,"Baseline: CI already has workflow_dispatch. Development dependency graph includes direct fast-glob 3.3.3 plus pm-ops 2026.10.6 carrying micromatch 4.0.8 and braces 3.0.3; npm ci reports 4 high findings. No repository code imports fast-glob. Remove the unused direct dependency and upgrade exact pm-ops to the latest published 2026.10.14, retaining SDK pins and all thresholds."
