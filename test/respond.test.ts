@@ -98,7 +98,8 @@ test('respond HTTP dry-run, fix/refusal votes, pagination and finding markers ma
   assert.deepEqual(first.actions.map(action => action.kind), ['reply', 'vote', 'vote', 'vote', 'vote']);
   assert.equal(s.writes.length, 0);
   const reply = first.actions.find(action => action.kind === 'reply')!;
-  assert.ok(reply.body.includes(responseMarker((await s.client.get(s.item.id)).item)));
+  const decision = (await reviewItems(s.client)).find(item => item.id === reply.finding)!;
+  assert.ok(reply.body.includes(responseMarker(decision)));
   assert.match(reply.body, / decision:[a-f0-9]{16} -->$/);
   assert.match(reply.body, /fix\n\nValidate input before writes\.\n\nCommit: b{40}/);
   assert.doesNotMatch(reply.body, /Potential issue|synthetic-token|maintainer|@/);
@@ -111,7 +112,7 @@ test('respond HTTP dry-run, fix/refusal votes, pagination and finding markers ma
   assert.equal(s.writes.some(write => write.includes('human') || write.includes('custom')), false);
   assert.deepEqual((await respond(s.client, s.transport, s.pr.repo, 1, { apply: true })).actions, []);
   // Altering surrounding text cannot defeat the stable marker; another actor's marker cannot satisfy it.
-  s.pr.threads[0].comments.at(-1)!.body = 'Changed surrounding text\n' + responseMarker((await s.client.get(s.item.id)).item);
+  s.pr.threads[0].comments.at(-1)!.body = 'Changed surrounding text\n' + responseMarker(decision);
   assert.deepEqual((await respond(s.client, s.transport, s.pr.repo, 1)).actions, []);
   s.pr.threads[0].comments.at(-1)!.bot = 'another-human';
   assert.equal((await respond(s.client, s.transport, s.pr.repo, 1)).actions[0].kind, 'reply');
