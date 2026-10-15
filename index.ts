@@ -15,6 +15,8 @@ export { evaluateRound, compactRound } from './src/round.ts';
 export { decide } from './src/verdict.ts';
 /** Export read-only source reconciliation for typed hosts. */
 export { reconcile } from './src/reconcile.ts';
+/** Export batch response and live status with the registered command semantics. */
+export { respond, reviewStatus } from './src/respond.ts';
 /** Export contribution and receipt vocabulary for package consumers. */
 export type { GitHubTransport, PullRequest, Verdict } from './src/types.ts';
 

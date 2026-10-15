@@ -1,0 +1,13 @@
+id: pm-review-round-exit-contract
+title: Round success returns unsupported explicit zero exit code
+description: "The existing review round handler returns exit_code zero for complete rounds, but the pinned CLI extension host rejects explicit zero: extension results may specify only failure codes 1 through 255. Direct handler tests do not exercise this host normalization contract. Discovered through the packed respond/status real-data proof; status avoids the gap by omitting the success code."
+type: Issue
+status: open
+priority: 2
+tags: []
+created_at: "2026-10-15T08:11:03.453Z"
+updated_at: "2026-10-15T08:11:03.453Z"
+author: codex-agent
+acceptance_criteria: "A packed CLI consumer with a complete synthetic round exits zero, preserves structured output and covers the real extension host normalization path; incomplete rounds still exit one"
+parent: pm-review-epic
+body: ""
