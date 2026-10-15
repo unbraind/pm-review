@@ -59,6 +59,17 @@ Clear status results omit an explicit success code because the pinned host accep
 
 Concurrent apply invocations must be serialized. Marker detection makes sequential retries idempotent; GitHub does not expose an atomic conditional thread-reply mutation.
 
+## Round 1 release gates
+
+Both complete release checks passed on commit `656c0ea` (runtime implementation `476d335`). The final receipt commit adds only documentation and tracker evidence.
+
+| Command | Suite | Packed consumer acceptance | Statements / branches / functions / lines |
+| --- | --- | --- | --- |
+| `npm run release:check` | 123 passed, 0 failed, 0 skipped | 1 passed | 100 / 100 / 100 / 100 |
+| `bun run release:check` | 123 passed, 0 failed, 0 skipped | 1 passed | 100 / 100 / 100 / 100 |
+
+Each ran with a fresh HOME, `GIT_CONFIG_GLOBAL=/dev/null`, `GIT_CONFIG_NOSYSTEM=1` and `npm_config_ignore_scripts=true`. The measured inventory remains 20 source files. All thresholds and dependency pins are unchanged; duplication is zero, the production audit is clean, and identity, type, lint, docstring, package, changelog and attestation checks pass. The linked HTTP command passed 7/7 through `pm test`; the changed-reason behavioral revert failed as expected before restoration. Changelog generation and checking were repeated after the final tracker writes.
+
 ## Initial feature release gates
 
 Runtime code commit: `01e3278`. The final receipt commit changes only documentation and tracker evidence.
