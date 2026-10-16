@@ -13,6 +13,7 @@
 
 ### Changed
 
+- Adopt pm-github 2026.10.16: default-branch-safe gated sync and daily gated closeout PRs ([pm-review-f82w](https://github.com/unbraind/pm-review/blob/main/.agents/pm/chores/pm-review-f82w.toon))
 - Enable the gated pm-github issue sync and remove the braces chain ([pm-review-gated-issue-sync](https://github.com/unbraind/pm-review/blob/main/.agents/pm/chores/pm-review-gated-issue-sync.toon))
 
 ### Fixed
