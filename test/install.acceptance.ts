@@ -3,16 +3,24 @@ import { spawnSync } from 'node:child_process';
 import { mkdtemp, mkdir, readFile, rm, writeFile, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { test } from 'node:test';
+import { EXIT_CODE } from '@unbrained/pm-cli/sdk';
 
 /** Run a consumer command with isolated HOME and tracker coordinates, preserving stderr for failures. */
 function command(cwd: string, name: string, args: string[], pmRoot: string, home = cwd): string {
-  const env: NodeJS.ProcessEnv = { ...process.env, HOME: home, PM_PATH: pmRoot, PM_AUTHOR: 'install-test', GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', NPM_CONFIG_USERCONFIG: '/dev/null', npm_config_userconfig: '/dev/null' };
-  for (const key of Object.keys(env)) if (key.toLowerCase() === 'npm_config_allow_scripts') delete env[key];
+  const env = consumerEnv(cwd, pmRoot, home);
   const result = spawnSync(name, args, { cwd, encoding: 'utf8', env, maxBuffer: 16 * 1024 * 1024 });
   assert.equal(result.error, undefined);
   assert.equal(result.status, 0, `${name} ${args.join(' ')}\n${result.stderr}\n${result.stdout}`);
   return result.stdout;
+}
+
+/** Keep package-manager configuration and Git identity outside consumer proofs. */
+function consumerEnv(cwd: string, pmRoot: string, home = cwd): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = { ...process.env, HOME: home, PM_PATH: pmRoot, PM_AUTHOR: 'install-test', GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', NPM_CONFIG_USERCONFIG: '/dev/null', npm_config_userconfig: '/dev/null' };
+  for (const key of Object.keys(env)) if (key.toLowerCase() === 'npm_config_allow_scripts') delete env[key];
+  return env;
 }
 
  test('packed npm/npx and native Bun/bunx consumers activate commands and search a real tracker', async t => {
@@ -54,9 +62,47 @@ function command(cwd: string, name: string, args: string[], pmRoot: string, home
     command(cwd, runner, [...prefix, 'create', 'ReviewFinding', 'Packed searchable review context', '--description', 'Synthetic validation context', '--json'], pmRoot);
     const search = JSON.parse(command(cwd, runner, [...prefix, 'search', 'validation', '--json'], pmRoot)) as { count: number };
     assert.equal(search.count, 1);
+    verifyHostExitContract(cwd, runner, prefix, pmRoot);
     assert.ok((await readdir(cwd)).includes('node_modules'));
   }
  });
+
+/** Exercise installed package results through real host rendering and process exits. */
+function verifyHostExitContract(cwd: string, runner: string, prefix: string[], pmRoot: string): void {
+  const fixture = resolve(import.meta.dirname, 'host-fixture.ts');
+  // Bun ignores NODE_OPTIONS preloads; pass its documented preload flag explicitly.
+  const host = runner === 'bunx' ? 'bun' : runner;
+  const hostArgs = runner === 'bunx' ? ['--preload', fixture, join(cwd, 'node_modules/.bin/pm')] : prefix;
+  for (const action of ['round', 'status']) {
+    for (const scenario of ['complete', 'incomplete', 'refusal']) {
+      for (const flags of action === 'round' ? [['--json'], ['--compact'], ['--compact', '--json']] : [['--json']]) {
+        const env = { ...consumerEnv(cwd, pmRoot), GITHUB_TOKEN: 'synthetic-only-token', NODE_OPTIONS: `--import=${pathToFileURL(fixture).href}`, PM_REVIEW_HOST_SCENARIO: scenario };
+        const result = spawnSync(host, [...hostArgs, 'review', action, '--repo', 'example/package', '--pr', '1', ...flags], { cwd, env, encoding: 'utf8', timeout: 30_000 });
+        const evidence = `${action}/${scenario}/${flags.join(' ')}\n${result.stdout}\n${result.stderr}`;
+        assert.equal(result.error, undefined, evidence);
+        assert.equal(result.status, scenario === 'complete' ? 0 : scenario === 'refusal' ? EXIT_CODE.USAGE : 1, evidence);
+        if (scenario === 'refusal') {
+          if (flags.includes('--json')) {
+            const error = JSON.parse(result.stderr) as { detail: string; type: string; code: string; exit_code: number };
+            assert.match(error.detail, /GraphQL request failed with HTTP 403/, evidence);
+            assert.equal(error.code, 'command_failed', evidence);
+            assert.equal(error.type, 'urn:pm-cli:error:command_failed', evidence);
+            assert.equal(error.exit_code, EXIT_CODE.USAGE, evidence);
+          } else assert.match(result.stderr, /GraphQL request failed with HTTP 403/, evidence);
+        } else if (flags.includes('--json')) {
+          const receipt = JSON.parse(result.stdout) as { complete: boolean; exit_code?: number };
+          assert.equal(receipt.complete, scenario === 'complete', evidence);
+          assert.equal(Object.hasOwn(receipt, 'exit_code'), scenario === 'incomplete', evidence);
+          if (scenario === 'incomplete') assert.equal(receipt.exit_code, 1, evidence);
+        } else {
+          assert.match(result.stdout, new RegExp(`complete=${scenario === 'complete'}`), evidence);
+          assert.equal(result.stdout.trim().split('\n').length, 1, evidence);
+        }
+        if (scenario !== 'refusal') assert.equal(result.stderr, '', evidence);
+      }
+    }
+  }
+}
 
 /** Read package metadata without evaluating shipped extension code. */
 async function importManifest(root: string): Promise<string> {

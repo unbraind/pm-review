@@ -28,7 +28,7 @@ export async function ensureReviewSchema(client: PmClient): Promise<void> {
   for (const field of REVIEW_FIELDS) {
     const existing = fields.fields.find(/** Match persisted fields by canonical metadata name. */ definition => definition.key === field.name);
     if (existing && existing.type !== field.type) throw new Error(`Incompatible schema field: ${field.name}`);
-    if (!existing) await client.run('schema', { name: field.name, options: { subcommand: 'add-field', fieldType: field.type } });
+    if (!existing) await client.schemaAddField(field.name, { type: field.type });
   }
 }
 
