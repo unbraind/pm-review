@@ -1,22 +1,28 @@
 id: pm-review-sdk-gap
 title: Follow up SDK schemaAddField type forwarding
-description: The pinned SDK helper drops the type option. pm-review uses the public schema action fieldType instead; numeric and boolean round trips are covered.
+description: "Originally recorded as: the pinned SDK helper drops the type option. Re-investigated on the current pin (pm-review#16): the pinned schemaAddField helper forwards the declared field type, so no upstream correction is needed. pm-review keeps the public schema action path and its real SDK numeric/boolean round-trip regressions."
 type: Issue
-status: open
+status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-12T11:24:57.849Z"
-updated_at: "2026-10-12T13:33:47.717Z"
+updated_at: "2026-10-16T14:57:14.112Z"
 author: codex-sol
-acceptance_criteria: Coordinate a separately authorized upstream helper correction; retain public-action compatibility and real SDK field round-trip regressions.
+acceptance_criteria: Prove on the pinned SDK that schemaAddField forwards the field type with a real temp-tracker round-trip regression; keep public-action compatibility
 parent: pm-review-epic
-comments[3]{created_at,author,text}:
+comments[7]{created_at,author,text}:
   "2026-10-12T11:24:59.623Z",codex-sol,"Observed with SDK 2026.10.10. PmClient.schemaAddField(name, { type: number or boolean }) persists string. client.run(schema, { name, options: { subcommand: add-field, fieldType } }) correctly persists the requested type. This package has a tested workaround; upstream correction is outside this task. No upstream issue was filed."
   "2026-10-12T11:33:15.544Z",codex-sol,"Additional environment boundary: normal host strict health reports an unrelated globally installed pm-github SDK requirement 2026.10.11 versus this package pinned host 2026.10.10. Package integrity, storage, locks, settings and history checks pass. The global extension and upstream repos are outside the authorized package scope; isolated-home CI health is checked separately."
   "2026-10-12T13:21:57.091Z",codex-sol,"Upstream schemaAddField drops the supplied type; reproduced on 2026.10.12 and tracked at https://github.com/unbraind/pm-cli/issues/1450. Package continues using its existing schema workaround."
+  "2026-10-16T12:25:22.640Z",codex-agent,"Plan: reproduce schemaAddField type forwarding with the pinned SDK in a real scratch tracker, verify the supported schema action workaround and stored field types, and retain an upstream issue draft here without filing it."
+  "2026-10-16T12:27:17.299Z",codex-agent,"Pinned SDK 2026.10.13 is already fixed: schemaAddField(name, { type }) stores number and boolean correctly in a real scratch tracker. Replaced the legacy client.run schema workaround with the public typed helper. The regression covers all six declared field types, every persisted review field, and numeric/boolean create/update round trips with extensions disabled. No upstream issue draft or filing is needed because the reported helper defect is absent in the pinned SDK."
+  "2026-10-16T12:29:05.695Z",codex-agent,"Linked real-tracker regression passed: node --test --test-name-pattern=\"pinned schemaAddField\" test/core.test.ts (1/1). It exercises PmClient.schemaAddField directly for string, number, boolean, string_array, array and object, then reads schema/fields.json and verifies review_pr/review_line numbers and review_resolved booleans after create/update. The pinned public SchemaAddFieldCommandOptions declares type; no SDK source or dependency pin changed."
+  "2026-10-16T12:42:30.233Z",codex-agent,"Delivery proof: all three release gate runs passed (normal npm, isolated-HOME npm with global/system Git config disabled, and Bun), each with 129/129 source tests, all four coverage dimensions at 100%, and packed acceptance 1/1. The direct schemaAddField regression passed through pm test, using all six declared types and real persisted numeric/boolean metadata. Source commit: e073751. The pinned SDK already contains the forwarding correction, so there is no upstream issue draft to file. Item remains in progress for orchestrator verification."
 files[2]{path,scope}:
   src/tracker.ts,project
   test/core.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  "node --test --test-name-pattern=\"pinned schemaAddField\" test/core.test.ts",project,codex-agent,"2026-10-16T12:27:55.161Z",local_mutation,fix/round-exit-and-schema-fields
 docs[1]{path,scope}:
   README.md,project
 body: ""

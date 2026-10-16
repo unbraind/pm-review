@@ -1,12 +1,14 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { test } from 'node:test';
 import { activateExtensionForTest, runRegisteredCommandForTest } from '@unbrained/pm-cli/sdk/testing';
 import extension from '../index.ts';
 import { createExtensionCommandSdk, createPmCliExpectedError, isPmCliExpectedError } from '@unbrained/pm-cli/sdk';
 import type { CommandHandlerContext } from '@unbrained/pm-cli/sdk/authoring';
 import { findingsOf, isInformational, severityOf, summaryOf } from '../src/findings.ts';
-import { fieldOptions, ensureReviewSchema, importFindings, precedents, reviewItems } from '../src/tracker.ts';
+import { fieldOptions, ensureReviewSchema, importFindings, precedents, reviewItems, REVIEW_FIELDS } from '../src/tracker.ts';
 import { compactRound, evaluateRound } from '../src/round.ts';
 import { decide, parseVerdict } from '../src/verdict.ts';
 import { runReviewCommand, targetOf } from '../src/commands.ts';
@@ -142,6 +144,27 @@ test('pending apply fails before transport reads and tracker writes', async t =>
   await assert.rejects(ensureReviewSchema(client), /Incompatible schema field/);
  });
 
+test('pinned schemaAddField forwards declared types and persists review metadata without extensions', async t => {
+  const { client, pmRoot } = await tracker(t);
+  for (const type of ['string', 'number', 'boolean', 'string_array', 'array', 'object'] as const) {
+    await client.schemaAddField(`proof_${type}`, { type });
+  }
+  await ensureReviewSchema(client);
+  const stored = JSON.parse(await readFile(join(pmRoot, 'schema/fields.json'), 'utf8')) as { fields: { key: string; type: string }[] };
+  const fields = new Map(stored.fields.map(field => [field.key, field.type]));
+  for (const type of ['string', 'number', 'boolean', 'string_array', 'array', 'object']) assert.equal(fields.get(`proof_${type}`), type);
+  for (const field of REVIEW_FIELDS) assert.equal(fields.get(field.name), field.type);
+  const item = (await client.create({ title: 'Typed review metadata', type: 'ReviewFinding', ...fieldOptions({ review_pr: 7, review_line: 12, review_resolved: false }) })).item;
+  assert.equal(item.review_pr, 7);
+  assert.equal(item.review_line, 12);
+  assert.equal(item.review_resolved, false);
+  await client.update(item.id, fieldOptions({ review_line: 0, review_resolved: true }));
+  const saved = (await client.get(item.id)).item;
+  assert.equal(saved.review_pr, 7);
+  assert.equal(saved.review_line, 0);
+  assert.equal(saved.review_resolved, true);
+});
+
  test('verdict validations fail before local or remote writes', async t => {
   const { client } = await tracker(t);
   const pr = pullRequest();
@@ -261,8 +284,11 @@ test('pending apply fails before transport reads and tracker writes', async t =>
   const pr = pullRequest({ threads: [], reviews: [{ ...contribution({ body: '', id: 'complete' }), state: 'COMMENTED' }], comments: [] });
   await importFindings(client, pr, findingsOf(pr));
   const ctx: CommandHandlerContext = { command: 'review round', args: [], options: { repo: pr.repo, pr: '1', compact: true }, global: { quiet: true }, pm_root: pmRoot, repo_root: cwd };
-  const result = await runReviewCommand(ctx, syntheticTransport(pr)) as { exit_code: number };
-  assert.equal(result.exit_code, 0);
+  const result = await runReviewCommand(ctx, syntheticTransport(pr)) as object;
+  assert.equal('exit_code' in result, false);
+  for (const options of [{ repo: pr.repo, pr: '1' }, { repo: pr.repo, pr: '1', compact: true }]) {
+    assert.equal('exit_code' in (await runReviewCommand({ ...ctx, options, global: { json: true } }, syntheticTransport(pr)) as object), false);
+  }
   assert.match(compactRound(evaluateRound(pr, await reviewItems(client))), /coderabbit=finished/);
   assert.match(compactRound(evaluateRound(pullRequest({ reviews: [], comments: [] }), [])), /coderabbit=missing/);
  });

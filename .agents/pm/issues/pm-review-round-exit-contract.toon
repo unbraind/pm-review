@@ -2,12 +2,27 @@ id: pm-review-round-exit-contract
 title: Round success returns unsupported explicit zero exit code
 description: "The existing review round handler returns exit_code zero for complete rounds, but the pinned CLI extension host rejects explicit zero: extension results may specify only failure codes 1 through 255. Direct handler tests do not exercise this host normalization contract. Discovered through the packed respond/status real-data proof; status avoids the gap by omitting the success code."
 type: Issue
-status: open
+status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-15T08:11:03.453Z"
-updated_at: "2026-10-15T08:11:03.453Z"
+updated_at: "2026-10-16T12:42:31.253Z"
 author: codex-agent
 acceptance_criteria: "A packed CLI consumer with a complete synthetic round exits zero, preserves structured output and covers the real extension host normalization path; incomplete rounds still exit one"
 parent: pm-review-epic
+comments[5]{created_at,author,text}:
+  "2026-10-16T12:25:19.107Z",codex-agent,"Plan: verify the pinned SDK extension result contract, cover round success and refusal through the real host, inspect sibling commands, and record behavioral revert evidence before both release gates."
+  "2026-10-16T12:29:01.249Z",codex-agent,"SDK contract inspected: docs/EXTENSIONS.md Package Authoring Notes permits structured exit_code values only from 1 through 255; sdk/authoring CommandHandlerResult exposes validated non-zero exitCode plus typed error details. Round now omits exit_code on complete JSON and compact results. Sibling status already follows that pattern. Packed acceptance tests cover both commands, rendered receipts, incomplete exit 1, and expected transport refusals without remote writes."
+  "2026-10-16T12:32:27.752Z",codex-agent,"Packed npm/npx and native Bun acceptance passed (1/1 acceptance test, 24 host scenarios): round JSON, compact and compact+JSON plus status JSON, each complete/incomplete/transport-refusal, in both runtimes. Complete receipts omit exit_code and exit 0; incomplete receipts retain exit_code 1; expected refusals preserve command_failed, urn:pm-cli:error:command_failed and EXIT_CODE.USAGE (2). Source coverage passed 129/129 tests, 21 measured files, 100% statements/branches/functions/lines. Isolated-HOME strict health passes; the normal host has a global pm-github SDK version-skew warning."
+  "2026-10-16T12:33:58.384Z",codex-agent,"Behavioral revert proof: restored only src/commands.ts to its origin/main implementation, retaining all new tests and the schema helper change. The compact success regression failed (exit 1: explicit exit_code present), and npm run test:install rebuilt the old handler and failed on a complete packed-host round (process exit 1 instead of 0). Host detail: Extension command result exit_code must be an integer from 1 to 255. Restored the fixed handler, rebuilt, and the compact success regression passed 1/1. Schema forwarding is already fixed in the pinned SDK; its production change removes an obsolete equivalent workaround rather than repairing SDK code."
+  "2026-10-16T12:42:29.403Z",codex-agent,"Final local gates passed at unchanged thresholds: npm run release:check; env HOME=\"$(mktemp -d -t pm-review-ci-home-XXXXXX)\" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 npm run release:check; bun run release:check. Each passed 129/129 source tests with 100% statements/branches/functions/lines across 21 measured files, 0% duplication, zero identity violations, and 1/1 packed npm/Bun acceptance test covering 24 host scenarios. The required pm test run passed 1/1 with --timeout 600 after restoring the fix. Source commit: e073751. Changelog regenerated after tracker writes; item remains in progress for orchestrator verification."
+files[4]{path,scope}:
+  src/commands.ts,project
+  test/core.test.ts,project
+  test/host-fixture.ts,project
+  test/install.acceptance.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  "npm run test:install",project,codex-agent,"2026-10-16T12:27:58.787Z",local_mutation,fix/round-exit-and-schema-fields
+docs[1]{path,scope}:
+  README.md,project
 body: ""
