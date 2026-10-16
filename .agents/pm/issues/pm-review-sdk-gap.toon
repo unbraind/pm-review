@@ -1,14 +1,14 @@
 id: pm-review-sdk-gap
 title: Follow up SDK schemaAddField type forwarding
-description: The pinned SDK helper drops the type option. pm-review uses the public schema action fieldType instead; numeric and boolean round trips are covered.
+description: "Originally recorded as: the pinned SDK helper drops the type option. Re-investigated on the current pin (pm-review#16): the pinned schemaAddField helper forwards the declared field type, so no upstream correction is needed. pm-review keeps the public schema action path and its real SDK numeric/boolean round-trip regressions."
 type: Issue
 status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-12T11:24:57.849Z"
-updated_at: "2026-10-16T12:42:32.129Z"
+updated_at: "2026-10-16T14:57:14.112Z"
 author: codex-sol
-acceptance_criteria: Coordinate a separately authorized upstream helper correction; retain public-action compatibility and real SDK field round-trip regressions.
+acceptance_criteria: Prove on the pinned SDK that schemaAddField forwards the field type with a real temp-tracker round-trip regression; keep public-action compatibility
 parent: pm-review-epic
 comments[7]{created_at,author,text}:
   "2026-10-12T11:24:59.623Z",codex-sol,"Observed with SDK 2026.10.10. PmClient.schemaAddField(name, { type: number or boolean }) persists string. client.run(schema, { name, options: { subcommand: add-field, fieldType } }) correctly persists the requested type. This package has a tested workaround; upstream correction is outside this task. No upstream issue was filed."
