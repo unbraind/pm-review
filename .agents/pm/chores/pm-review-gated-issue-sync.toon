@@ -2,12 +2,17 @@ id: pm-review-gated-issue-sync
 title: Enable the gated pm-github issue sync and remove the braces chain
 description: "Adopt the pinned gated issue sync caller, preserve CI dispatch, and consume published braces-free canonical gates. Related: pm-github-aiok (pm-github adoption task). Also verify pm-review-dev-audit for its explicitly authorized conditional closure."
 type: Chore
-status: in_progress
+status: closed
 priority: 2
 tags[1]: changed
 created_at: "2026-10-15T06:54:05.453Z"
-updated_at: "2026-10-15T12:26:44.125Z"
+updated_at: "2026-10-17T08:11:43.623Z"
+closed_at: "2026-10-17T08:11:43.620Z"
+completed_at: "2026-10-15T13:20:36.000Z"
 author: codex-agent
+resolution: "Delivered by https://github.com/unbraind/pm-review/pull/11 (merge 8432f76a6eeb, head cd2539286f0e)"
+expected_result: "Delivered by the linked pull request, merged after its head check gate passed."
+actual_result: "Merged at 2026-10-15T13:20:36Z; no readable required checks, so every completed head check run had to succeed, be neutral or be skipped; successful checks: CodeQL, CodeRabbit, codeql, test (22), test (26)"
 comments[3]{created_at,author,text}:
   "2026-10-15T06:54:29.619Z",codex-agent,"Baseline: CI already has workflow_dispatch. Development dependency graph includes direct fast-glob 3.3.3 plus pm-ops 2026.10.6 carrying micromatch 4.0.8 and braces 3.0.3; npm ci reports 4 high findings. No repository code imports fast-glob. Remove the unused direct dependency and upgrade exact pm-ops to the latest published 2026.10.14, retaining SDK pins and all thresholds."
   "2026-10-15T06:59:16.994Z",codex-agent,"npm release:check currently fails at coverage: 116 tests, 115 pass, 1 fail, 0 skips; all four measured coverage dimensions are 100%. The failing test expects the canonical attestation verifier to accept the tracked release workflow. pm-ops 2026.10.14 refuses its pre-existing review-thread while/read fragment as unresolved executable expansion. Auditing origin/main release.yml bytes reproduces the same refusal and that workflow has no diff. Follow-up: pm-review-release-scanner-blocker, related to ops-0u7l. Preserve the gate and workflow; run Bun independently and remaining gates separately."
@@ -20,4 +25,5 @@ tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   npm run typecheck,project,codex-agent,"2026-10-15T06:55:16.892Z",local_mutation,chore/gated-issue-sync-and-braces-free-gates
 docs[1]{path,scope}:
   CHANGELOG.md,project
+close_reason: "{\"pr\":11,\"url\":\"https://github.com/unbraind/pm-review/pull/11\",\"merge_commit_sha\":\"8432f76a6eeba19de2c91196c4dcc5978ec58f0c\",\"head_sha\":\"cd2539286f0ee588aa1fbe7f75e5b9d5d5688af3\",\"merged_at\":\"2026-10-15T13:20:36Z\",\"checks\":[\"CodeQL\",\"CodeRabbit\",\"codeql\",\"test (22)\",\"test (26)\"]}"
 body: ""

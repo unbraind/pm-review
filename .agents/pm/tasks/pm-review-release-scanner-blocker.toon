@@ -2,13 +2,18 @@ id: pm-review-release-scanner-blocker
 title: Characterize the canonical attestation refusal in the release review-thread loop
 description: "Consuming published pm-ops 2026.10.14 removes the vulnerable glob chain but the canonical attestation scanner refuses the unchanged release workflow review-thread loop with cannot prove executable expansion. Reproduced by auditing the origin/main release.yml bytes directly with pm-ops/attestation. Related: ops-0u7l and pm-review-gated-issue-sync. Resolve through a reviewed canonical scanner repair or separately verified workflow change; do not weaken the gate."
 type: Task
-status: in_progress
+status: closed
 priority: 1
 tags: []
 created_at: "2026-10-15T06:59:12.256Z"
-updated_at: "2026-10-15T09:15:00.863Z"
+updated_at: "2026-10-17T08:11:43.610Z"
+closed_at: "2026-10-17T08:11:43.607Z"
+completed_at: "2026-10-15T13:20:36.000Z"
 author: codex-agent
 acceptance_criteria: Canonical attestation accepts the verified release workflow and both release checks pass without exemptions.
+resolution: "Delivered by https://github.com/unbraind/pm-review/pull/11 (merge 8432f76a6eeb, head cd2539286f0e)"
+expected_result: Canonical attestation accepts the verified release workflow and both release checks pass without exemptions.
+actual_result: "Merged at 2026-10-15T13:20:36Z; no readable required checks, so every completed head check run had to succeed, be neutral or be skipped; successful checks: CodeQL, CodeRabbit, codeql, test (22), test (26)"
 comments[6]{created_at,author,text}:
   "2026-10-15T08:51:51.146Z",codex-agent,"Investigating the canonical pm-ops attestation refusal in the release review-thread resolution loop. Plan: identify the exact parser boundary, extract a typed helper with fake-transport regression coverage, preserve surrounding workflow bytes, and verify isolated npm and Bun release gates before pushing PR #11."
   "2026-10-15T08:56:05.083Z",codex-agent,"Cause: pm-ops 2026.10.14 readSubstitution resets single/double quote state at every newline. The multiline single-quoted jq filter contains parentheses spanning lines; later GraphQL mutation text is misclassified as unresolved executable expansion. This is a false positive: gh api graphql only queries/resolves review threads. Fix: replace exactly that workflow block with a plain node scripts/resolve-release-threads.ts invocation; helper retains the original GraphQL documents, jq policy, serial mutations, best-effort failures and summary text. Surrounding release workflow is unchanged. Focused helper tests pass 5/5 and the canonical verifier passes without changes or exemptions."
@@ -26,4 +31,5 @@ tests[2]{command,scope,timeout_seconds,pm_context_mode,workspace_context_mode,pr
   "env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 bun run release:check",project,2400,schema,source,codex-agent,"2026-10-15T08:58:45.028Z",local_mutation,chore/gated-issue-sync-and-braces-free-gates
 docs[1]{path,scope}:
   CHANGELOG.md,project
+close_reason: "{\"pr\":11,\"url\":\"https://github.com/unbraind/pm-review/pull/11\",\"merge_commit_sha\":\"8432f76a6eeba19de2c91196c4dcc5978ec58f0c\",\"head_sha\":\"cd2539286f0ee588aa1fbe7f75e5b9d5d5688af3\",\"merged_at\":\"2026-10-15T13:20:36Z\",\"checks\":[\"CodeQL\",\"CodeRabbit\",\"codeql\",\"test (22)\",\"test (26)\"]}"
 body: ""
