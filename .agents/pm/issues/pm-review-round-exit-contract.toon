@@ -2,14 +2,19 @@ id: pm-review-round-exit-contract
 title: Round success returns unsupported explicit zero exit code
 description: "The existing review round handler returns exit_code zero for complete rounds, but the pinned CLI extension host rejects explicit zero: extension results may specify only failure codes 1 through 255. Direct handler tests do not exercise this host normalization contract. Discovered through the packed respond/status real-data proof; status avoids the gap by omitting the success code."
 type: Issue
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-15T08:11:03.453Z"
-updated_at: "2026-10-16T12:42:31.253Z"
+updated_at: "2026-10-18T08:24:01.922Z"
+closed_at: "2026-10-18T08:24:01.917Z"
+completed_at: "2026-10-16T15:56:44.000Z"
 author: codex-agent
 acceptance_criteria: "A packed CLI consumer with a complete synthetic round exits zero, preserves structured output and covers the real extension host normalization path; incomplete rounds still exit one"
 parent: pm-review-epic
+resolution: "Delivered by https://github.com/unbraind/pm-review/pull/16 (merge 51cd1993858e, head 34cfe44fea79)"
+expected_result: "A packed CLI consumer with a complete synthetic round exits zero, preserves structured output and covers the real extension host normalization path; incomplete rounds still exit one"
+actual_result: "Merged at 2026-10-16T15:56:44Z; no readable required checks, so every completed head check run had to succeed, be neutral or be skipped; successful checks: CodeQL, CodeRabbit, codeql, cubic · AI code reviewer, test (22), test (26)"
 comments[5]{created_at,author,text}:
   "2026-10-16T12:25:19.107Z",codex-agent,"Plan: verify the pinned SDK extension result contract, cover round success and refusal through the real host, inspect sibling commands, and record behavioral revert evidence before both release gates."
   "2026-10-16T12:29:01.249Z",codex-agent,"SDK contract inspected: docs/EXTENSIONS.md Package Authoring Notes permits structured exit_code values only from 1 through 255; sdk/authoring CommandHandlerResult exposes validated non-zero exitCode plus typed error details. Round now omits exit_code on complete JSON and compact results. Sibling status already follows that pattern. Packed acceptance tests cover both commands, rendered receipts, incomplete exit 1, and expected transport refusals without remote writes."
@@ -25,4 +30,5 @@ tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   "npm run test:install",project,codex-agent,"2026-10-16T12:27:58.787Z",local_mutation,fix/round-exit-and-schema-fields
 docs[1]{path,scope}:
   README.md,project
+close_reason: "{\"pr\":16,\"url\":\"https://github.com/unbraind/pm-review/pull/16\",\"merge_commit_sha\":\"51cd1993858e9af5d35b1d846c86267da406e9f7\",\"head_sha\":\"34cfe44fea79ded5846b2726110c192cd0baa820\",\"merged_at\":\"2026-10-16T15:56:44Z\",\"checks\":[\"CodeQL\",\"CodeRabbit\",\"codeql\",\"cubic · AI code reviewer\",\"test (22)\",\"test (26)\"]}"
 body: ""
