@@ -1,0 +1,30 @@
+id: pm-review-native-folders
+title: Adopt native custom-type folders in changelog generation
+description: "Adapt PR #19 to pm-changelog native registered folder metadata, superseding the workaround delivered by pm-review-changelog-links. Remove canonicalFindingLinks, preserve branch-file checks and output behaviors, and verify a behavioral revert with unchanged release gates."
+type: Task
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-19T12:28:52.233Z"
+updated_at: "2026-10-19T12:32:16.140Z"
+assignee: codex-agent
+claim_principal: codex-agent
+author: codex-agent
+parent: pm-review-epic
+comments[3]{created_at,author,text}:
+  "2026-10-19T12:29:02.374Z",codex-agent,"Merged origin/main into the Dependabot branch without conflicts. Registry versions checked: pm-changelog 2026.10.19-1 is newer than the proposed 2026.10.16 and is now pinned; pm-cli latest is 2026.10.19, with this repo retaining the Dependabot-owned 2026.10.15 pin. Inspecting upstream readPmItems and folder metadata before choosing the smallest supported integration."
+  "2026-10-19T12:29:38.728Z",codex-agent,"Upstream docs/usage.md (Registered item folders and link checks) documents readPmItems as the native tracker reader and itemFolder metadata for JSON input. The existing CLI already uses readPmItems; remove the output rewrite and use that path directly. Update JSON behavior fixtures to retain readPmItems metadata. Keep missing-file refusal, alternate bases, large output, and step summaries. Local health also reports pm-github host-version skew from machine extension discovery; preserve dependency scope and verify tracker health in an isolated HOME and fresh clone."
+  "2026-10-19T12:32:16.140Z",codex-agent,"Regression proof: after adapting the tests, node --test test/changelog.test.ts passed 5/5 (baseline before adaptation: 1 passed, 4 failed). Temporarily reverted only pm-changelog resolveItemFolder to built-in folders plus the old lowercase-type pluralization, leaving wrapper/tests unchanged. node --test --test-name-pattern=^changelog\\ resolves\\ registered test/changelog.test.ts exited 1, with the link test refusing reviewfindings/sample-gh-685da68fb5e0aeb61aa0b653.toon because no branch file exists. Restored the installed resolver byte-for-byte. The generated prepare-merge-driver .gitattributes change uses merge=text for extension assets under the pinned toolchain. Isolated-HOME strict tracker health passes; no merge receipts required for the workflow-only main merge."
+files[5]{path,scope}:
+  .gitattributes,project
+  package-lock.json,project
+  package.json,project
+  scripts/changelog.ts,project
+  test/changelog.test.ts,project
+tests[3]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test test/changelog.test.ts,project,codex-agent,"2026-10-19T12:30:02.228Z",local_mutation,dependabot/npm_and_yarn/pm-toolchain-cae96be54b
+  "npm run release:check",project,codex-agent,"2026-10-19T12:31:56.729Z",local_mutation,dependabot/npm_and_yarn/pm-toolchain-cae96be54b
+  "bun run release:check",project,codex-agent,"2026-10-19T12:31:56.729Z",local_mutation,dependabot/npm_and_yarn/pm-toolchain-cae96be54b
+docs[1]{path,scope}:
+  CHANGELOG.md,project
+body: ""

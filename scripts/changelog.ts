@@ -3,14 +3,7 @@ import { appendFileSync, closeSync, existsSync, mkdtempSync, openSync, readFileS
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { REVIEW_TYPE } from '../src/tracker.ts';
 import { isMainInvocation } from './main-invocation.ts';
-
-/** Correct the pinned generator's pluralization using the package-owned custom type folder. */
-export function canonicalFindingLinks(markdown: string, itemUrlBase: string): string {
-  const base = itemUrlBase.replace(/\/$/, '');
-  return markdown.replaceAll(`${base}/${REVIEW_TYPE.name.toLowerCase()}s/`, `${base}/${REVIEW_TYPE.folder}/`);
-}
 
 /** Read the last configured option, including the generator's equals spelling. */
 function optionValue(args: string[], name: string, fallback: string): string {
@@ -22,7 +15,7 @@ function optionValue(args: string[], name: string, fallback: string): string {
   return value;
 }
 
-/** Capture stdout through a file descriptor so full history never hits a pipe buffer cap. */
+/** Use the CLI's readPmItems registry resolution; capture stdout without a pipe buffer cap. */
 function generateChangelog(args: string[], cwd: string): string | null {
   const scratch = mkdtempSync(join(tmpdir(), 'pm-review-changelog-'));
   const output = join(scratch, 'output.md');
@@ -41,10 +34,9 @@ export function runChangelog(args: string[], cwd = process.cwd()): number {
   const check = args.includes('--check');
   const stepSummary = args.includes('--github-step-summary');
   const forwarded = args.filter(arg => arg !== '--check' && arg !== '--github-step-summary');
-  const generated = generateChangelog(forwarded, cwd);
-  if (generated === null) return 1;
+  const markdown = generateChangelog(forwarded, cwd);
+  if (markdown === null) return 1;
   const base = optionValue(args, '--item-url-base', '').replace(/\/$/, '');
-  const markdown = base ? canonicalFindingLinks(generated, base) : generated;
   const pmRoot = resolve(cwd, optionValue(args, '--pm-root', '.agents/pm'));
   for (const match of markdown.matchAll(/\]\(([^)\s]+\.toon)\)/g)) {
     if (!base || !match[1].startsWith(`${base}/`)) continue;

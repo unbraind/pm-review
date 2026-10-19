@@ -3,26 +3,19 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { test } from 'node:test';
-import { createChangelog } from 'pm-changelog';
-import { canonicalFindingLinks, runChangelog } from '../scripts/changelog.ts';
+import { readPmItems } from 'pm-changelog';
+import { runChangelog } from '../scripts/changelog.ts';
 import { findingsOf } from '../src/findings.ts';
 import { importFindings } from '../src/tracker.ts';
 import { pullRequest, tracker } from './helpers.ts';
 
-test('changelog maps the pinned generator custom-type link to the persisted file', async t => {
+test('changelog resolves registered custom-type links to persisted files natively', async t => {
   const { client, cwd, pmRoot } = await tracker(t);
   const pr = pullRequest({ reviews: [], comments: [] });
   const id = (await importFindings(client, pr, findingsOf(pr))).items[0].id;
   const base = 'https://github.com/unbraind/pm-review/blob/main/.agents/pm';
-  const generated = createChangelog({ items: [{ id, title: 'Synthetic finding', type: 'ReviewFinding', status: 'closed' }], itemUrlBase: base }).markdown;
-  assert.ok(generated.includes(`${base}/reviewfindings/${id}.toon`), 'minimal upstream reproduction');
-  const canonical = canonicalFindingLinks(generated, base);
-  assert.ok(canonical.includes(`${base}/review-findings/${id}.toon`));
-  assert.equal(canonicalFindingLinks('ordinary text', base), 'ordinary text');
   assert.ok(readFileSync(join(pmRoot, 'review-findings', `${id}.toon`), 'utf8'));
-  const input = join(cwd, 'items.json');
-  writeFileSync(input, JSON.stringify({ items: (await client.listAllComplete()).items }));
-  const args = ['--input', input, '--item-url-base', base, '--status', 'open', '--mode', 'replace'];
+  const args = ['--pm-root', pmRoot, '--item-url-base', base, '--status', 'open', '--mode', 'replace'];
   assert.equal(runChangelog([...args, '--check'], cwd), 1);
   assert.equal(runChangelog(args, cwd), 0);
   assert.equal(runChangelog([...args, '--check'], cwd), 0);
@@ -32,20 +25,20 @@ test('changelog maps the pinned generator custom-type link to the persisted file
   assert.equal(runChangelog([...args, '--output', 'CUSTOM.md'], cwd), 0);
   assert.ok(readFileSync(join(cwd, 'CUSTOM.md'), 'utf8').includes(`/review-findings/${id}.toon`));
   assert.equal(runChangelog(['--unknown-option'], cwd), 1);
-  writeFileSync(input, JSON.stringify([{ id: 'missing-item', title: 'Missing finding', type: 'ReviewFinding', status: 'open' }]));
-  assert.throws(() => runChangelog(args, cwd), /no branch file/);
+  const input = join(cwd, 'items.json');
+  writeFileSync(input, JSON.stringify(readPmItems({ pmRoot, cwd }).map(item => ({ ...item, id: 'missing-item' }))));
+  assert.throws(() => runChangelog([...args, '--input', input], cwd), /no branch file/);
 });
 
-test('changelog corrects and validates the configured alternate item URL base', async t => {
+test('changelog uses native folder metadata and validates the alternate item URL base', async t => {
   const { client, cwd, pmRoot } = await tracker(t);
   const snapshot = pullRequest({ reviews: [], comments: [] });
   const imported = await importFindings(client, snapshot, findingsOf(snapshot));
   const id = imported.items[0].id;
   const base = 'https://example.test/project/tracker';
-  assert.equal(canonicalFindingLinks(`[item](${base}/reviewfindings/${id}.toon)`, `${base}/`), `[item](${base}/review-findings/${id}.toon)`);
   await client.update(id, { title: 'Finding with [external evidence](https://other.test/evidence.toon)' });
   const input = join(cwd, 'items.json');
-  writeFileSync(input, JSON.stringify((await client.listAllComplete()).items));
+  writeFileSync(input, JSON.stringify(readPmItems({ pmRoot, cwd })));
   const args = ['--input', input, '--status', 'open', `--item-url-base=${base}/`, '--pm-root', pmRoot];
   assert.equal(runChangelog(args, cwd), 0);
   assert.ok(readFileSync(join(cwd, 'CHANGELOG.md'), 'utf8').includes(`${base}/review-findings/${id}.toon`));
@@ -56,7 +49,7 @@ test('changelog corrects and validates the configured alternate item URL base', 
 test('changelog rejects missing branch files under an alternate configured base', async t => {
   const { cwd } = await tracker(t);
   const input = join(cwd, 'items.json');
-  writeFileSync(input, JSON.stringify([{ id: 'missing-item', title: 'Missing finding', type: 'ReviewFinding', status: 'open' }]));
+  writeFileSync(input, JSON.stringify([{ id: 'missing-item', title: 'Missing finding', type: 'Issue', status: 'open' }]));
   assert.throws(() => runChangelog(['--input', input, '--status', 'open', '--item-url-base', 'https://example.test/tracker'], cwd), /no branch file/);
 });
 
@@ -75,10 +68,10 @@ test('changelog writes and checks output larger than 1 MiB without truncation', 
 });
 
 test('changelog CLI publishes canonical stdout and GitHub step summaries', async t => {
-  const { client, cwd } = await tracker(t);
+  const { client, cwd, pmRoot } = await tracker(t);
   const id = (await importFindings(client, pullRequest({ reviews: [], comments: [] }), findingsOf(pullRequest({ reviews: [], comments: [] })))).items[0].id;
   const input = join(cwd, 'items.json');
-  writeFileSync(input, JSON.stringify((await client.listAllComplete()).items));
+  writeFileSync(input, JSON.stringify(readPmItems({ pmRoot, cwd })));
   const summary = join(cwd, 'summary.md');
   const args = [resolve('scripts/changelog.ts'), '--input', input, '--status', 'open', '--item-url-base', 'https://github.com/unbraind/pm-review/blob/main/.agents/pm', '--stdout', '--github-step-summary'];
   for (const withSummary of [false, true]) {

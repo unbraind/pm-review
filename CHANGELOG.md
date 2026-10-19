@@ -45,6 +45,7 @@
 ### Other
 
 - Durable bot review context and exact-head round gates ([pm-review-epic](https://github.com/unbraind/pm-review/blob/main/.agents/pm/epics/pm-review-epic.toon))
+- Adopt native custom-type folders in changelog generation ([pm-review-native-folders](https://github.com/unbraind/pm-review/blob/main/.agents/pm/tasks/pm-review-native-folders.toon))
 - Characterize the canonical attestation refusal in the release review-thread loop ([pm-review-release-scanner-blocker](https://github.com/unbraind/pm-review/blob/main/.agents/pm/tasks/pm-review-release-scanner-blocker.toon))
 - coderabbitai: Actionable comments posted: 8 ([pm-review-gh-62f3c6c9f2d29d92515c6046](https://github.com/unbraind/pm-review/blob/main/.agents/pm/review-findings/pm-review-gh-62f3c6c9f2d29d92515c6046.toon))
 - coderabbitai: Actionable comments posted: 4 ([pm-review-gh-62994f50a613b4005c178d77](https://github.com/unbraind/pm-review/blob/main/.agents/pm/review-findings/pm-review-gh-62994f50a613b4005c178d77.toon))
