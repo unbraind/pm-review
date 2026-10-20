@@ -2,13 +2,18 @@ id: pm-review-native-folders
 title: Adopt native custom-type folders in changelog generation
 description: "Adapt PR #19 to pm-changelog native registered folder metadata, superseding the workaround delivered by pm-review-changelog-links. Remove canonicalFindingLinks, preserve branch-file checks and output behaviors, and verify a behavioral revert with unchanged release gates."
 type: Task
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-19T12:28:52.233Z"
-updated_at: "2026-10-19T12:49:41.138Z"
+updated_at: "2026-10-20T09:04:36.925Z"
+closed_at: "2026-10-20T09:04:36.917Z"
+completed_at: "2026-10-19T12:53:48.000Z"
 author: codex-agent
 parent: pm-review-epic
+resolution: "Delivered by https://github.com/unbraind/pm-review/pull/19 (merge 7a3794a32c42, head 4137596683d1)"
+expected_result: "Delivered by the linked pull request, merged after its head check gate passed."
+actual_result: "Merged at 2026-10-19T12:53:48Z; no readable required checks, so every completed head check run had to succeed, be neutral or be skipped; successful checks: CodeQL, CodeRabbit, codeql, enable-auto-merge, test (22), test (26)"
 comments[5]{created_at,author,text}:
   "2026-10-19T12:29:02.374Z",codex-agent,"Merged origin/main into the Dependabot branch without conflicts. Registry versions checked: pm-changelog 2026.10.19-1 is newer than the proposed 2026.10.16 and is now pinned; pm-cli latest is 2026.10.19, with this repo retaining the Dependabot-owned 2026.10.15 pin. Inspecting upstream readPmItems and folder metadata before choosing the smallest supported integration."
   "2026-10-19T12:29:38.728Z",codex-agent,"Upstream docs/usage.md (Registered item folders and link checks) documents readPmItems as the native tracker reader and itemFolder metadata for JSON input. The existing CLI already uses readPmItems; remove the output rewrite and use that path directly. Update JSON behavior fixtures to retain readPmItems metadata. Keep missing-file refusal, alternate bases, large output, and step summaries. Local health also reports pm-github host-version skew from machine extension discovery; preserve dependency scope and verify tracker health in an isolated HOME and fresh clone."
@@ -27,4 +32,5 @@ tests[3]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   "bun run release:check",project,codex-agent,"2026-10-19T12:31:56.729Z",local_mutation,dependabot/npm_and_yarn/pm-toolchain-cae96be54b
 docs[1]{path,scope}:
   CHANGELOG.md,project
+close_reason: "{\"pr\":19,\"url\":\"https://github.com/unbraind/pm-review/pull/19\",\"merge_commit_sha\":\"7a3794a32c42c87d61f0c108eb843507043ce491\",\"head_sha\":\"4137596683d1654cbaa7649e780a25a44f2e078c\",\"merged_at\":\"2026-10-19T12:53:48Z\",\"checks\":[\"CodeQL\",\"CodeRabbit\",\"codeql\",\"enable-auto-merge\",\"test (22)\",\"test (26)\"]}"
 body: ""
