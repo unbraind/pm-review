@@ -1,0 +1,102 @@
+import { execFileSync, spawn } from 'node:child_process';
+import { cpSync, existsSync, mkdtempSync, mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
+import { basename, dirname, join, relative, resolve } from 'node:path';
+import type { PmClient } from '@unbrained/pm-cli/sdk';
+import type { CloseoutChange, CloseoutOptions } from './closeout-types.ts';
+import { artifactPath, hasGit } from './closeout-state.ts';
+
+/** Minimal host result preserves assertion, context, trust and timeout semantics. */
+export interface CloseoutRun { command?: string; path?: string; status: string; stdout?: string; stderr?: string; failure_category?: string }
+/** A disposable run has either parsed host evidence or a bounded refusal. */
+export interface CloseoutExecution { runs: CloseoutRun[]; error: string; functions?: { file: string; start: number; end: number; count: number }[] }
+
+/** Kill the entire disposable host process group so timed-out tests cannot keep running. */
+function killGroup(pid: number): void {
+  try {
+    const children = readFileSync(`/proc/${pid}/task/${pid}/children`, 'utf8').trim();
+    for (const child of children.split(/\s+/).filter(Boolean)) killGroup(Number(child));
+  } catch { /* A completed process has no children metadata; group cleanup still applies. */ }
+  try { process.kill(-pid, 'SIGKILL'); }
+  catch { try { process.kill(pid, 'SIGKILL'); } catch { /* The process may already have exited. */ } }
+}
+
+/** Run a pinned host with bounded wall time and output, independent of linked timeout overrides. */
+export function boundedHost(args: string[], cwd: string, timeout: number): Promise<CloseoutExecution> {
+  return new Promise(resolveResult => {
+    const env = { ...process.env };
+    delete env.NODE_TEST_CONTEXT;
+    delete env.NODE_V8_COVERAGE;
+    delete env.PM_SOURCE_WORKSPACE_ROOT;
+    delete env.PM_PATH;
+    delete env.PM_GLOBAL_PATH;
+    const child = spawn(process.execPath, args, { cwd, env, detached: true, stdio: ['ignore', 'pipe', 'pipe'] });
+    let stdout = '';
+    let error = '';
+    const timer = setTimeout(/** Wall time covers setup, every linked command and all descendants. */ () => { error = 'Closeout test budget exceeded'; killGroup(child.pid!); }, timeout);
+    child.stdout.on('data', /** Keep output memory bounded even when a command floods stdout. */ chunk => { stdout += String(chunk); if (stdout.length > 2_000_000) { error = 'Closeout host output limit exceeded'; killGroup(child.pid!); } });
+    child.stderr.on('data', /** Consume stderr without retaining private raw logs. */ () => {});
+    child.on('error', /** Spawn failures also produce an explicit absent-evidence receipt. */ () => { error = 'Pinned test host could not start'; });
+    child.on('close', /** Host failures without parseable evidence never count as execution. */ () => {
+      clearTimeout(timer);
+      killGroup(child.pid!);
+      if (!error) {
+        try {
+          const parsed = JSON.parse(stdout) as { run_results?: CloseoutRun[] };
+          if (Array.isArray(parsed.run_results)) { resolveResult({ runs: parsed.run_results, error: '' }); return; }
+        } catch { /* Report malformed or interrupted host output as absent evidence. */ }
+        error = 'Pinned test host returned no execution evidence';
+      }
+      resolveResult({ runs: [], error });
+    });
+  });
+}
+
+/** Copy source and tracker into a disposable workspace; never revert or record tests in the original. */
+export async function executeCloseout(client: PmClient, id: string, options: CloseoutOptions, restore: CloseoutChange[] = []): Promise<CloseoutExecution> {
+  const sandbox = mkdtempSync(join(tmpdir(), 'pm-review-closeout-'));
+  const workspace = join(sandbox, 'workspace');
+  let result: CloseoutExecution;
+  try {
+    if (hasGit(options.cwd)) execFileSync('git', ['clone', '--no-hardlinks', '--no-checkout', '--quiet', '--', options.cwd, workspace], { timeout: 30_000, stdio: ['ignore', 'pipe', 'pipe'] });
+    cpSync(options.cwd, workspace, { recursive: true, filter: /** Exclude mutable caches and Git metadata from the copy. */ path => !['.git', 'node_modules', 'coverage'].includes(basename(path)) });
+    const tracker = join(workspace, '.closeout-pm');
+    cpSync(options.pmRoot, tracker, { recursive: true });
+    const modules = join(options.cwd, 'node_modules');
+    if (existsSync(modules)) symlinkSync(modules, join(workspace, 'node_modules'), 'dir');
+    for (const change of restore) {
+      const target = artifactPath(workspace, change.file);
+      if (change.before === null) rmSync(target, { force: true });
+      else { mkdirSync(dirname(target), { recursive: true }); writeFileSync(target, change.before); }
+    }
+    // Resolve through the package's installed peer, never a possibly newer global host.
+    const cli = resolve(dirname(createRequire(import.meta.url).resolve('@unbrained/pm-cli/cli')), '../cli.js');
+    const seconds = options.timeoutSeconds ?? 60;
+    // Reading through the supplied client ensures hosted/back-end failures are visible before execution.
+    await client.get(id, { depth: 'full' });
+    const counters = join(sandbox, 'counters');
+    mkdirSync(counters);
+    const execution = await boundedHost([cli, '--no-extensions', '--json', '--pm-path', tracker, 'test', id, '--run', '--timeout', String(seconds), '--fail-on-skipped', '--fail-on-empty-test-run', '--env-set', `NODE_V8_COVERAGE=${counters}`], workspace, seconds * 1000);
+    execution.functions = [];
+    for (const entry of readdirSync(counters)) {
+      const report = JSON.parse(readFileSync(join(counters, entry), 'utf8')) as { result: { url: string; functions: { ranges: { startOffset: number; endOffset: number; count: number }[] }[] }[] };
+      for (const script of report.result) {
+        if (!script.url.startsWith('file:')) continue;
+        const file = relative(workspace, fileURLToPath(script.url));
+        if (file.startsWith('..')) continue;
+        for (const fn of script.functions.slice(1)) {
+          const range = fn.ranges[0];
+          execution.functions.push({ file, start: range.startOffset, end: range.endOffset, count: range.count });
+        }
+      }
+    }
+    result = execution;
+  } catch {
+    result = { runs: [], error: 'Disposable workspace or native coverage could not be prepared' };
+  } finally {
+    rmSync(sandbox, { recursive: true, force: true });
+  }
+  return result;
+}

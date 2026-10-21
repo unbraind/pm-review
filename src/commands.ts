@@ -1,6 +1,7 @@
 import { createPmCliExpectedError, isPmCliExpectedError, PmClient, printResult, readBooleanOption, readStringOption, suppressHostOutput } from '@unbrained/pm-cli/sdk';
 import { defineCommand } from '@unbrained/pm-cli/sdk/authoring';
 import type { CommandHandlerContext, ExtensionApi, FlagDefinition } from '@unbrained/pm-cli/sdk/authoring';
+import { reviewCloseout } from './closeout.ts';
 import { findingsOf } from './findings.ts';
 import { createGitHubTransport } from './github.ts';
 import { compactRound, evaluateRound } from './round.ts';
@@ -40,6 +41,14 @@ export async function runReviewCommand(ctx: CommandHandlerContext, provided?: Gi
 /** Run one dispatched package command; separated so the wrapper above stays the single error boundary. */
 async function dispatchReviewCommand(ctx: CommandHandlerContext, provided?: GitHubTransport): Promise<unknown> {
   const client = ctx.sdk?.client ?? new PmClient({ cwd: ctx.source_workspace_root ?? ctx.repo_root, pmRoot: ctx.pm_root, author: ctx.global.author });
+  if (ctx.command === 'review closeout') {
+    const timeout = readStringOption(ctx.options, 'timeout');
+    const result = await reviewCloseout(client, ctx.args[0] ?? '', { cwd: ctx.source_workspace_root ?? ctx.repo_root ?? process.cwd(), pmRoot: ctx.pm_root, base: readStringOption(ctx.options, 'base'), timeoutSeconds: timeout === undefined ? undefined : Number(timeout), revertCheck: readBooleanOption(ctx.options, 'revertCheck') === true });
+    const { tests, ...receipt } = result;
+    const test_summary = { total: tests.length, passed: 0, failed: 0, skipped: 0 };
+    for (const test of tests) test_summary[test.result]++;
+    return { ...receipt, test_summary, ...(result.ok ? {} : { exit_code: 1 }) };
+  }
   if (ctx.command === 'review find') {
     const items = await findReviewItems(client, readStringOption(ctx.options, 'thread') ?? '');
     return { count: items.length, items };
@@ -89,6 +98,7 @@ const RESPONSE_FLAGS: FlagDefinition[] = [
 /** Register help, typed positional arguments and command handlers through the host API. */
 export function registerReviewCommands(api: ExtensionApi): void {
   const commands = [
+    { name: 'closeout', description: 'Verify acceptance criteria with fresh linked tests and detect gamed gates; never closes the item', arguments: [{ name: 'item', required: true, description: 'Item whose completion evidence needs independent verification' }], flags: [{ long: '--base', type: 'string' as const, description: 'Git commit to compare with the current workspace' }, { long: '--timeout', type: 'string' as const, description: 'Total test budget per run, 1 to 600 seconds (default 60)' }, { long: '--revert-check', type: 'boolean' as const, description: 'Restore changed source in another disposable copy and require a named assertion to fail' }], example: 'pm review closeout sample-task --base main --revert-check --json' },
     { name: 'respond', description: 'Plan recorded inline replies and missing bot votes; dry-run unless --apply', arguments: [], flags: [...RESPONSE_FLAGS, { long: '--apply', type: 'boolean' as const, description: 'Write planned replies and votes to GitHub' }, { long: '--resolve', type: 'boolean' as const, description: 'Also resolve threads with recorded final decisions; default off' }], example: 'pm review respond --repo unbraind/pm-review --pr 1' },
     { name: 'status', description: 'Gate on unanswered findings, missing replies, bot votes, threads and exact-head review', arguments: [], flags: RESPONSE_FLAGS, example: 'pm review status --repo unbraind/pm-review --pr 1' },
     { name: 'reconcile', description: 'Close findings from live resolved threads, terminal alerts and merged PRs (GitHub read-only)', arguments: [], flags: [...TARGET_FLAGS, { long: '--dry-run', type: 'boolean' as const, description: 'Report planned closures without tracker writes' }], example: 'pm review reconcile --repo unbraind/pm-review --pr 1 --dry-run' },

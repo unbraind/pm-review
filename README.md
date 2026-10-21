@@ -219,3 +219,20 @@ Implementation and acceptance receipts live in this package's `.agents/pm` track
 The pinned SDK (2026.10.13) forwards `PmClient.schemaAddField`'s declared `type` correctly. pm-review uses that typed helper; real tracker tests verify stored schema types and numeric/boolean round trips. Successful round and status results omit `exit_code`; incomplete gates return `exit_code: 1`, as required by the host extension contract.
 
 MIT licensed.
+
+## Closeout verification
+
+Run `pm review closeout <id> --base <commit> --json` before closing delegated
+work. It compares item criteria with fresh linked tests and checks for weakened
+policies, skipped/focused/deleted tests and unexecuted changed functions.
+`--revert-check` additionally requires a behavioral test failure after source
+restoration in a disposable copy. The command never closes or updates the item.
+See [evidence binding, limitations and examples](docs/closeout.md).
+
+## Without git
+
+Review imports, decisions, precedents and GitHub review commands do not require a
+local Git checkout. Closeout runs linked tests in plain trackers and compares
+linked artifacts against `closeout-before:<base64>` notes. It reports missing
+states and skipped repository-wide checks explicitly. Only `--base` comparison
+requires Git; GitHub commands require provider credentials and connectivity.
