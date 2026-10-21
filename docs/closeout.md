@@ -46,6 +46,7 @@ disabled, and rename detection is disabled so both sides remain visible.
 Repository entries that cannot be compared as bounded text are recorded as opaque
 with a `diff:<path>` skip receipt. Opaque policies and tests retain blocking
 findings; opaque source cannot certify invocation or serve as a revert baseline.
+Opaque status takes precedence even when baseline bytes equal the placeholder.
 Unrelated opaque assets do not abort report generation.
 Linked artifact paths must stay within the workspace and cannot use
 symlinks, binary contents or text larger than one megabyte. Workspace roots are canonicalized before copying,

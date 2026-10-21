@@ -68,9 +68,9 @@ test('review regression: staged and committed renames retain deleted tests and b
 test('review regression: opaque repository entries produce receipts and retain policy and test findings', async t => {
   const { cwd, client, pmRoot } = await tracker(t);
   git(cwd, 'init', '-q');
-  for (const [file, text] of [['image.png', '\0old'], ['large.lock', 'x'.repeat(1_000_001)], ['huge.lock', 'x'.repeat(8_000_001)], ['case.test.ts', "test('lost', () => {});"], ['stable.txt', 'stable']]) writeFileSync(join(cwd, file), text);
+  for (const [file, text] of [['image.png', '\0old'], ['large.lock', 'x'.repeat(1_000_001)], ['huge.lock', 'x'.repeat(8_000_001)], ['case.test.ts', "test('lost', () => {});"], ['stable.txt', 'stable'], ['collision.test.ts', '\0opaque']]) writeFileSync(join(cwd, file), text);
   symlinkSync('stable.txt', join(cwd, 'tracked-link'));
-  git(cwd, 'add', 'image.png', 'large.lock', 'huge.lock', 'case.test.ts', 'stable.txt', 'tracked-link');
+  git(cwd, 'add', 'image.png', 'large.lock', 'huge.lock', 'case.test.ts', 'collision.test.ts', 'stable.txt', 'tracked-link');
   git(cwd, 'commit', '-qm', 'baseline');
   const base = git(cwd, 'rev-parse', 'HEAD');
   git(cwd, 'update-index', '--add', '--cacheinfo', `160000,${base},submodule`);
@@ -78,6 +78,7 @@ test('review regression: opaque repository entries produce receipts and retain p
   for (const file of ['image.png', 'large.lock', 'huge.lock']) writeFileSync(join(cwd, file), 'new');
   writeFileSync(join(cwd, 'case.test.ts'), '\0');
   writeFileSync(join(cwd, 'new.test.ts'), '\0');
+  writeFileSync(join(cwd, 'collision.test.ts'), 'changed');
   writeFileSync(join(cwd, 'eslint.config.ts'), '\0');
   writeFileSync(join(cwd, 'new-large.lock'), 'x'.repeat(1_000_001));
   symlinkSync('stable.txt', join(cwd, 'untracked-link'));
@@ -86,13 +87,13 @@ test('review regression: opaque repository entries produce receipts and retain p
   const skipped: { check: string; reason: string }[] = [];
   let state: { baseline: string; changes: CloseoutChange[] } = { baseline: '', changes: [] };
   assert.doesNotThrow(() => { state = closeoutChanges(cwd, {}, base, skipped); });
-  for (const file of ['image.png', 'large.lock', 'huge.lock', 'case.test.ts', 'new.test.ts', 'eslint.config.ts', 'new-large.lock', 'tracked-link', 'untracked-link', 'submodule']) {
+  for (const file of ['image.png', 'large.lock', 'huge.lock', 'case.test.ts', 'new.test.ts', 'collision.test.ts', 'eslint.config.ts', 'new-large.lock', 'tracked-link', 'untracked-link', 'submodule']) {
     assert.equal(state.changes.find(row => row.file === file)?.opaque, true, file);
     assert.ok(skipped.some(row => row.check === `diff:${file}`), file);
   }
   const findings = detectGaming(state.changes);
   assert.ok(findings.some(row => row.code === 'gate_changed' && row.file === 'eslint.config.ts'));
-  for (const file of ['case.test.ts', 'new.test.ts']) assert.ok(findings.some(row => row.code === 'execution_unverified' && row.file === file));
+  for (const file of ['case.test.ts', 'new.test.ts', 'collision.test.ts']) assert.ok(findings.some(row => row.code === 'execution_unverified' && row.file === file));
   const { item } = await client.create({ type: 'Task', title: 'Opaque diff receipt' });
   const receipt = await reviewCloseout(client, item.id, { cwd, pmRoot, base });
   assert.equal(receipt.ok, false);
@@ -102,11 +103,13 @@ test('review regression: opaque repository entries produce receipts and retain p
 test('review regression: opaque source cannot gain invocation proof or become a revert baseline', async t => {
   const { cwd, client, pmRoot } = await tracker(t);
   git(cwd, 'init', '-q');
-  writeFileSync(join(cwd, 'source.ts'), '\0');
-  writeFileSync(join(cwd, 'case.test.ts'), "import { test } from 'node:test'; test('proof', () => {});\n");
-  git(cwd, 'add', 'source.ts', 'case.test.ts');
+  writeFileSync(join(cwd, 'source.ts'), '\0opaque');
+  writeFileSync(join(cwd, 'healthy.ts'), 'export function result() { return 1; }');
+  writeFileSync(join(cwd, 'case.test.ts'), "import { test } from 'node:test'; import assert from 'node:assert/strict'; import { result } from './healthy.ts'; test('proof', () => assert.equal(result(), 2));\n");
+  git(cwd, 'add', 'source.ts', 'healthy.ts', 'case.test.ts');
   git(cwd, 'commit', '-qm', 'baseline');
   writeFileSync(join(cwd, 'source.ts'), 'export function result() { return 2; }');
+  writeFileSync(join(cwd, 'healthy.ts'), 'export function result() { return 2; }');
   const { item } = await client.create({ type: 'Task', title: 'Opaque baseline', acceptanceCriteria: '[test:proof]' });
   await linkProof(client, item.id, cwd);
   const receipt = await reviewCloseout(client, item.id, { cwd, pmRoot, base: 'HEAD', revertCheck: true });
@@ -114,6 +117,6 @@ test('review regression: opaque source cannot gain invocation proof or become a 
   assert.equal(receipt.revert_check, 'inconclusive');
   assert.ok(receipt.findings.some(row => row.code === 'revert_inconclusive'));
   const isolated: CloseoutReport = { ...receipt, findings: [] };
-  checkInvocation([{ file: 'source.ts', before: '', after: '\0opaque', opaque: true }], { error: '', runs: [], functions: [{ file: 'source.ts', start: 0, end: 100, count: 1 }] }, isolated);
+  checkInvocation([{ file: 'source.ts', before: '\0opaque', after: '\0opaque', opaque: true }], { error: '', runs: [], functions: [{ file: 'source.ts', start: 0, end: 100, count: 1 }] }, isolated);
   assert.deepEqual(isolated.findings.map(row => row.code), ['execution_unverified']);
 });

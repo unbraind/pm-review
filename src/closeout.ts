@@ -49,7 +49,7 @@ export function recordExecution(execution: CloseoutExecution, report: CloseoutRe
 /** Check invocation of changed functions using fresh native coverage rather than stale reports. */
 export function checkInvocation(changes: CloseoutChange[], execution: CloseoutExecution, report: CloseoutReport): void {
   for (const change of changes) {
-    if (isTestFile(change.file) || !/\.[cm]?[jt]s$/.test(change.file) || change.after === null || change.after === change.before) continue;
+    if (isTestFile(change.file) || !/\.[cm]?[jt]s$/.test(change.file) || change.after === null || (change.after === change.before && !change.opaque)) continue;
     if (change.opaque) { report.findings.push({ code: 'execution_unverified', file: change.file, detail: 'Changed source is not comparable text' }); continue; }
     const before = change.before ?? '';
     const after = change.after;
@@ -98,7 +98,7 @@ export async function reviewCloseout(client: PmClient, id: string, options: Clos
   report.criteria = texts.map(/** Every acceptance assertion gets its own conservative verdict. */ (text, index) => criterionEvidence(text, index, item, report));
   if (options.revertCheck) {
     report.revert_check = 'inconclusive';
-    const source = state.changes.filter(/** Restore source only, retaining the changed tests and test policies. */ change => !isTestFile(change.file) && /\.[cm]?[jt]s$/.test(change.file) && change.before !== change.after);
+    const source = state.changes.filter(/** Restore source only, retaining the changed tests and test policies. */ change => !isTestFile(change.file) && /\.[cm]?[jt]s$/.test(change.file) && (change.opaque || change.before !== change.after));
     if (source.some(/** Opaque baselines must never be written as source during restoration. */ change => change.opaque) || source.length === 0 || report.commands.length === 0 || report.commands.some(/** A failing baseline cannot establish behavioral sensitivity. */ run => run.result !== 'passed')) report.findings.push({ code: 'revert_inconclusive', file: '', detail: 'Revert check needs changed source and passing linked commands' });
     else {
       const reverted = await executeCloseout(client, id, { ...options, cwd }, source);
