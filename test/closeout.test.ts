@@ -1,7 +1,7 @@
 import '../src/closeout-types.ts';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
@@ -271,4 +271,29 @@ test('native counters from unrelated external modules cannot certify changed wor
   const original = readFileSync(join(cwd, 'case.test.ts'), 'utf8');
   writeFileSync(join(cwd, 'case.test.ts'), `import { unrelated } from ${JSON.stringify(externalUrl)}; unrelated();\n${original}`);
   assert.equal((await reviewCloseout(client, id, options)).ok, true);
+});
+
+
+test('a symlink workspace root cannot turn the disposable copy into writes to the original', async t => {
+  const { client, id, cwd, options } = await closeoutFixture(t);
+  const external = await tracker(t);
+  const alias = join(external.cwd, 'workspace-alias');
+  symlinkSync(cwd, alias, 'dir');
+  const before = readFileSync(join(cwd, 'source.ts'), 'utf8');
+  const report = await reviewCloseout(client, id, { ...options, cwd: alias });
+  assert.equal(report.ok, true, JSON.stringify(report));
+  assert.equal(existsSync(join(cwd, '.closeout-pm')), false);
+  assert.equal(readFileSync(join(cwd, 'source.ts'), 'utf8'), before);
+});
+
+test('a linked external artifact cannot enter an executable workspace snapshot', async t => {
+  const { client, id, cwd, options } = await closeoutFixture(t);
+  const external = await tracker(t);
+  writeFileSync(join(external.cwd, 'foreign.txt'), 'original');
+  symlinkSync(join(external.cwd, 'foreign.txt'), join(cwd, 'foreign-link'));
+  const report = await reviewCloseout(client, id, options);
+  assert.equal(report.ok, false);
+  assert.equal(report.commands.length, 0);
+  assert.ok(report.findings.some(row => row.code === 'execution_missing'));
+  assert.equal(readFileSync(join(external.cwd, 'foreign.txt'), 'utf8'), 'original');
 });

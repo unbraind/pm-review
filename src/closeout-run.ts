@@ -1,5 +1,5 @@
 import { execFileSync, spawn } from 'node:child_process';
-import { cpSync, existsSync, mkdtempSync, mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, lstatSync, mkdtempSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -54,17 +54,27 @@ export function boundedHost(args: string[], cwd: string, timeout: number): Promi
   });
 }
 
+/** Refuse copied symlinks so commands cannot write through to original artifact paths. */
+function regularCopyEntry(path: string): boolean {
+  if (lstatSync(path).isSymbolicLink()) throw new Error('Artifact links cannot enter a disposable workspace');
+  return true;
+}
+
 /** Copy source and tracker into a disposable workspace; never revert or record tests in the original. */
 export async function executeCloseout(client: PmClient, id: string, options: CloseoutOptions, restore: CloseoutChange[] = []): Promise<CloseoutExecution> {
   const sandbox = mkdtempSync(join(tmpdir(), 'pm-review-closeout-'));
   const workspace = join(sandbox, 'workspace');
   let result: CloseoutExecution;
   try {
-    if (hasGit(options.cwd)) execFileSync('git', ['clone', '--no-hardlinks', '--no-checkout', '--quiet', '--', options.cwd, workspace], { timeout: 30_000, stdio: ['ignore', 'pipe', 'pipe'] });
-    cpSync(options.cwd, workspace, { recursive: true, filter: /** Exclude mutable caches and Git metadata from the copy. */ path => !['.git', 'node_modules', 'coverage'].includes(basename(path)) });
+    const sourceRoot = realpathSync(options.cwd);
+    if (hasGit(sourceRoot)) execFileSync('git', ['clone', '--no-hardlinks', '--no-checkout', '--quiet', '--', sourceRoot, workspace], { timeout: 30_000, stdio: ['ignore', 'pipe', 'pipe'] });
+    cpSync(sourceRoot, workspace, { recursive: true, filter: /** Exclude caches and refuse links that could write through to original artifacts. */ path => {
+      if (path !== sourceRoot && ['.git', 'node_modules', 'coverage'].includes(basename(path))) return false;
+      return regularCopyEntry(path);
+    } });
     const tracker = join(workspace, '.closeout-pm');
-    cpSync(options.pmRoot, tracker, { recursive: true });
-    const modules = join(options.cwd, 'node_modules');
+    cpSync(realpathSync(options.pmRoot), tracker, { recursive: true, filter: regularCopyEntry });
+    const modules = join(sourceRoot, 'node_modules');
     if (existsSync(modules)) symlinkSync(modules, join(workspace, 'node_modules'), 'dir');
     for (const change of restore) {
       const target = artifactPath(workspace, change.file);

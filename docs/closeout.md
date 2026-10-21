@@ -43,7 +43,9 @@ Git comparison includes committed, staged, unstaged and untracked changes from
 `--base` to the current workspace. Invoke at the repository root. The base is
 resolved as a commit without shell interpolation. External diff/textconv are
 disabled. Linked artifact paths must stay within the workspace and cannot use
-symlinks, binary contents or text larger than one megabyte.
+symlinks, binary contents or text larger than one megabyte. Workspace roots are canonicalized before copying,
+and artifact symlinks are refused in executable snapshots; installed dependencies
+remain the explicit shared-link exception.
 
 Findings include weakened coverage floors/lint severity, changed test policies,
 new focused/skipped/pending tests, removed test cases/artifacts, missing runs,
