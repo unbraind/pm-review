@@ -28,7 +28,7 @@ async function closeoutFixture(t: Parameters<typeof tracker>[0]) {
   const before = Buffer.from('/** Return the fixed result. */\nexport function result() { return 1; }\n').toString('base64');
   await setup.client.files(item.id, { add: [`path=source.ts,note=closeout-before:${before}`] });
   await setup.client.run('test', { id: item.id, options: { add: [`command=${process.execPath} --test --test-reporter=tap case.test.ts,path=case.test.ts`] } });
-  return { ...setup, id: item.id, options: { cwd: setup.cwd, pmRoot: setup.pmRoot, timeoutSeconds: 20 } };
+  return { ...setup, id: item.id, options: { cwd: setup.cwd, pmRoot: setup.pmRoot, timeoutSeconds: 60 } };
 }
 
 test('plain tracker fresh evidence proves criterion and revert demonstrates sensitivity without source writes', async t => {

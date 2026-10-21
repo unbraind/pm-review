@@ -1,3 +1,4 @@
+import { preparationFailure } from '../src/closeout-run.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { criterionEvidence, checkInvocation, recordExecution, recordRevert, itemEvidence } from '../src/closeout.ts';
@@ -74,4 +75,15 @@ test('revert evidence requires a previously green named assertion and rejects bu
   assert.equal(receipt.revert_check, 'inconclusive');
   recordRevert({ error: '', runs: [{ status: 'failed', failure_category: 'assertion_failure', stdout: 'not ok 1 - proof' }] }, receipt);
   assert.equal(receipt.revert_check, 'sensitive');
+});
+
+
+test('preparation diagnostics retain failure categories without arbitrary error text', () => {
+  assert.equal(preparationFailure(null), 'Error');
+  assert.equal(preparationFailure(new Error('sensitive text')), 'Error');
+  assert.equal(preparationFailure(new TypeError()), 'TypeError');
+  assert.equal(preparationFailure(new SyntaxError()), 'SyntaxError');
+  assert.equal(preparationFailure(Object.assign(new Error(), { code: 3 })), 'Error');
+  assert.equal(preparationFailure(Object.assign(new Error(), { code: 'not-a-code' })), 'Error');
+  assert.equal(preparationFailure(Object.assign(new Error(), { code: 'ENOENT' })), 'ENOENT');
 });

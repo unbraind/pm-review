@@ -60,19 +60,28 @@ function regularCopyEntry(path: string): boolean {
   return true;
 }
 
+/** Report preparation categories without echoing private paths or raw command output. */
+export function preparationFailure(failure: unknown): string {
+  if (failure instanceof Error && 'code' in failure && typeof failure.code === 'string' && /^[A-Z0-9_]+$/.test(failure.code)) return failure.code;
+  return failure instanceof SyntaxError ? 'SyntaxError' : failure instanceof TypeError ? 'TypeError' : 'Error';
+}
+
 /** Copy source and tracker into a disposable workspace; never revert or record tests in the original. */
 export async function executeCloseout(client: PmClient, id: string, options: CloseoutOptions, restore: CloseoutChange[] = []): Promise<CloseoutExecution> {
   const sandbox = mkdtempSync(join(tmpdir(), 'pm-review-closeout-'));
   const workspace = join(sandbox, 'workspace');
   let result: CloseoutExecution;
+  let phase = 'workspace-root';
   try {
     const sourceRoot = realpathSync(options.cwd);
     if (hasGit(sourceRoot)) execFileSync('git', ['clone', '--no-hardlinks', '--no-checkout', '--quiet', '--', sourceRoot, workspace], { timeout: 30_000, stdio: ['ignore', 'pipe', 'pipe'] });
+    phase = 'workspace-copy';
     cpSync(sourceRoot, workspace, { recursive: true, filter: /** Exclude caches and refuse links that could write through to original artifacts. */ path => {
       if (path !== sourceRoot && ['.git', 'node_modules', 'coverage'].includes(basename(path))) return false;
       return regularCopyEntry(path);
     } });
     const tracker = join(workspace, '.closeout-pm');
+    phase = 'tracker-copy';
     const trackerSource = realpathSync(options.pmRoot);
     cpSync(trackerSource, tracker, { recursive: true, filter: /** PM-managed dependency links share the same explicit exception as workspace node_modules. */ path => {
       const parts = relative(trackerSource, path).split(sep);
@@ -80,6 +89,7 @@ export async function executeCloseout(client: PmClient, id: string, options: Clo
     } });
     const modules = join(sourceRoot, 'node_modules');
     if (existsSync(modules)) symlinkSync(modules, join(workspace, 'node_modules'), 'dir');
+    phase = 'source-restore';
     for (const change of restore) {
       const target = artifactPath(workspace, change.file);
       if (change.before === null) rmSync(target, { force: true });
@@ -92,7 +102,9 @@ export async function executeCloseout(client: PmClient, id: string, options: Clo
     await client.get(id, { depth: 'full' });
     const counters = join(sandbox, 'counters');
     mkdirSync(counters);
+    phase = 'test-host';
     const execution = await boundedHost([cli, '--no-extensions', '--json', '--pm-path', tracker, 'test', id, '--run', '--timeout', String(seconds), '--fail-on-skipped', '--fail-on-empty-test-run', '--env-set', `NODE_V8_COVERAGE=${counters}`], workspace, seconds * 1000);
+    phase = 'native-counters';
     execution.functions = [];
     for (const entry of readdirSync(counters)) {
       const report = JSON.parse(readFileSync(join(counters, entry), 'utf8')) as { result: { url: string; functions: { ranges: { startOffset: number; endOffset: number; count: number }[] }[] }[] };
@@ -107,8 +119,8 @@ export async function executeCloseout(client: PmClient, id: string, options: Clo
       }
     }
     result = execution;
-  } catch {
-    result = { runs: [], error: 'Disposable workspace or native coverage could not be prepared' };
+  } catch (failure) {
+    result = { runs: [], error: `Disposable workspace or native coverage could not be prepared (${phase}/${preparationFailure(failure)})` };
   } finally {
     rmSync(sandbox, { recursive: true, force: true });
   }
