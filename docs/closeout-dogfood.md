@@ -35,8 +35,8 @@ mixed-policy/test-gaming regression fail with an assertion error. Disabling only
 bytes remain untouched. These are disabled-behavior proofs for newly introduced
 functions, rather than import/build failures from deleting new modules.
 
-The final validation candidate passes both Node 22 and Node 26 CI jobs, each with
-155/155 outer source tests, zero skipped tests, 100% statements/branches/functions/
+The earlier `ca837cc` validation candidate passed both Node 22 and Node 26 CI
+jobs, each with 155/155 outer source tests, zero skipped tests, 100% statements/branches/functions/
 lines across all 26 authored sources, and zero duplication. Packed npm/npx and
 native Bun/bunx acceptance passes 1/1 in each matrix job. The Node 26 job also
 runs the full `bun run release:check` with Bun 1.4.3: 155/155 source tests and
@@ -55,7 +55,7 @@ PM-run receipt and the classifier timing failure tracked separately in
 disables durable test-run recording, so verified PM runner results are retained
 in comments without changing that policy.
 
-The isolated-HOME Node 24 gate on the same candidate exited 1 with 154/155
+The isolated-HOME Node 24 gate on that earlier candidate exited 1 with 154/155
 source tests passing and zero skipped. Its only failure was the existing
 severity-parser child reaching the unchanged 5000 ms deadline under shared-host
 load; coverage still measured 100% in all four dimensions. The same isolated
@@ -67,5 +67,9 @@ zero skipped, all 26 authored sources at 100% in every coverage dimension,
 zero duplication, and packed npm/npx plus native Bun/bunx acceptance 1/1.
 The PM-linked run independently exited 0 with both command receipts passed
 (21 integration tests and 5 evidence-boundary tests). No failed or incomplete
-run is included in those passing counts. Code and tests were unchanged at
-`ca837cc`; only documentation and tracker receipts follow that candidate.
+run is included in those passing counts. These counts describe `ca837cc` only.
+Later commits `df7164a`, `f8305d3` and
+`4a157d0` changed source and tests for root-only cloning, rename handling and
+opaque artifacts. Subsequent review fixes also change source and tests; the
+current-head validation receipt is recorded on the PR and its pm item. The
+historical counts and CI link above do not certify those later revisions.

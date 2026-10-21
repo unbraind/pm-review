@@ -27,7 +27,7 @@ export function detectGaming(changes: CloseoutChange[]): CloseoutFinding[] {
   for (const change of changes) {
     const { file, before, after } = change;
     if (before === after && !change.opaque) continue;
-    if (/package\.json$|(?:coverage|eslint|lint|vitest|jest|nyc|c8)[^/]*\.[cm]?[jt]s(?:on)?$/.test(file)) {
+    if (/(?:^|\/)(?:package\.json|\.?(?:coverage|eslint|lint|vitest|jest|nyc|c8)(?:rc|Config)?(?:[.-][^/]*)?\.[cm]?[jt]s(?:on)?)$/.test(file)) {
       let lowered = loweredLiteralFloor(before ?? '', after ?? '');
       if (before !== null && after !== null && file.endsWith('.json')) {
         try { lowered = weakened(JSON.parse(before), JSON.parse(after)); } catch { /* Non-JSON policies remain reviewable findings below. */ }

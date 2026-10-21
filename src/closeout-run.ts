@@ -9,7 +9,7 @@ import type { CloseoutChange, CloseoutOptions } from './closeout-types.ts';
 import { artifactPath } from './closeout-state.ts';
 
 /** Minimal host result preserves assertion, context, trust and timeout semantics. */
-export interface CloseoutRun { command?: string; path?: string; status: string; stdout?: string; stderr?: string; failure_category?: string }
+export interface CloseoutRun { command?: string; path?: string; status: string; stdout?: string; stderr?: string; failure_category?: string; execution_receipt?: { code: string; stream: string } }
 /** A disposable run has either parsed host evidence or a bounded refusal. */
 export interface CloseoutExecution { runs: CloseoutRun[]; error: string; functions?: { file: string; start: number; end: number; count: number }[] }
 
@@ -36,7 +36,8 @@ export function boundedHost(args: string[], cwd: string, timeout: number): Promi
     let stdout = '';
     let error = '';
     const timer = setTimeout(/** Wall time covers setup, every linked command and all descendants. */ () => { error = 'Closeout test budget exceeded'; killGroup(child.pid!); }, timeout);
-    child.stdout.on('data', /** Keep output memory bounded even when a command floods stdout. */ chunk => { stdout += String(chunk); if (stdout.length > 2_000_000) { error = 'Closeout host output limit exceeded'; killGroup(child.pid!); } });
+    child.stdout.setEncoding('utf8');
+    child.stdout.on('data', /** Keep output memory bounded even when a command floods stdout. */ (chunk: string) => { stdout += chunk; if (stdout.length > 2_000_000) { error = 'Closeout host output limit exceeded'; killGroup(child.pid!); } });
     child.stderr.on('data', /** Consume stderr without retaining private raw logs. */ () => {});
     child.on('error', /** Spawn failures also produce an explicit absent-evidence receipt. */ () => { error = 'Pinned test host could not start'; });
     child.on('close', /** Host failures without parseable evidence never count as execution. */ () => {
@@ -73,6 +74,12 @@ function regularCopyEntry(path: string, root: string): boolean {
   return true;
 }
 
+/** Preserve only managed tracker dependency links while applying artifact policy everywhere else. */
+function trackerCopyEntry(path: string, root: string, trackerRoot: string): boolean {
+  const parts = relative(trackerRoot, path).split(sep);
+  return parts[0] === 'extensions' && parts.includes('node_modules') || regularCopyEntry(path, root);
+}
+
 /** Report preparation categories without echoing private paths or raw command output. */
 export function preparationFailure(failure: unknown): string {
   if (failure instanceof Error && 'code' in failure && typeof failure.code === 'string' && /^[A-Z0-9_]+$/.test(failure.code)) return failure.code;
@@ -81,24 +88,24 @@ export function preparationFailure(failure: unknown): string {
 
 /** Copy source and tracker into a disposable workspace; never revert or record tests in the original. */
 export async function executeCloseout(client: PmClient, id: string, options: CloseoutOptions, restore: CloseoutChange[] = []): Promise<CloseoutExecution> {
-  const sandbox = mkdtempSync(join(tmpdir(), 'pm-review-closeout-'));
+  const sandbox = realpathSync(mkdtempSync(join(tmpdir(), 'pm-review-closeout-')));
   const workspace = join(sandbox, 'workspace');
   let result: CloseoutExecution;
   let phase = 'workspace-root';
   try {
     const sourceRoot = realpathSync(options.cwd);
     if (existsSync(join(sourceRoot, '.git'))) execFileSync('git', ['clone', '--no-hardlinks', '--no-checkout', '--quiet', '--', sourceRoot, workspace], { timeout: 30_000, stdio: ['ignore', 'pipe', 'pipe'] });
+    const trackerSource = realpathSync(options.pmRoot);
     phase = 'workspace-copy';
     cpSync(sourceRoot, workspace, { recursive: true, filter: /** Exclude caches and refuse links that could write through to original artifacts. */ path => {
-      if (path !== sourceRoot && ['.git', 'node_modules', 'coverage', '.bun', '.npm', '.cache'].includes(basename(path))) return false;
-      return regularCopyEntry(path, sourceRoot);
+      if (path !== sourceRoot && basename(path) === '.git') return false;
+      if (['node_modules', 'coverage', '.bun', '.npm', '.cache'].includes(relative(sourceRoot, path))) return false;
+      return trackerCopyEntry(path, sourceRoot, trackerSource);
     } });
     const tracker = join(workspace, '.closeout-pm');
     phase = 'tracker-copy';
-    const trackerSource = realpathSync(options.pmRoot);
     cpSync(trackerSource, tracker, { recursive: true, filter: /** PM-managed dependency links share the same explicit exception as workspace node_modules. */ path => {
-      const parts = relative(trackerSource, path).split(sep);
-      return parts[0] === 'extensions' && parts.includes('node_modules') || regularCopyEntry(path, trackerSource);
+      return trackerCopyEntry(path, trackerSource, trackerSource);
     } });
     const modules = join(sourceRoot, 'node_modules');
     if (existsSync(modules)) symlinkSync(modules, join(workspace, 'node_modules'), 'dir');
@@ -124,7 +131,7 @@ export async function executeCloseout(client: PmClient, id: string, options: Clo
       for (const script of report.result) {
         if (!script.url.startsWith('file:')) continue;
         const file = relative(workspace, fileURLToPath(script.url));
-        if (file.startsWith('..')) continue;
+        if (file.split(sep)[0] === '..') continue;
         for (const fn of script.functions.slice(1)) {
           const range = fn.ranges[0];
           execution.functions.push({ file, start: range.startOffset, end: range.endOffset, count: range.count });

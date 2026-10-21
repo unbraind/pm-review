@@ -37,11 +37,12 @@ export function criterionEvidence(text: string, index: number, item: EvidenceIte
 export function recordExecution(execution: CloseoutExecution, report: CloseoutReport): void {
   if (execution.error) report.findings.push({ code: 'execution_missing', file: '', detail: execution.error });
   execution.runs.forEach(/** Every command retains its result even when it supplies no named evidence. */ (run, index) => {
-    const tests = namedTests(`${run.stdout ?? ''}\n${run.stderr ?? ''}`, index + 1);
+    const missingReceipt = run.status === 'passed' && !run.execution_receipt;
+    const tests = missingReceipt ? [] : namedTests(`${run.stdout ?? ''}\n${run.stderr ?? ''}`, index + 1);
     report.commands.push({ command: run.command ?? run.path ?? '', result: run.status });
     report.tests.push(...tests.map(/** A failed host assertion or context refusal invalidates apparently green output. */ test => ({ ...test, result: run.status !== 'passed' && test.result === 'passed' ? 'skipped' as const : test.result })));
     if (run.status !== 'passed') report.findings.push({ code: run.status === 'skipped' ? 'test_skipped' : 'test_failed', file: run.path ?? '', detail: `Linked command ${index + 1}: ${run.status}` });
-    if (tests.length === 0) report.findings.push({ code: 'execution_missing', file: run.path ?? '', detail: `Linked command ${index + 1} has no named test assertions` });
+    if (tests.length === 0) report.findings.push({ code: 'execution_missing', file: run.path ?? '', detail: missingReceipt ? `Linked command ${index + 1} has no positive runner execution receipt` : `Linked command ${index + 1} has no named test assertions` });
     if (tests.some(/** TAP skip directives remain findings even when the runner exits zero. */ test => test.result === 'skipped')) report.findings.push({ code: 'test_skipped', file: run.path ?? '', detail: `Linked command ${index + 1} skipped named assertions` });
   });
 }

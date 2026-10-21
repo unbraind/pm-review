@@ -52,7 +52,9 @@ Linked artifact paths must stay within the workspace and cannot use
 symlinks, binary contents or text larger than one megabyte. Workspace roots are canonicalized before copying,
 and artifact symlinks are refused in executable snapshots; installed dependencies
 remain the explicit shared-link exception. Package-manager and tooling caches
-(`.bun`, `.npm`, `.cache`, `coverage`) are excluded from source snapshots.
+(`.bun`, `.npm`, `.cache`, `coverage`) are excluded at the workspace root;
+nested directories with those names and nested dependency directories are copied
+under the same artifact-symlink policy. Git metadata is excluded at every depth.
 
 Findings include weakened coverage floors/lint severity, changed test policies,
 new focused/skipped/pending tests, removed test cases/artifacts, missing runs,
@@ -74,7 +76,9 @@ functions together proves aggregate sensitivity, not individual necessity.
 
 Named assertions are recognized in TAP, Node spec and Bun output, including stderr.
 The CLI emits aggregate test counts while criterion rows retain the relevant names.
-The SDK report retains all named test rows.
+Successful commands must also carry a positive runner execution receipt from
+the pinned host; printed assertion lines alone cannot prove execution. The SDK
+report retains all accepted named test rows.
 
 The result uses the host's default TOON rendering or global `--json`. Exit zero
 requires at least one criterion, every criterion proven and no open finding.
