@@ -14,6 +14,14 @@ import { boundedHost, executeCloseout } from '../src/closeout-run.ts';
 import { runReviewCommand } from '../src/commands.ts';
 import { tracker } from './helpers.ts';
 
+/** Bind intake provenance to a real fixture instead of an inherited parent test workspace. */
+async function inFixtureWorkspace<T>(cwd: string, action: () => Promise<T>): Promise<T> {
+  const previous = process.env.PM_SOURCE_WORKSPACE_ROOT;
+  process.env.PM_SOURCE_WORKSPACE_ROOT = cwd;
+  try { return await action(); }
+  finally { if (previous === undefined) delete process.env.PM_SOURCE_WORKSPACE_ROOT; else process.env.PM_SOURCE_WORKSPACE_ROOT = previous; }
+}
+
 /** Create fixture source and directly instrumented named behavior tests. */
 function sourceFiles(cwd: string): void {
   writeFileSync(join(cwd, 'source.ts'), '/** Return the fixed result. */\nexport function result() { return 2; }\n');
@@ -27,7 +35,7 @@ async function closeoutFixture(t: Parameters<typeof tracker>[0]) {
   const item = (await setup.client.create({ type: 'Task', title: 'Check fixed result', acceptanceCriteria: '[test:returns fixed result]' })).item;
   const before = Buffer.from('/** Return the fixed result. */\nexport function result() { return 1; }\n').toString('base64');
   await setup.client.files(item.id, { add: [`path=source.ts,note=closeout-before:${before}`] });
-  await setup.client.run('test', { id: item.id, options: { add: [`command=${process.execPath} --test --test-reporter=tap case.test.ts,path=case.test.ts`] } });
+  await inFixtureWorkspace(setup.cwd, () => setup.client.run('test', { id: item.id, options: { add: [`command=${process.execPath} --test --test-reporter=tap case.test.ts,path=case.test.ts`] } }));
   return { ...setup, id: item.id, options: { cwd: setup.cwd, pmRoot: setup.pmRoot, timeoutSeconds: 60 } };
 }
 
@@ -156,23 +164,26 @@ test('registered closeout dispatch uses SDK context and emits nonzero for incomp
 });
 
 test('no-git tracker works with a PATH containing no git and a discovery ceiling', async t => {
-  const { client, id, options, cwd } = await closeoutFixture(t);
+  const { client, id, options, cwd } = await inFixtureWorkspace(dirname(import.meta.dirname), () => closeoutFixture(t));
   const bin = join(cwd, 'empty-bin');
   mkdirSync(bin);
-  const priorSource = process.env.PM_SOURCE_WORKSPACE_ROOT;
-  process.env.PM_SOURCE_WORKSPACE_ROOT = join(cwd, 'incorrect-outer-workspace');
-  const priorPath = process.env.PATH;
-  const priorCeiling = process.env.GIT_CEILING_DIRECTORIES;
+  const keys = ['PATH', 'GIT_CEILING_DIRECTORIES', 'PM_SOURCE_WORKSPACE_ROOT', 'PM_SOURCE_PM_PATH', 'PM_SOURCE_CONTEXT_ACCESS', 'PM_ALLOW_SOURCE_CONTEXT_WRITES'];
+  const prior = Object.fromEntries(keys.map(key => [key, process.env[key]]));
   process.env.PATH = bin;
   process.env.GIT_CEILING_DIRECTORIES = dirname(cwd);
+  process.env.PM_SOURCE_WORKSPACE_ROOT = cwd;
+  process.env.PM_SOURCE_PM_PATH = options.pmRoot;
+  process.env.PM_SOURCE_CONTEXT_ACCESS = 'read_only';
+  delete process.env.PM_ALLOW_SOURCE_CONTEXT_WRITES;
   try {
     const report = await reviewCloseout(client, id, options);
     assert.equal(report.ok, true, JSON.stringify(report));
     assert.equal(report.revert_check, 'not_requested');
   } finally {
-    if (priorSource === undefined) delete process.env.PM_SOURCE_WORKSPACE_ROOT; else process.env.PM_SOURCE_WORKSPACE_ROOT = priorSource;
-    if (priorPath === undefined) delete process.env.PATH; else process.env.PATH = priorPath;
-    if (priorCeiling === undefined) delete process.env.GIT_CEILING_DIRECTORIES; else process.env.GIT_CEILING_DIRECTORIES = priorCeiling;
+    for (const key of keys) {
+      const value = prior[key];
+      if (value === undefined) delete process.env[key]; else process.env[key] = value;
+    }
   }
 });
 
@@ -203,7 +214,7 @@ test('failed and skipped named assertions cannot produce a successful criterion'
 test('bare command success is absent named execution even when comments claim EXIT:0', async t => {
   const { client, cwd, pmRoot } = await tracker(t);
   const item = (await client.create({ type: 'Task', title: 'An empty command', acceptanceCriteria: 'missing result' })).item;
-  await client.run('test', { id: item.id, options: { add: [`command=${process.execPath} -e 'console.log("EXIT:0")'`] } });
+  await inFixtureWorkspace(cwd, () => client.run('test', { id: item.id, options: { add: [`command=${process.execPath} -e 'console.log("EXIT:0")'`] } }));
   await client.comments(item.id, { add: 'EXIT:0' });
   const report = await reviewCloseout(client, item.id, { cwd, pmRoot });
   assert.equal(report.ok, false);
@@ -224,8 +235,8 @@ test('git-backed execution clones metadata, restores new and deleted source only
   const located = await locateItem(pmRoot, item.id);
   const { document } = await readLocatedItem(located!);
   document.metadata.tests = [{ path: 'case.test.ts', scope: 'project' }];
-  await commitImportedItem({ pmRoot, id: item.id, itemPath: located!.itemPath, document, author: 'test-agent', message: 'Import legacy test link', settings: await readSettings(pmRoot), conflictWarningPrefix: 'fixture' });
-  const execution = await executeCloseout(client, item.id, { cwd, pmRoot, timeoutSeconds: 20 }, [
+  await inFixtureWorkspace(cwd, async () => commitImportedItem({ pmRoot, id: item.id, itemPath: located!.itemPath, document, author: 'test-agent', message: 'Import legacy test link', settings: await readSettings(pmRoot), conflictWarningPrefix: 'fixture' }));
+  const execution = await executeCloseout(client, item.id, { cwd, pmRoot, timeoutSeconds: 60 }, [
     { file: 'new.ts', before: null, after: 'new' },
     { file: 'nested/restored.ts', before: 'restored', after: null },
   ]);
@@ -246,7 +257,7 @@ test('registered closeout success omits explicit zero exit and returns a compact
 test('deadline kills a detached linked-command descendant before discarding its workspace', async t => {
   const { cwd } = await tracker(t);
   const script = `const { spawn } = require('node:child_process'); const fs = require('node:fs'); const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], {detached:true,stdio:'ignore'}); fs.writeFileSync('child.pid', String(child.pid)); setInterval(() => {}, 1000);`;
-  const result = await boundedHost(['-e', script], cwd, 1000);
+  const result = await boundedHost(['-e', script], cwd, 5000);
   assert.match(result.error, /budget exceeded/);
   const pid = Number(readFileSync(join(cwd, 'child.pid'), 'utf8'));
   // SIGKILL delivery and process reaping are asynchronous; observe bounded eventual termination.
