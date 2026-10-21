@@ -54,9 +54,22 @@ export function boundedHost(args: string[], cwd: string, timeout: number): Promi
   });
 }
 
+/** A refused artifact carries only its workspace-relative identity. */
+class CopyPolicyError extends Error {
+  /** Stable category is safe to include in compact failure receipts. */
+  readonly code = 'ARTIFACT_SYMLINK';
+  /** Relative artifact name helps callers distinguish source from generated caches. */
+  readonly file: string;
+  /** Capture relative evidence without disclosing the source workspace root. */
+  constructor(root: string, path: string) {
+    super('Artifact links cannot enter a disposable workspace');
+    this.file = relative(root, path);
+  }
+}
+
 /** Refuse copied symlinks so commands cannot write through to original artifact paths. */
-function regularCopyEntry(path: string): boolean {
-  if (lstatSync(path).isSymbolicLink()) throw new Error('Artifact links cannot enter a disposable workspace');
+function regularCopyEntry(path: string, root: string): boolean {
+  if (lstatSync(path).isSymbolicLink()) throw new CopyPolicyError(root, path);
   return true;
 }
 
@@ -78,14 +91,14 @@ export async function executeCloseout(client: PmClient, id: string, options: Clo
     phase = 'workspace-copy';
     cpSync(sourceRoot, workspace, { recursive: true, filter: /** Exclude caches and refuse links that could write through to original artifacts. */ path => {
       if (path !== sourceRoot && ['.git', 'node_modules', 'coverage'].includes(basename(path))) return false;
-      return regularCopyEntry(path);
+      return regularCopyEntry(path, sourceRoot);
     } });
     const tracker = join(workspace, '.closeout-pm');
     phase = 'tracker-copy';
     const trackerSource = realpathSync(options.pmRoot);
     cpSync(trackerSource, tracker, { recursive: true, filter: /** PM-managed dependency links share the same explicit exception as workspace node_modules. */ path => {
       const parts = relative(trackerSource, path).split(sep);
-      return parts[0] === 'extensions' && parts.includes('node_modules') || regularCopyEntry(path);
+      return parts[0] === 'extensions' && parts.includes('node_modules') || regularCopyEntry(path, trackerSource);
     } });
     const modules = join(sourceRoot, 'node_modules');
     if (existsSync(modules)) symlinkSync(modules, join(workspace, 'node_modules'), 'dir');
@@ -120,7 +133,7 @@ export async function executeCloseout(client: PmClient, id: string, options: Clo
     }
     result = execution;
   } catch (failure) {
-    result = { runs: [], error: `Disposable workspace or native coverage could not be prepared (${phase}/${preparationFailure(failure)})` };
+    result = { runs: [], error: `Disposable workspace or native coverage could not be prepared (${phase}/${preparationFailure(failure)}${failure instanceof CopyPolicyError ? `:${failure.file}` : ''})` };
   } finally {
     rmSync(sandbox, { recursive: true, force: true });
   }
