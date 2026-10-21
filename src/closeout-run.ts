@@ -3,7 +3,7 @@ import { cpSync, existsSync, lstatSync, mkdtempSync, mkdirSync, readdirSync, rea
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { basename, dirname, join, relative, resolve } from 'node:path';
+import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import type { PmClient } from '@unbrained/pm-cli/sdk';
 import type { CloseoutChange, CloseoutOptions } from './closeout-types.ts';
 import { artifactPath, hasGit } from './closeout-state.ts';
@@ -73,7 +73,11 @@ export async function executeCloseout(client: PmClient, id: string, options: Clo
       return regularCopyEntry(path);
     } });
     const tracker = join(workspace, '.closeout-pm');
-    cpSync(realpathSync(options.pmRoot), tracker, { recursive: true, filter: regularCopyEntry });
+    const trackerSource = realpathSync(options.pmRoot);
+    cpSync(trackerSource, tracker, { recursive: true, filter: /** PM-managed dependency links share the same explicit exception as workspace node_modules. */ path => {
+      const parts = relative(trackerSource, path).split(sep);
+      return parts[0] === 'extensions' && parts.includes('node_modules') || regularCopyEntry(path);
+    } });
     const modules = join(sourceRoot, 'node_modules');
     if (existsSync(modules)) symlinkSync(modules, join(workspace, 'node_modules'), 'dir');
     for (const change of restore) {

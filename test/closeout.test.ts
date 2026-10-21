@@ -297,3 +297,11 @@ test('a linked external artifact cannot enter an executable workspace snapshot',
   assert.ok(report.findings.some(row => row.code === 'execution_missing'));
   assert.equal(readFileSync(join(external.cwd, 'foreign.txt'), 'utf8'), 'original');
 });
+
+test('PM-managed extension dependency links preserve the pinned peer in the copied tracker', async t => {
+  const { client, id, pmRoot, options } = await closeoutFixture(t);
+  const dependency = join(pmRoot, 'extensions', 'fixture', 'node_modules', '@unbrained', 'pm-cli');
+  mkdirSync(dirname(dependency), { recursive: true });
+  symlinkSync(join(import.meta.dirname, '../node_modules/@unbrained/pm-cli'), dependency, 'dir');
+  assert.equal((await reviewCloseout(client, id, options)).ok, true);
+});
