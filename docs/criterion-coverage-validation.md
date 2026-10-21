@@ -91,3 +91,27 @@ rate-limit counters remain eligible. The guard rejects service-notice phrases,
 not topic words. Real SDK and registered-command regressions retain rejection
 of quota-exhausted, skipped, unavailable and rate-limit-reached notices. The
 existing round-classifier issue remains open; this change does not certify it.
+
+
+The local `npm run test:install` targeted acceptance run passes 1/1, including
+packed npm/npx and native Bun/bunx consumers. It verifies both coverage commands,
+caller attribution, TOON/JSON reads and typed refusal exits. It is targeted
+installation evidence, not a locally executed full release gate.
+
+## Full CI receipt
+
+Source head `e8f102d7a1e459e7d89d11a253b3c6fc77cceae4` passes the complete
+[CI run](https://github.com/unbraind/pm-review/actions/runs/39687725734).
+The npm release-gate steps on Node 22 and Node 26, and the full
+`bun run release:check` on Node 26, each pass 175/175 outer source tests with zero
+failures/skips. Each reports all 28 authored source files at 100% statements,
+branches, functions and lines. The packed npm/npx and native Bun/bunx acceptance
+passes 1/1 in each npm job and again inside the Bun gate.
+
+Duplication is 0% (0/6,461 lines, 43 sources, zero clone pairs); all 90 declarations
+across 28 files are documented. Fresh-clone tracker health/history, identity/privacy,
+typecheck, lint, production audit, packaging, changelog and attestation checks pass.
+Nested deliberate failure fixtures in tooling tests are negative controls; the
+outer source-suite result is the 175/175 receipt. No thresholds, dependency pins,
+release workflow or telemetry settings changed. The final receipt/claim-release
+commit changes only documentation and PM records; its CI is reported in the PR.

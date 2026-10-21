@@ -236,8 +236,10 @@ local Git checkout. Closeout runs linked tests in plain trackers and compares
 linked artifacts against `closeout-before:<base64>` notes. It reports missing
 states and skipped repository-wide checks explicitly. Only `--base` comparison
 requires Git; GitHub commands require provider credentials and connectivity.
+Criterion coverage reads and explicit judgment writes work in plain trackers
+without git or GitHub access, using previously imported evidence.
 
-### Criterion review coverage
+## Criterion review coverage
 
 `pm review coverage <item>` shows which declared acceptance criteria have substantive
 review attention and which remain unreviewed. Declare risk criteria in the same
