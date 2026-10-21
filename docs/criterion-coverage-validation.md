@@ -39,7 +39,7 @@ typed remedies, explicit retractions/gaps, SDK attribution and no-git dispatch.
 The host's test-result recording policy is disabled, so observed receipts are
 recorded on the feature item rather than changing that policy.
 
-In four independent disposable source copies with the same tests/dependencies:
+In five independent disposable source copies with the same tests/dependencies:
 
 | Behavioral control removed | Retained test selector | Result |
 | --- | --- | --- |
@@ -47,11 +47,13 @@ In four independent disposable source copies with the same tests/dependencies:
 | Complete-criterion revision guard | `changed criteria, reordered` | Exit 1, assertion failure |
 | Author/date propagation | `explicit coverage is attributed` | Exit 1, assertion failure |
 | Append explicit repeated assessments (restore global deduplication) | `explicit coverage is attributed` | Exit 1, assertion failure |
+| Explicit author forwarding | `a gap from another source` | Exit 1, assertion failure |
 
 Each proof runs `node --test --test-name-pattern='<selector>' test/coverage.test.ts`.
 The notice control forces the eligibility result true, the revision control removes
 only its refusal guard, and the attribution control blanks only author/date. The fourth control restores
 only global comment deduplication; it fails the retained retraction/replay test.
+The fifth removes only the author override passed to the PM comment mutation.
 The production source and tracker remain unchanged during these probes.
 
 Local `npm run typecheck`, `npm run build:test`, `npm run build`, `npm run lint`,
@@ -68,3 +70,11 @@ assurance proof or exact-head reviewer completion. Coverage cannot prove that th
 judgment's semantic interpretation is correct. Full contract content revisions may
 be reused when the exact declaration is restored. See the contract document for
 source eligibility, immutable digest bindings and comment-edit limitations.
+
+
+Packed-consumer integration identified two pinned-host boundaries: generated
+`--review-pr`/`--review-url` aliases are classified as typos before extension field
+handling, so the fixture uses canonical `--field name=value`; and the injected
+SDK client defaults to `pm-extension`, so coverage forwards explicit caller
+attribution to the mutation. These are recorded without filing upstream issues.
+The first two CI runs fail at fixture setup and are not full-gate evidence.

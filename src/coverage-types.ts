@@ -8,7 +8,7 @@ export interface CoverageBinding {
   excerpt: string; reason: string; judgment: 'reviewed' | 'gap';
 }
 /** Inputs deliberately omit digest: the package captures the current source itself. */
-export type CoverOptions = Omit<CoverageBinding, 'digest'>;
+export type CoverOptions = Omit<CoverageBinding, 'digest'> & { /** Explicit author override; otherwise the client's author applies. */ author?: string };
 /** Compact attributable judgment; full excerpts and source bodies stay in the tracker. */
 export interface CoverageJudgment {
   comment: number; author: string; date: string; criterion: string;

@@ -135,6 +135,7 @@ test('coverage dispatch works without git in PATH, with a ceiling, and returns t
   try {
     const ctx = { command: 'review coverage', args: [id], options: {}, global: { author: 'test-agent' }, pm_root: pmRoot, repo_root: cwd };
     assert.equal((await runReviewCommand(ctx) as CoverageMap).reviewed, 0);
+    assert.equal((await runReviewCommand({ ...ctx, global: {} }) as CoverageMap).reviewed, 0);
     const covered = await runReviewCommand({ ...ctx, command: 'review cover', options: { ...options } }) as CoverageMap;
     assert.equal(covered.reviewed, 1);
     const deniedResult = await runReviewCommand({ ...ctx, command: 'review cover' }) as { exit_code: number; refusal: { code: string } };
@@ -154,8 +155,9 @@ test('a gap from another source dominates reviewed claims', async t => {
   const pr = pullRequest({ threads: [], comments: [], reviews: [{ ...contribution({ id: 'second-review', body: 'Validate the input before writing.' }), state: 'COMMENTED' }] });
   const imported = await importFindings(client, pr, findingsOf(pr));
   await coverCriterion(client, id, options);
-  const result = await coverCriterion(client, id, { ...options, evidence: imported.items[0].id, judgment: 'gap' }) as CoverageMap;
+  const result = await coverCriterion(client, id, { ...options, evidence: imported.items[0].id, judgment: 'gap', author: 'gap-review-agent' }) as CoverageMap;
   assert.equal(result.criteria[0].state, 'gap');
+  assert.equal(result.judgments.at(-1)!.author, 'gap-review-agent');
 });
 
 

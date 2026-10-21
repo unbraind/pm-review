@@ -49,6 +49,10 @@ bodies are also refused; select a separate substantive inline finding. Unknown-h
 issue comments cannot establish coverage. Human judgments remain judgments, and
 PM authors are attribution rather than cryptographic identity verification.
 
+The CLI forwards explicit `--author` or `PM_AUTHOR` to the comment mutation, even
+when the host injects an SDK client with its own default author. SDK callers may
+set `CoverOptions.author`; otherwise the client author applies.
+
 Writes append a versioned JSON comment through the SDK with PM author, timestamp
 and normal history. They never close items or alter the criterion declaration.
 Reads revalidate every record against the complete contract and source digest

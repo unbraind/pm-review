@@ -104,10 +104,11 @@ export async function coverCriterion(client: PmClient, id: string, options: Cove
   const map = await reviewCoverage(client, id);
   if (!map.ok) return map;
   const evidence = (await client.listAllComplete()).items.find(/** Missing evidence is a typed refusal, not an SDK item lookup exception. */ item => item.id === options.evidence);
-  const raw = { ...options, digest: evidence ? sourceDigest(evidence) : '' };
+  const { author, ...selection } = options;
+  const raw = { ...selection, digest: evidence ? sourceDigest(evidence) : '' };
   const binding = bindingOf(raw);
   const denied = binding ? validate(binding, map, evidence) : refusal('judgment_invalid');
   if (denied) return { ok: false, id, refusal: denied };
-  await client.comments(id, { add: PREFIX + JSON.stringify(raw) });
+  await client.comments(id, { add: PREFIX + JSON.stringify(raw), author });
   return reviewCoverage(client, id);
 }

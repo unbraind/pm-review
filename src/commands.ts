@@ -45,7 +45,7 @@ async function dispatchReviewCommand(ctx: CommandHandlerContext, provided?: GitH
   const client = ctx.sdk?.client ?? new PmClient({ cwd: ctx.source_workspace_root ?? ctx.repo_root, pmRoot: ctx.pm_root, author: ctx.global.author });
   if (ctx.command === 'review coverage' || ctx.command === 'review cover') {
     const id = ctx.args[0] ?? '';
-    const options = Object.fromEntries(['revision', 'criterion', 'evidence', 'excerpt', 'reason', 'judgment'].map(/** Preserve invalid inputs for typed validation instead of guessing a judgment. */ name => [name, readStringOption(ctx.options, name) ?? ''])) as unknown as CoverOptions;
+    const options = { author: ctx.global.author ?? process.env.PM_AUTHOR, ...Object.fromEntries(['revision', 'criterion', 'evidence', 'excerpt', 'reason', 'judgment'].map(/** Preserve invalid inputs for typed validation instead of guessing a judgment. */ name => [name, readStringOption(ctx.options, name) ?? ''])) } as unknown as CoverOptions;
     const result = ctx.command === 'review coverage' ? await reviewCoverage(client, id) : await coverCriterion(client, id, options);
     return result.ok ? result : { ...result, exit_code: 1 };
   }
