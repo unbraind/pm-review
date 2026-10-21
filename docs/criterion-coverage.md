@@ -43,7 +43,9 @@ if (map.ok) {
 Evidence must be a `ReviewFinding` with substantive text, node identity, reviewer,
 repository/PR coordinates, matching GitHub source URL and known commit. Import it
 with `review import` first. Quota, skipped, failed, unavailable and similar service
-notices contribute zero, even when they contain severity markers. Informational
+notices contribute zero, even when they contain severity markers. The words
+quota and rate-limit alone are topics, not service-notice evidence; substantive
+findings about their counters remain eligible. Informational
 summaries and empty approvals are conservatively ineligible. Mixed notice/review
 bodies are also refused; select a separate substantive inline finding. Unknown-head
 issue comments cannot establish coverage. Human judgments remain judgments, and

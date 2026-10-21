@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
-import { commitImportedItem, locateItem, readLocatedItem, readSettings } from '@unbrained/pm-cli/sdk';
+import { createExtensionCommandSdk, commitImportedItem, locateItem, readLocatedItem, readSettings } from '@unbrained/pm-cli/sdk';
+import { activateExtensionForTest, runRegisteredCommandForTest } from '@unbrained/pm-cli/sdk/testing';
+import extension from '../index.ts';
 import type { TestContext } from 'node:test';
 import { coverCriterion, reviewCoverage } from '../src/coverage.ts';
 import type { CoverOptions, CoverageCode, CoverageMap, CoverageResult } from '../src/coverage-types.ts';
@@ -177,4 +179,31 @@ test('missing source mappings refuse and imported attribution is normalized by t
   result = await reviewCoverage(client, id) as CoverageMap;
   assert.ok(result.judgments[2].refusal || result.judgments[2].author.trim().length > 0);
   assert.ok(result.judgments[3].refusal || result.judgments[3].date.trim().length > 0);
+});
+
+
+test('substantive quota and rate-limit findings remain eligible through SDK and registered commands', async t => {
+  const { client, pmRoot, id, options } = await fixture(t);
+  const activation = await activateExtensionForTest(extension, { name: 'pm-review', capabilities: ['commands', 'schema'] });
+  assert.deepEqual(activation.failed, []);
+  const cases = [
+    ...['allowance', 'quota', 'rate-limit'].map(topic => ({ body: `**High** Validate the input before writing. The ${topic} counter must be atomic.`, allowed: true })),
+    ...['Quota exhausted.', 'Review skipped.', 'Review unavailable.', 'rate-limit reached.'].map(notice => ({ body: `**High** ${notice} Validate the input before writing.`, allowed: false })),
+  ];
+  for (const [index, scenario] of cases.entries()) {
+    const pr = pullRequest({ threads: [{ id: `classification-${index}`, path: 'src/counter.ts', line: 1, resolved: false, comments: [contribution({ body: scenario.body })] }], comments: [], reviews: [] });
+    const imported = await importFindings(client, pr, findingsOf(pr));
+    const binding = { ...options, evidence: imported.items[0].id };
+    const sdk = await coverCriterion(client, id, binding);
+    const command = await runRegisteredCommandForTest(activation.commands, { command: 'review cover', args: [id], options: binding, pmRoot, sdk: createExtensionCommandSdk(pmRoot, client, 'test-agent') });
+    assert.equal(command.handled, true);
+    if (scenario.allowed) {
+      assert.equal((sdk as CoverageMap).reviewed, 1, scenario.body);
+      assert.equal((command.result as CoverageMap).reviewed, 1, scenario.body);
+    } else {
+      denied(sdk, 'evidence_ineligible');
+      denied(command.result as CoverageResult, 'evidence_ineligible');
+      assert.equal((command.result as { exit_code: number }).exit_code, 1);
+    }
+  }
 });

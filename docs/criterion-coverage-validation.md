@@ -39,7 +39,7 @@ typed remedies, explicit retractions/gaps, SDK attribution and no-git dispatch.
 The host's test-result recording policy is disabled, so observed receipts are
 recorded on the feature item rather than changing that policy.
 
-In five independent disposable source copies with the same tests/dependencies:
+In six independent disposable source copies with the same tests/dependencies:
 
 | Behavioral control removed | Retained test selector | Result |
 | --- | --- | --- |
@@ -48,12 +48,17 @@ In five independent disposable source copies with the same tests/dependencies:
 | Author/date propagation | `explicit coverage is attributed` | Exit 1, assertion failure |
 | Append explicit repeated assessments (restore global deduplication) | `explicit coverage is attributed` | Exit 1, assertion failure |
 | Explicit author forwarding | `a gap from another source` | Exit 1, assertion failure |
+| Restore topic-wide quota/rate-limit denylist | `substantive quota and rate-limit` | Exit 1, assertion failure |
 
 Each proof runs `node --test --test-name-pattern='<selector>' test/coverage.test.ts`.
 The notice control forces the eligibility result true, the revision control removes
 only its refusal guard, and the attribution control blanks only author/date. The fourth control restores
 only global comment deduplication; it fails the retained retraction/replay test.
 The fifth removes only the author override passed to the PM comment mutation.
+The sixth restores only the topic-wide notice denylist and fails the substantive
+quota/rate-limit regression. The final targeted suite passes 10/10 with 100% statements, branches, functions
+and lines across both new modules, adding the SDK and registered-command
+regression to the original nine tests.
 The production source and tracker remain unchanged during these probes.
 
 Local `npm run typecheck`, `npm run build:test`, `npm run build`, `npm run lint`,
@@ -78,3 +83,11 @@ handling, so the fixture uses canonical `--field name=value`; and the injected
 SDK client defaults to `pm-extension`, so coverage forwards explicit caller
 attribution to the mutation. These are recorded without filing upstream issues.
 The first two CI runs fail at fixture setup and are not full-gate evidence.
+
+
+Reviewer feedback on the existing classification issue #14 is addressed on this
+feature path: substantive severity-marked findings about allowance, quota and
+rate-limit counters remain eligible. The guard rejects service-notice phrases,
+not topic words. Real SDK and registered-command regressions retain rejection
+of quota-exhausted, skipped, unavailable and rate-limit-reached notices. The
+existing round-classifier issue remains open; this change does not certify it.

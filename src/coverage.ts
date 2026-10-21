@@ -43,7 +43,7 @@ function eligible(item: ItemMetadata): boolean {
     && typeof item.review_url === 'string' && item.review_url.startsWith(`https://github.com/${item.review_repo}/pull/${String(item.review_pr)}#`)
     && typeof item.review_head === 'string' && /^[a-f0-9]{40,64}$/i.test(item.review_head)
     && !isInformational(body)
-    && !/quota|rate[- ]limit|review skipped|skipped review|review failed|review unavailable|review (?:was |is )?(?:not (?:performed|completed)|cancelled|canceled)|trial (?:has )?ended|review budget|no access|failed to (?:review|generate)/i.test(body);
+    && !/quota (?:exceeded|exhausted)|rate[- ]limit(?:ed| (?:exceeded|reached))|review skipped|skipped review|review failed|review unavailable|review (?:was |is )?(?:not (?:performed|completed)|cancelled|canceled)|trial (?:has )?ended|review budget|no access|failed to (?:review|generate)/i.test(body);
 }
 
 /** Validate persisted and CLI bindings identically instead of trusting stored JSON. */
@@ -66,7 +66,7 @@ function validate(binding: CoverageBinding, map: CoverageMap, evidence: ItemMeta
   return undefined;
 }
 
-/** Read complete target and source items through the backend-neutral SDK, with no git or network. */
+/** Read complete target and source items through the backend-neutral SDK, without git or review-provider calls. */
 export async function reviewCoverage(client: PmClient, id: string): Promise<CoverageResult> {
   const item = (await client.get(id, { full: true })).item;
   const { acceptance_criteria: contract, comments } = itemEvidence(item);
