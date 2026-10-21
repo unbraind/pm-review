@@ -1,6 +1,8 @@
 import { createPmCliExpectedError, isPmCliExpectedError, PmClient, printResult, readBooleanOption, readStringOption, suppressHostOutput } from '@unbrained/pm-cli/sdk';
 import { defineCommand } from '@unbrained/pm-cli/sdk/authoring';
 import type { CommandHandlerContext, ExtensionApi, FlagDefinition } from '@unbrained/pm-cli/sdk/authoring';
+import { coverCriterion, reviewCoverage } from './coverage.ts';
+import type { CoverOptions } from './coverage-types.ts';
 import { reviewCloseout } from './closeout.ts';
 import { findingsOf } from './findings.ts';
 import { createGitHubTransport } from './github.ts';
@@ -41,6 +43,12 @@ export async function runReviewCommand(ctx: CommandHandlerContext, provided?: Gi
 /** Run one dispatched package command; separated so the wrapper above stays the single error boundary. */
 async function dispatchReviewCommand(ctx: CommandHandlerContext, provided?: GitHubTransport): Promise<unknown> {
   const client = ctx.sdk?.client ?? new PmClient({ cwd: ctx.source_workspace_root ?? ctx.repo_root, pmRoot: ctx.pm_root, author: ctx.global.author });
+  if (ctx.command === 'review coverage' || ctx.command === 'review cover') {
+    const id = ctx.args[0] ?? '';
+    const options = Object.fromEntries(['revision', 'criterion', 'evidence', 'excerpt', 'reason', 'judgment'].map(/** Preserve invalid inputs for typed validation instead of guessing a judgment. */ name => [name, readStringOption(ctx.options, name) ?? ''])) as unknown as CoverOptions;
+    const result = ctx.command === 'review coverage' ? await reviewCoverage(client, id) : await coverCriterion(client, id, options);
+    return result.ok ? result : { ...result, exit_code: 1 };
+  }
   if (ctx.command === 'review closeout') {
     const timeout = readStringOption(ctx.options, 'timeout');
     const result = await reviewCloseout(client, ctx.args[0] ?? '', { cwd: ctx.source_workspace_root ?? ctx.repo_root ?? process.cwd(), pmRoot: ctx.pm_root, base: readStringOption(ctx.options, 'base'), timeoutSeconds: timeout === undefined ? undefined : Number(timeout), revertCheck: readBooleanOption(ctx.options, 'revertCheck') === true });
@@ -98,6 +106,8 @@ const RESPONSE_FLAGS: FlagDefinition[] = [
 /** Register help, typed positional arguments and command handlers through the host API. */
 export function registerReviewCommands(api: ExtensionApi): void {
   const commands = [
+    { name: 'coverage', description: 'Read explicit criterion review attention and stale judgments; no completion claim', arguments: [{ name: 'item', required: true, description: 'Item declaring acceptance and risk criteria' }], flags: [], example: 'pm review coverage sample-task --json' },
+    { name: 'cover', description: 'Record an attributed criterion judgment with an exact review excerpt', arguments: [{ name: 'item', required: true, description: 'Item declaring acceptance and risk criteria' }], flags: ['revision', 'criterion', 'evidence', 'excerpt', 'reason', 'judgment'].map(/** Each selector is explicit and validated by the SDK operation. */ name => ({ long: `--${name}`, type: 'string' as const, description: name === 'judgment' ? 'reviewed|gap (attention, never proof)' : `Explicit ${name} binding; see review coverage` })), example: 'pm review cover sample-task --criterion AC1 --revision HASH --evidence finding-id --excerpt "Exact substantive review text" --judgment reviewed --reason "Explains the validation boundary"' },
     { name: 'closeout', description: 'Verify acceptance criteria with fresh linked tests and detect gamed gates; never closes the item', arguments: [{ name: 'item', required: true, description: 'Item whose completion evidence needs independent verification' }], flags: [{ long: '--base', type: 'string' as const, description: 'Git commit to compare with the current workspace' }, { long: '--timeout', type: 'string' as const, description: 'Total test budget per run, 1 to 600 seconds (default 60)' }, { long: '--revert-check', type: 'boolean' as const, description: 'Restore changed source in another disposable copy and require a named assertion to fail' }], example: 'pm review closeout sample-task --base main --revert-check --json' },
     { name: 'respond', description: 'Plan recorded inline replies and missing bot votes; dry-run unless --apply', arguments: [], flags: [...RESPONSE_FLAGS, { long: '--apply', type: 'boolean' as const, description: 'Write planned replies and votes to GitHub' }, { long: '--resolve', type: 'boolean' as const, description: 'Also resolve threads with recorded final decisions; default off' }], example: 'pm review respond --repo unbraind/pm-review --pr 1' },
     { name: 'status', description: 'Gate on unanswered findings, missing replies, bot votes, threads and exact-head review', arguments: [], flags: RESPONSE_FLAGS, example: 'pm review status --repo unbraind/pm-review --pr 1' },

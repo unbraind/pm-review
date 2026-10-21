@@ -9,6 +9,7 @@
 - Compute exact-head review round completion ([pm-review-round](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-round.toon))
 - Scaffold fleet gates and certify packed consumers ([pm-review-quality](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-quality.toon))
 - Import every bot thread, review and issue comment idempotently ([pm-review-import](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-import.toon))
+- Map substantive review evidence to declared criteria ([pm-review-criterion-coverage-map](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-criterion-coverage-map.toon))
 - Verify closeout evidence and detect gamed gates ([pm-review-closeout-verification](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-closeout-verification.toon))
 - Post recorded verdicts and gate unanswered review work ([pm-review-respond](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-respond.toon))
 

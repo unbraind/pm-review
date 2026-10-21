@@ -1,0 +1,31 @@
+id: pm-review-criterion-coverage-map
+title: Map substantive review evidence to declared criteria
+description: Add an attributable review coverage map over declared acceptance and risk criteria. Builds on closeout verification; reviewer completion and assurance evaluation remain separate.
+type: Feature
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-21T22:15:24.573Z"
+updated_at: "2026-10-21T22:23:43.379Z"
+assignee: codex-agent
+claim_principal: codex-agent
+author: codex-agent
+acceptance_criteria: Quota/skipped notices cover zero criteria; Changed criteria invalidate mappings; Judgments remain explicit and attributable; Typed SDK and compact CLI work without git with typed refusals and remedies; Public tracker copy validation and npm plus Bun CI release gates pass
+comments[2]{created_at,author,text}:
+  "2026-10-21T22:15:33.479Z",codex-agent,"Overlap rechecked against CLI 2026.10.21 assurance measurement/assertion/gate declarations, pm-ops quality measurement providers, sibling README surfaces, and pm-review round/closeout implementations. Round answers who finished at the exact head; closeout evaluates fresh tests; core assurance owns criterion contracts. No existing review-to-criterion map found. Implement explicit acceptance-criterion bindings, including risk criteria declared there, with revision and source digests, exact evidence excerpts, recorded judgment/reason and PM comment attribution. Read maps offline without git, provider calls or writes. Base is PR #25; merge after it. Targeted local gates only due host load; full npm and Bun release gates in CI."
+  "2026-10-21T22:23:43.379Z",codex-agent,"Implementation and targeted validation complete. SDK reviewCoverage/coverCriterion and CLI review coverage/cover preserve explicit PM attribution, contract and source digests, exact excerpts and typed remedies. Latest pinned pm linked-test run passes 9/9, zero failures/skips; test-result persistence remains disabled by project policy. Three independent behavioral-revert probes retain the tests and force notice eligibility, remove only the contract revision guard, or blank judgment author/date: each exits 1 with an AssertionError. Exact selectors and aggregate dogfood results are in docs/criterion-coverage-validation.md. Public origin/main tracker at 68eea9cccf2a32c0f101cb85ce8b2f58369f600e: 45 items, 22 findings, 15 criterion-bearing items, 79 criteria, zero mappings, zero reviewed and 79 unreviewed; 30 typed missing-contract refusals. Largest JSON 1753 bytes; total 9678 bytes. Non-git copy with empty PATH and ceiling: measured tracker fingerprints unchanged after SDK cache priming. Early probe observed only SDK runtime-cache/usage additions; no source item or history changed. Initial targeted failures exposed an empty-body eligibility edge and fixture expectations about SDK attribution normalization; corrected runs pass. Full npm/Bun gates reserved for CI."
+files[7]{path,scope}:
+  index.ts,project
+  src/commands.ts,project
+  src/coverage-types.ts,project
+  src/coverage.ts,project
+  test/core.test.ts,project
+  test/coverage.test.ts,project
+  test/install.acceptance.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test test/coverage.test.ts,project,codex-agent,"2026-10-21T22:20:47.306Z",local_mutation,feat/criterion-coverage-map
+docs[3]{path,scope}:
+  docs/criterion-coverage-validation.md,project
+  docs/criterion-coverage.md,project
+  README.md,project
+body: ""

@@ -47,7 +47,7 @@ function consumerEnv(cwd: string, pmRoot: string, home = cwd): NodeJS.ProcessEnv
     const prefix = runtime === 'npm' ? ['--no-install', 'pm'] : ['--bun', '--no-install', 'pm'];
     command(cwd, runner, [...prefix, 'init', 'consumer', '--defaults', '--agent-guidance', 'skip', '--json'], pmRoot);
     command(cwd, runner, [...prefix, 'install', tarball, '--project', '--json'], pmRoot);
-    for (const action of ['import', 'verdict', 'round', 'precedents', 'reconcile', 'respond', 'status', 'closeout']) assert.match(command(cwd, runner, [...prefix, 'review', action, '--help'], pmRoot), /review/);
+    for (const action of ['import', 'verdict', 'round', 'precedents', 'reconcile', 'respond', 'status', 'closeout', 'coverage', 'cover']) assert.match(command(cwd, runner, [...prefix, 'review', action, '--help'], pmRoot), /review/);
     assert.match(command(cwd, runner, [...prefix, 'review', 'reconcile', '--help'], pmRoot), /--dry-run/);
     const verdictHelp = command(cwd, runner, [...prefix, 'review', 'verdict', '--help'], pmRoot);
     assert.doesNotMatch(verdictHelp, /<value>\s+<value>/);
@@ -62,6 +62,19 @@ function consumerEnv(cwd: string, pmRoot: string, home = cwd): NodeJS.ProcessEnv
     command(cwd, runner, [...prefix, 'create', 'ReviewFinding', 'Packed searchable review context', '--description', 'Synthetic validation context', '--json'], pmRoot);
     const search = JSON.parse(command(cwd, runner, [...prefix, 'search', 'validation', '--json'], pmRoot)) as { count: number };
     assert.equal(search.count, 1);
+    const coverageTarget = JSON.parse(command(cwd, runner, [...prefix, 'create', 'Task', 'Packed criterion map', '--ac', 'Review validation boundaries', '--json'], pmRoot)) as { id: string };
+    const coverage = JSON.parse(command(cwd, runner, [...prefix, 'review', 'coverage', coverageTarget.id, '--json'], pmRoot)) as { total: number; unreviewed: number };
+    assert.equal(coverage.total, 1);
+    assert.equal(coverage.unreviewed, 1);
+    assert.match(command(cwd, runner, [...prefix, 'review', 'coverage', coverageTarget.id], pmRoot), /unreviewed/);
+    const evidence = JSON.parse(command(cwd, runner, [...prefix, 'create', 'ReviewFinding', 'Packed substantive review', '--description', 'Validate the input before writing.', '--review-bot', 'synthetic-reviewer', '--review-node-id', 'packed-node', '--review-repo', 'example/package', '--review-pr', '1', '--review-url', 'https://github.com/example/package/pull/1#discussion_r1', '--review-head', 'a'.repeat(40), '--review-kind', 'thread', '--json'], pmRoot)) as { id: string };
+    const revision = (JSON.parse(command(cwd, runner, [...prefix, 'review', 'coverage', coverageTarget.id, '--json'], pmRoot)) as { revision: string }).revision;
+    const covered = JSON.parse(command(cwd, runner, [...prefix, 'review', 'cover', coverageTarget.id, '--revision', revision, '--criterion', 'AC1', '--evidence', evidence.id, '--excerpt', 'Validate the input before writing.', '--judgment', 'reviewed', '--reason', 'Reviews the invalid input boundary', '--json'], pmRoot)) as { reviewed: number; judgments: { author: string }[] };
+    assert.equal(covered.reviewed, 1);
+    assert.equal(covered.judgments[0].author, 'install-test');
+    const refused = spawnSync(runner, [...prefix, 'review', 'cover', coverageTarget.id, '--json'], { cwd, env: consumerEnv(cwd, pmRoot), encoding: 'utf8' });
+    assert.equal(refused.status, 1, refused.stderr);
+    assert.equal((JSON.parse(refused.stdout) as { refusal: { code: string } }).refusal.code, 'judgment_invalid');
     await verifyCloseout(cwd, runner, prefix, pmRoot);
     verifyHostExitContract(cwd, runner, prefix, pmRoot);
     assert.ok((await readdir(cwd)).includes('node_modules'));

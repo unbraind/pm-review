@@ -236,3 +236,26 @@ local Git checkout. Closeout runs linked tests in plain trackers and compares
 linked artifacts against `closeout-before:<base64>` notes. It reports missing
 states and skipped repository-wide checks explicitly. Only `--base` comparison
 requires Git; GitHub commands require provider credentials and connectivity.
+
+### Criterion review coverage
+
+`pm review coverage <item>` shows which declared acceptance criteria have substantive
+review attention and which remain unreviewed. Declare risk criteria in the same
+`acceptance_criteria` contract. This adds what reviewers covered to `review round`'s
+who-finished gate; it does not replace core assurance contracts or `review closeout`
+proof. A `reviewed` judgment means attention, never correctness, approval or readiness.
+
+```sh
+pm review coverage sample-task --json
+# Copy the revision and AC identifier from that result, then explicitly assess:
+pm review cover sample-task --revision HASH --criterion AC1 \
+  --evidence imported-finding-id --excerpt 'Validate the input before writing.' \
+  --judgment reviewed --reason 'Reviews the invalid input boundary'
+pm review coverage sample-task
+```
+
+The typed SDK exports `reviewCoverage`, `coverCriterion`, `CoverageResult` and
+`CoverOptions`. TOON is the host default; `--json` returns the same compact shape.
+Review bodies and excerpts are omitted from the map, while reasons, author/date,
+reviewer and source links remain attributable. Refusals carry stable codes and
+remedies. [Contract, SDK example and limitations](docs/criterion-coverage.md).
