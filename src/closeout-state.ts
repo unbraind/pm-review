@@ -46,11 +46,17 @@ export function closeoutChanges(root: string, item: Pick<ItemMetadata, 'files' |
     try { commit = readGit(root, ['rev-parse', '--verify', '--end-of-options', `${base}^{commit}`]).trim(); }
     catch { throw new Error('--base must resolve to a commit in the workspace repository'); }
     if (realpathSync(readGit(root, ['rev-parse', '--show-toplevel']).trim()) !== realpathSync(root)) throw new Error('Run closeout from the repository root');
-    const files = new Set([...readGit(root, ['diff', '--no-ext-diff', '--no-textconv', '--name-only', '-z', commit, '--']).split('\0'), ...readGit(root, ['ls-files', '--others', '--exclude-standard', '--exclude=node_modules', '-z']).split('\0')].filter(Boolean));
+    const files = new Set([...readGit(root, ['diff', '--no-ext-diff', '--no-textconv', '--no-renames', '--name-only', '-z', commit, '--']).split('\0'), ...readGit(root, ['ls-files', '--others', '--exclude-standard', '--exclude=node_modules', '-z']).split('\0')].filter(Boolean));
     const changes = [...files].map(file => {
       let before: string | null = null;
-      if (readGit(root, ['ls-tree', '--name-only', commit, '--', file]).trim()) before = readGit(root, ['show', `${commit}:${file}`]);
-      return { file, before, after: artifactText(root, file) };
+      try {
+        if (readGit(root, ['ls-tree', '--name-only', commit, '--', file]).trim()) before = readGit(root, ['show', `${commit}:${file}`]);
+        if (before !== null && (Buffer.byteLength(before) > 1_000_000 || before.includes('\0'))) throw new Error('Baseline entry is not comparable text');
+        return { file, before, after: artifactText(root, file) };
+      } catch {
+        skipped.push({ check: `diff:${file}`, reason: 'Changed entry is not a comparable text file' });
+        return { file, before: before ?? '', after: '\0opaque', opaque: true };
+      }
     });
     return { baseline: commit, changes };
   }

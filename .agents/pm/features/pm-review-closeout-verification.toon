@@ -7,10 +7,12 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-21T15:11:44.530Z"
-updated_at: "2026-10-21T18:03:47.727Z"
+updated_at: "2026-10-21T19:22:40.398Z"
+assignee: codex-agent
+claim_principal: codex-agent
 author: codex-agent
 acceptance_criteria: Closeout reports each criterion with concrete evidence and fails closed on gaps; detects weakened gates and skipped focused deleted or ineffective tests; supports plain trackers and optional isolated behavioral revert checks; demonstrates three merged fleet items and a seeded gamed change; unchanged npm and Bun release gates pass
-comments[19]{created_at,author,text}:
+comments[23]{created_at,author,text}:
   "2026-10-21T15:11:53.850Z",codex-agent,"Overlap checked: pm help exposes linked-test execution but no independent criterion verification; pm-ops verify-release executes package gates and assurance measures thresholds; pm-lint validates context quality and explicitly does not certify evidence; pm-context assembles handoff evidence. pm-review owns the independent closeout verdict. Design: conservative criterion binding to fresh named test results, typed gate findings, git baseline or recorded linked-file state, isolated optional source revert. No automatic closure."
   "2026-10-21T15:21:21.114Z",codex-agent,"Initial behavioral acceptance now passes: a plain tracker proves a named criterion from a fresh run and becomes sensitive after source-only restore; a vacuous passing test is flagged source_unexecuted and revert_survived. Source item bytes remain unchanged. The pinned host rejects universal read-output controls on test mutations; the runner omits those controls. Full release coverage and three merged-item demonstrations are next."
   "2026-10-21T15:35:03.650Z",codex-agent,"Three exact-merge read-only demonstrations complete: PR 16 round-exit-contract: 2 unproven (120-second test budget exceeded); PR 15 f82w: 2 unproven (no linked tests); PR 12 respond: 16 unproven (combined original linked commands exceeded 120 seconds). All refuse closeout, preserve original criteria and leave tracked source state unchanged. Seeded vacuous test returns source_unexecuted and revert_survived; legitimate no-git evidence proves its criterion. Details: docs/closeout-dogfood.md. Continuing unchanged-threshold release gates."
@@ -30,7 +32,11 @@ comments[19]{created_at,author,text}:
   "2026-10-21T17:33:19.826Z",codex-agent,"Verified final PM-linked run: process exit 0; both progress receipts explicitly report end status=passed and exit_code=0. Main integration command completed in 552937 ms; evidence-boundary command completed in 4757 ms. The verification script also asserted exactly two passed command receipts and no failed receipt. No timeout failures occurred. Durable run recording remains disabled by project policy, so this comment preserves the observed result. CI on ca837cc is green for Node 22/26 and full native Bun release gates; isolated-HOME npm gate is still running."
   "2026-10-21T17:38:24.988Z",codex-agent,"The final isolated-HOME npm run on ca837cc exited 1: 154/155 source tests passed, zero skipped, all 26 authored sources still measured 100 percent in all four dimensions. The existing severity-parsing adversarial-input test hit its unchanged 5000 ms child-startup deadline (ETIMEDOUT). CI Node 22/26 passes the identical test. This failed local gate is not approval. Retrying with an installed Node 26 runtime matching the CI major, with identical source and thresholds."
   "2026-10-21T18:03:13.086Z",codex-agent,"Final complete isolated-HOME npm release:check on ca837cc with Node 26 exited 0. Outer source suite: 155 passed, 0 failed, 0 skipped; all 26 authored sources met unchanged 100 percent statements/branches/functions/lines; duplication 0 percent; production audit 0 vulnerabilities. All later stages passed, including changelog and attestation checks and packed npm/npx plus native Bun/bunx acceptance 1/1. CI Node 22/26 and full Bun 1.4.3 release:check are also green at this code/test head. Final PM-linked run independently passed both commands with verified exit 0. Three original merged-item copies remain unproven 2/2/16; the gamed seed is blocked. Known boundaries and failed-run corrections remain in linked docs and append-only history. Handing off for independent orchestrator review; item stays in progress and will not be closed."
-files[11]{path,scope}:
+  "2026-10-21T19:15:07.534Z",codex-agent,"Review round for PR 25: all three unresolved threads verified valid (PRRT_kwDOVGABD86u6Tae, PRRT_kwDOVGABD86u6Tau, PRRT_kwDOVGABD86u6Ta1). Latest CodeRabbit body has no outside-diff or nitpick findings. Branch contains main and matches remote. Fix direct-root clone detection, disable rename collapsing, retain opaque repository entries with skip receipts. Self-review also guards opaque tests, invocation and revert baselines. Only targeted regressions, typecheck and lint run locally on the loaded host; full unchanged npm and Bun release gates will run in CI."
+  "2026-10-21T19:18:12.642Z",codex-agent,"Targeted regression suite passes 4/4 (0 failed, 0 skipped). npm run typecheck, npm run build:test and npm run lint pass. npm ci completed with 0 vulnerabilities. The first typecheck attempt ran before dependency installation completed and could not find tsc; retry after installation passed. Initial nested fixture inherited parent-branch provenance and was refused by the unchanged pinned host trust checks; the regression now models pre-existing branch-independent plain-tracker evidence placed beneath a repository. Such evidence executes and proves its criterion after the root-only clone fix. Branch-bound provenance remains governed by host trust policy. No dist files are tracked. Whole PR reviewed for clone/discovery, rename and opaque-evidence handling; same-class opaque test/invocation/revert paths are covered. Function-only behavioral revert checks are next."
+  "2026-10-21T19:21:22.052Z",codex-agent,"Behavioral revert proof complete: six separate function-only reversions, retaining the regression tests, each exited 1 with AssertionError. executeCloseout reversion (required hasGit import restored) breaks nested plain-tracker execution at workspace-root; closeoutChanges reversion loses renamed test/source paths; a separate closeoutChanges reversion throws on opaque binary entries; detectGaming reversion fails opaque-test blocking; checkInvocation reversion falsely accepts opaque native invocation; reviewCloseout reversion attempts the opaque source baseline and fails the inconclusive-verdict assertion. All functions restored immediately after their individual proof. Exact commands: node --test --test-name-pattern \"a plain tracker\" test/closeout-review.test.ts; same command with patterns \"staged and committed\", \"opaque repository entries\" (state and detector proofs separately), \"opaque source\" (invocation and revert proofs separately). No build/import failures count as proof. The original opaque-state proof also reproduced the domain binary exception; assert.doesNotThrow now makes that contract explicit. Fixed-source PM-linked targeted run and existing no-git/Git copy smoke regressions are running."
+  "2026-10-21T19:22:40.332Z",codex-agent,"Fixed-source verification after all six revert proofs: PM-linked targeted run ./node_modules/.bin/pm test pm-review-closeout-verification --run --only-last --progress --timeout 600 exited 0; selected command end status=passed and exit_code=0, all four review regressions pass, 0 failed/0 skipped and all failure categories 0. Existing smoke command node --test --test-name-pattern=\"plain tracker fresh evidence|no-git tracker works|git-backed execution\" test/closeout.test.ts passes 3/3, 0 failed/0 skipped. npm run typecheck, npm run build:test and npm run lint pass after sharing the existing intake-context helper. PM durable run recording remains disabled by project policy; observed command receipt is recorded here. No local full release gates were run in this round. All thresholds and dependency pins remain unchanged; pushing code plus append-only tracker evidence for CI npm/Node 22, npm/Node 26 and Bun release validation."
+files[13]{path,scope}:
   index.ts,project
   src/closeout-detectors.ts,project
   src/closeout-run.ts,project
@@ -39,10 +45,12 @@ files[11]{path,scope}:
   src/closeout.ts,project
   src/commands.ts,project
   test/closeout-evidence.test.ts,project
+  test/closeout-review.test.ts,project
   test/closeout.test.ts,project
   test/core.test.ts,project
+  test/helpers.ts,project
   test/install.acceptance.ts,project
-tests[2]:
+tests[3]:
   - command: node --test test/closeout.test.ts
     scope: project
     timeout_seconds: 600
@@ -58,6 +66,14 @@ tests[2]:
     provenance:
       author: codex-agent
       created_at: "2026-10-21T15:38:41.666Z"
+      source_kind: local_mutation
+      source_ref: feat/closeout-verification
+  - command: node --test test/closeout-review.test.ts
+    scope: project
+    timeout_seconds: 600
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-21T19:16:44.060Z"
       source_kind: local_mutation
       source_ref: feat/closeout-verification
 docs[3]{path,scope}:

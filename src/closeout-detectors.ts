@@ -35,6 +35,7 @@ export function detectGaming(changes: CloseoutChange[]): CloseoutFinding[] {
       findings.push({ code: lowered ? 'threshold_lowered' : 'gate_changed', file, detail: lowered ? 'A coverage floor or lint rule was weakened or removed' : 'Changed test or lint policy requires independent review' });
     }
     if (!isTestFile(file)) continue;
+    if (change.opaque) { findings.push({ code: 'execution_unverified', file, detail: 'Changed test artifact is not comparable text' }); continue; }
     if (after === null) { findings.push({ code: 'test_deleted', file, detail: 'Test artifact deleted' }); continue; }
     const priorLines = new Set((before ?? '').split('\n'));
     const addedLines = after.split('\n').filter(/** Compare test directives on newly changed lines, including replacements at equal counts. */ line => !priorLines.has(line)).join('\n');

@@ -42,7 +42,12 @@ through the copied workspace's dependency link.
 Git comparison includes committed, staged, unstaged and untracked changes from
 `--base` to the current workspace. Invoke at the repository root. The base is
 resolved as a commit without shell interpolation. External diff/textconv are
-disabled. Linked artifact paths must stay within the workspace and cannot use
+disabled, and rename detection is disabled so both sides remain visible.
+Repository entries that cannot be compared as bounded text are recorded as opaque
+with a `diff:<path>` skip receipt. Opaque policies and tests retain blocking
+findings; opaque source cannot certify invocation or serve as a revert baseline.
+Unrelated opaque assets do not abort report generation.
+Linked artifact paths must stay within the workspace and cannot use
 symlinks, binary contents or text larger than one megabyte. Workspace roots are canonicalized before copying,
 and artifact symlinks are refused in executable snapshots; installed dependencies
 remain the explicit shared-link exception. Package-manager and tooling caches

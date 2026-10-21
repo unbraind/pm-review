@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import type { PmClient } from '@unbrained/pm-cli/sdk';
 import type { CloseoutChange, CloseoutOptions } from './closeout-types.ts';
-import { artifactPath, hasGit } from './closeout-state.ts';
+import { artifactPath } from './closeout-state.ts';
 
 /** Minimal host result preserves assertion, context, trust and timeout semantics. */
 export interface CloseoutRun { command?: string; path?: string; status: string; stdout?: string; stderr?: string; failure_category?: string }
@@ -87,7 +87,7 @@ export async function executeCloseout(client: PmClient, id: string, options: Clo
   let phase = 'workspace-root';
   try {
     const sourceRoot = realpathSync(options.cwd);
-    if (hasGit(sourceRoot)) execFileSync('git', ['clone', '--no-hardlinks', '--no-checkout', '--quiet', '--', sourceRoot, workspace], { timeout: 30_000, stdio: ['ignore', 'pipe', 'pipe'] });
+    if (existsSync(join(sourceRoot, '.git'))) execFileSync('git', ['clone', '--no-hardlinks', '--no-checkout', '--quiet', '--', sourceRoot, workspace], { timeout: 30_000, stdio: ['ignore', 'pipe', 'pipe'] });
     phase = 'workspace-copy';
     cpSync(sourceRoot, workspace, { recursive: true, filter: /** Exclude caches and refuse links that could write through to original artifacts. */ path => {
       if (path !== sourceRoot && ['.git', 'node_modules', 'coverage', '.bun', '.npm', '.cache'].includes(basename(path))) return false;

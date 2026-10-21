@@ -12,15 +12,7 @@ import { artifactPath, artifactText, closeoutChanges, hasGit } from '../src/clos
 import { detectGaming, namedTests } from '../src/closeout-detectors.ts';
 import { boundedHost, executeCloseout } from '../src/closeout-run.ts';
 import { runReviewCommand } from '../src/commands.ts';
-import { tracker } from './helpers.ts';
-
-/** Bind intake provenance to a real fixture instead of an inherited parent test workspace. */
-async function inFixtureWorkspace<T>(cwd: string, action: () => Promise<T>): Promise<T> {
-  const previous = process.env.PM_SOURCE_WORKSPACE_ROOT;
-  process.env.PM_SOURCE_WORKSPACE_ROOT = cwd;
-  try { return await action(); }
-  finally { if (previous === undefined) delete process.env.PM_SOURCE_WORKSPACE_ROOT; else process.env.PM_SOURCE_WORKSPACE_ROOT = previous; }
-}
+import { tracker, inFixtureWorkspace } from './helpers.ts';
 
 /** Create fixture source and directly instrumented named behavior tests. */
 function sourceFiles(cwd: string): void {
