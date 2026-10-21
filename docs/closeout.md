@@ -51,11 +51,13 @@ remain the explicit shared-link exception. Package-manager and tooling caches
 Findings include weakened coverage floors/lint severity, changed test policies,
 new focused/skipped/pending tests, removed test cases/artifacts, missing runs,
 and missing linked files. Policy and test-definition scanning is conservative:
-unsupported policy formats and renamed tests require review rather than silently
-passing. It does not parse every test framework or dynamic configuration.
-Native V8 counters additionally flag changed functions that never execute.
-Transpiled or non-V8 code without matching source counters is explicitly
-unverified. Invocation alone does not prove an assertion depends on the result.
+unsupported syntax in recognized policy files and renamed tests require review.
+The literal patterns can flag fixture strings and do not parse every test
+framework, configuration format or dynamic definition.
+For changed JavaScript/TypeScript files (`.js`, `.ts` and their `c`/`m`
+variants), native V8 counters additionally flag functions that never execute.
+Missing matching counters for those files are explicitly unverified; other
+languages and JSX/TSX are outside invocation analysis. Invocation alone does not prove an assertion depends on the result.
 
 `--revert-check` runs the same tests again in another disposable copy with only
 changed source files restored to the baseline. Keep build steps in the linked
@@ -80,5 +82,8 @@ previous UTF-8 contents in each linked file/document note as
 `closeout-before:<base64>`. Comparisons use those recorded contents and current
 files; the receipt explicitly skips repository-wide diff discovery. Missing
 recorded states block closeout. An unavailable `--base` cannot substitute for
-recorded state. Git metadata is detected by filesystem inspection before any
-Git operation. No source Git checkout is needed for the plain-tracker path.
+recorded state. The verifier inspects filesystem metadata before its own Git
+comparison reads.
+The pinned PM host still makes an optional Git provenance probe; missing Git is
+tolerated and the plain-tracker regression runs with Git absent from PATH.
+No source Git checkout is needed for the plain-tracker path.

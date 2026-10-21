@@ -34,3 +34,38 @@ mixed-policy/test-gaming regression fail with an assertion error. Disabling only
 `source_unexecuted` is missing. Each fails with exit 1, and original source
 bytes remain untouched. These are disabled-behavior proofs for newly introduced
 functions, rather than import/build failures from deleting new modules.
+
+The final validation candidate passes both Node 22 and Node 26 CI jobs, each with
+155/155 outer source tests, zero skipped tests, 100% statements/branches/functions/
+lines across all 26 authored sources, and zero duplication. Packed npm/npx and
+native Bun/bunx acceptance passes 1/1 in each matrix job. The Node 26 job also
+runs the full `bun run release:check` with Bun 1.4.3: 155/155 source tests and
+1/1 packed acceptance. [CI receipt](https://github.com/unbraind/pm-review/actions/runs/39642397454).
+
+Additional behavioral proofs cover installed SDK peer links and Bun cache
+symlinks. Managed extension dependencies remain available; package-manager
+caches never enter the copied workspace. External artifact symlinks stay
+refused. Each corresponding regression fails before its fix. A nested-intake
+regression also proves that fixture provenance must describe its own workspace;
+production trust refusal remains intact.
+
+Earlier failed runs are retained in the tracker, including a corrected mistaken
+PM-run receipt and the classifier timing failure tracked separately in
+`pm-review-classifier-timing`. They are not passing gate evidence. Project policy
+disables durable test-run recording, so verified PM runner results are retained
+in comments without changing that policy.
+
+The isolated-HOME Node 24 gate on the same candidate exited 1 with 154/155
+source tests passing and zero skipped. Its only failure was the existing
+severity-parser child reaching the unchanged 5000 ms deadline under shared-host
+load; coverage still measured 100% in all four dimensions. The same isolated
+parser test passed 1/1 on installed Node 26 at the original limit. This failed
+full run is retained as non-passing evidence.
+
+The complete isolated-HOME Node 26 retry then exited 0: 155/155 source tests,
+zero skipped, all 26 authored sources at 100% in every coverage dimension,
+zero duplication, and packed npm/npx plus native Bun/bunx acceptance 1/1.
+The PM-linked run independently exited 0 with both command receipts passed
+(21 integration tests and 5 evidence-boundary tests). No failed or incomplete
+run is included in those passing counts. Code and tests were unchanged at
+`ca837cc`; only documentation and tracker receipts follow that candidate.

@@ -6,12 +6,15 @@ status: open
 priority: 2
 tags: []
 created_at: "2026-10-21T15:50:26.310Z"
-updated_at: "2026-10-21T15:50:35.599Z"
+updated_at: "2026-10-21T18:03:34.061Z"
 author: codex-agent
 acceptance_criteria: Retain the existing 50 ms bound and full coverage scope; measure repeated full and isolated runs with scheduling context; improve reproducibility without hiding a real classifier regression
-comments[1]{created_at,author,text}:
+comments[3]{created_at,author,text}:
   "2026-10-21T15:50:35.589Z",codex-agent,"Observed on source commit 92f1c29: full npm release source suite 149/150, no skipped tests; only the existing large-input classifier timing assertion failed at 63.60046 ms. Isolated command node --test --test-name-pattern=\"under 50\" test/review-regressions.test.ts passed 1/1. Coverage measured 100 percent in all four dimensions. No timing or coverage gate was changed. Follow-up only; closeout implementation is tracked separately in pm-review-closeout-verification."
-files[2]{path,scope}:
+  "2026-10-21T17:38:31.225Z",codex-agent,"Additional scheduling-sensitive observation on ca837cc: isolated-HOME full suite passed 154/155, with the existing severity parser subprocess reaching its 5000 ms deadline before completion. Shared-host load was approximately 68 while this process was restricted to four CPUs and nice 15. CI Node 22 and 26 passed all 155 tests. No timeout, classifier code or coverage threshold was changed; investigate separately alongside the earlier wall-clock classifier observation."
+  "2026-10-21T18:03:34.061Z",codex-agent,"The unchanged full isolated-HOME release gate subsequently passed on installed Node 26: 155/155 source tests with 0 skipped, including both existing timing-sensitive assertions, followed by packed consumer acceptance 1/1. The isolated severity parser rerun also passed 1/1 at its original deadline. Earlier failures remain valid observations for reproducibility work; this follow-up remains open and no threshold was relaxed."
+files[3]{path,scope}:
   src/findings.ts,project
+  test/core.test.ts,project
   test/review-regressions.test.ts,project
 body: ""
