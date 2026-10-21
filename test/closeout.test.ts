@@ -5,6 +5,7 @@ import { mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
+import { setTimeout as delay } from 'node:timers/promises';
 import { commitImportedItem, locateItem, readLocatedItem, readSettings } from '@unbrained/pm-cli/sdk';
 import { reviewCloseout } from '../src/closeout.ts';
 import { artifactPath, artifactText, closeoutChanges, hasGit } from '../src/closeout-state.ts';
@@ -16,7 +17,8 @@ import { tracker } from './helpers.ts';
 /** Create fixture source and directly instrumented named behavior tests. */
 function sourceFiles(cwd: string): void {
   writeFileSync(join(cwd, 'source.ts'), '/** Return the fixed result. */\nexport function result() { return 2; }\n');
-  writeFileSync(join(cwd, 'case.test.ts'), "import { test } from 'node:test'; import assert from 'node:assert/strict'; import { result } from './source.ts'; test('returns fixed result', () => assert.equal(result(), 2));\n");
+  writeFileSync(join(cwd, 'case.test.ts'), "import { test } from 'node:test';
+import { setTimeout as delay } from 'node:timers/promises'; import assert from 'node:assert/strict'; import { result } from './source.ts'; test('returns fixed result', () => assert.equal(result(), 2));\n");
 }
 
 /** Bind fixture tests through real SDK mutations with recorded non-git source state. */
@@ -43,7 +45,8 @@ test('plain tracker fresh evidence proves criterion and revert demonstrates sens
 
 test('gamed passing test never calling changed function is detected and survives revert', async t => {
   const { client, id, options, cwd } = await closeoutFixture(t);
-  writeFileSync(join(cwd, 'case.test.ts'), "import { test } from 'node:test'; import './source.ts'; test('returns fixed result', () => {});\n");
+  writeFileSync(join(cwd, 'case.test.ts'), "import { test } from 'node:test';
+import { setTimeout as delay } from 'node:timers/promises'; import './source.ts'; test('returns fixed result', () => {});\n");
   const report = await reviewCloseout(client, id, { ...options, revertCheck: true });
   assert.equal(report.ok, false);
   assert.ok(report.findings.some(row => row.code === 'source_unexecuted'), JSON.stringify(report));
@@ -191,7 +194,8 @@ test('criterion mappings retain comment ids and require every explicitly named a
 
 test('failed and skipped named assertions cannot produce a successful criterion', async t => {
   const { client, id, options, cwd } = await closeoutFixture(t);
-  writeFileSync(join(cwd, 'case.test.ts'), "import { test } from 'node:test'; import assert from 'node:assert/strict'; test('returns fixed result', () => assert.fail('contradiction')); test.skip('later', () => {});\n");
+  writeFileSync(join(cwd, 'case.test.ts'), "import { test } from 'node:test';
+import { setTimeout as delay } from 'node:timers/promises'; import assert from 'node:assert/strict'; test('returns fixed result', () => assert.fail('contradiction')); test.skip('later', () => {});\n");
   const report = await reviewCloseout(client, id, { ...options, revertCheck: true });
   assert.equal(report.criteria[0].verdict, 'contradicted');
   assert.ok(report.findings.some(row => row.code === 'test_failed'));
@@ -248,10 +252,17 @@ test('deadline kills a detached linked-command descendant before discarding its 
   const result = await boundedHost(['-e', script], cwd, 1000);
   assert.match(result.error, /budget exceeded/);
   const pid = Number(readFileSync(join(cwd, 'child.pid'), 'utf8'));
-  try {
-    const state = readFileSync(`/proc/${pid}/stat`, 'utf8');
-    assert.match(state, /\) Z /, 'descendant must have terminated');
-  } catch (error) { assert.equal((error as NodeJS.ErrnoException).code, 'ENOENT'); }
+  // SIGKILL delivery and process reaping are asynchronous; observe bounded eventual termination.
+  for (let attempt = 0; attempt < 100; attempt++) {
+    try {
+      if (/\) Z /.test(readFileSync(`/proc/${pid}/stat`, 'utf8'))) return;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return;
+      throw error;
+    }
+    await delay(20);
+  }
+  assert.fail('detached descendant remained live after SIGKILL');
 });
 
 
