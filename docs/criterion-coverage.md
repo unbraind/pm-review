@@ -59,7 +59,9 @@ a refused record's original digest and excerpt remain in its comment/history.
 Comment numbers are current one-based positions; the SDK permits comment editing
 and deletion, so these are navigation selectors rather than permanent record ids.
 
-For each criterion/source pair the last valid judgment wins; a later `gap` retracts
+Every explicit cover request appends an assessment, including repeated wording, so
+reusing a reason after a gap can restore a reviewed judgment. For each
+criterion/source pair the last valid judgment wins; a later `gap` retracts
 an earlier `reviewed` claim. Any current gap dominates other sources' attention.
 Malformed, unattributed or stale mappings stay visible with a typed refusal and
 contribute nothing. There is no inference from arbitrary comments or green bot

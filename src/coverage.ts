@@ -108,6 +108,6 @@ export async function coverCriterion(client: PmClient, id: string, options: Cove
   const binding = bindingOf(raw);
   const denied = binding ? validate(binding, map, evidence) : refusal('judgment_invalid');
   if (denied) return { ok: false, id, refusal: denied };
-  await client.comments(id, { add: PREFIX + JSON.stringify(raw), ifAbsent: true });
+  await client.comments(id, { add: PREFIX + JSON.stringify(raw) });
   return reviewCoverage(client, id);
 }

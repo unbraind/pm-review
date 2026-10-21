@@ -50,10 +50,10 @@ test('explicit coverage is attributed, compact, read-only, and supports retracte
   await reviewCoverage(client, id);
   assert.equal(JSON.stringify((await client.get(id, { full: true })).item), before);
   await coverCriterion(client, id, options);
-  assert.equal((await reviewCoverage(client, id) as CoverageMap).judgments.length, 1);
+  assert.equal((await reviewCoverage(client, id) as CoverageMap).judgments.length, 2);
   const gap = await coverCriterion(client, id, { ...options, judgment: 'gap', reason: 'Input length bounds remain unreviewed' }) as CoverageMap;
   assert.equal(gap.criteria[0].state, 'gap');
-  const recovered = await coverCriterion(client, id, { ...options, reason: 'Reassessed all of the input bounds' }) as CoverageMap;
+  const recovered = await coverCriterion(client, id, options) as CoverageMap;
   assert.equal(recovered.reviewed, 1);
   await coverCriterion(client, id, { ...options, criterion: 'AC2' });
   assert.equal((await reviewCoverage(client, id) as CoverageMap).unreviewed, 0);

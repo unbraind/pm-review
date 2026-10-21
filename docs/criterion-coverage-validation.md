@@ -39,17 +39,19 @@ typed remedies, explicit retractions/gaps, SDK attribution and no-git dispatch.
 The host's test-result recording policy is disabled, so observed receipts are
 recorded on the feature item rather than changing that policy.
 
-In three independent disposable source copies with the same tests/dependencies:
+In four independent disposable source copies with the same tests/dependencies:
 
 | Behavioral control removed | Retained test selector | Result |
 | --- | --- | --- |
 | Evidence eligibility predicate | `quota and skipped` | Exit 1, assertion failure |
 | Complete-criterion revision guard | `changed criteria, reordered` | Exit 1, assertion failure |
 | Author/date propagation | `explicit coverage is attributed` | Exit 1, assertion failure |
+| Append explicit repeated assessments (restore global deduplication) | `explicit coverage is attributed` | Exit 1, assertion failure |
 
 Each proof runs `node --test --test-name-pattern='<selector>' test/coverage.test.ts`.
 The notice control forces the eligibility result true, the revision control removes
-only its refusal guard, and the attribution control blanks only author/date.
+only its refusal guard, and the attribution control blanks only author/date. The fourth control restores
+only global comment deduplication; it fails the retained retraction/replay test.
 The production source and tracker remain unchanged during these probes.
 
 Local `npm run typecheck`, `npm run build:test`, `npm run build`, `npm run lint`,
