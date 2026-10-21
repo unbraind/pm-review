@@ -305,3 +305,15 @@ test('PM-managed extension dependency links preserve the pinned peer in the copi
   symlinkSync(join(import.meta.dirname, '../node_modules/@unbrained/pm-cli'), dependency, 'dir');
   assert.equal((await reviewCloseout(client, id, options)).ok, true);
 });
+
+test('package-manager and tooling caches stay outside executable snapshots', async t => {
+  const { client, id, cwd, options } = await closeoutFixture(t);
+  for (const cache of ['.bun', '.npm', '.cache']) {
+    const link = join(cwd, cache, 'install', 'cache', '@unbrained', 'pm-cli', '2026.10.18@@@1');
+    mkdirSync(dirname(link), { recursive: true });
+    symlinkSync(join(import.meta.dirname, '../node_modules/@unbrained/pm-cli'), link, 'dir');
+  }
+  const testPath = join(cwd, 'case.test.ts');
+  writeFileSync(testPath, readFileSync(testPath, 'utf8') + "\nimport { existsSync } from 'node:fs'; test('volatile caches are absent', () => { for (const cache of ['.bun', '.npm', '.cache']) assert.equal(existsSync(cache), false); });\n");
+  assert.equal((await reviewCloseout(client, id, options)).ok, true);
+});

@@ -90,7 +90,7 @@ export async function executeCloseout(client: PmClient, id: string, options: Clo
     if (hasGit(sourceRoot)) execFileSync('git', ['clone', '--no-hardlinks', '--no-checkout', '--quiet', '--', sourceRoot, workspace], { timeout: 30_000, stdio: ['ignore', 'pipe', 'pipe'] });
     phase = 'workspace-copy';
     cpSync(sourceRoot, workspace, { recursive: true, filter: /** Exclude caches and refuse links that could write through to original artifacts. */ path => {
-      if (path !== sourceRoot && ['.git', 'node_modules', 'coverage'].includes(basename(path))) return false;
+      if (path !== sourceRoot && ['.git', 'node_modules', 'coverage', '.bun', '.npm', '.cache'].includes(basename(path))) return false;
       return regularCopyEntry(path, sourceRoot);
     } });
     const tracker = join(workspace, '.closeout-pm');

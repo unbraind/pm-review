@@ -45,7 +45,8 @@ resolved as a commit without shell interpolation. External diff/textconv are
 disabled. Linked artifact paths must stay within the workspace and cannot use
 symlinks, binary contents or text larger than one megabyte. Workspace roots are canonicalized before copying,
 and artifact symlinks are refused in executable snapshots; installed dependencies
-remain the explicit shared-link exception.
+remain the explicit shared-link exception. Package-manager and tooling caches
+(`.bun`, `.npm`, `.cache`, `coverage`) are excluded from source snapshots.
 
 Findings include weakened coverage floors/lint severity, changed test policies,
 new focused/skipped/pending tests, removed test cases/artifacts, missing runs,
