@@ -1,0 +1,17 @@
+id: pm-review-classifier-timing
+title: Investigate classifier timing gate sensitivity to shared-host scheduling
+description: "The unchanged bot-classification regression exceeded its 50 ms wall-clock limit during the full closeout-verification release run (63.60046 ms), while the isolated same-source test passed. No classifier implementation, timing limit or coverage floor changed. Investigate repeatability and scheduling effects separately from closeout verification."
+type: Issue
+status: open
+priority: 2
+tags: []
+created_at: "2026-10-21T15:50:26.310Z"
+updated_at: "2026-10-21T15:50:35.599Z"
+author: codex-agent
+acceptance_criteria: Retain the existing 50 ms bound and full coverage scope; measure repeated full and isolated runs with scheduling context; improve reproducibility without hiding a real classifier regression
+comments[1]{created_at,author,text}:
+  "2026-10-21T15:50:35.589Z",codex-agent,"Observed on source commit 92f1c29: full npm release source suite 149/150, no skipped tests; only the existing large-input classifier timing assertion failed at 63.60046 ms. Isolated command node --test --test-name-pattern=\"under 50\" test/review-regressions.test.ts passed 1/1. Coverage measured 100 percent in all four dimensions. No timing or coverage gate was changed. Follow-up only; closeout implementation is tracked separately in pm-review-closeout-verification."
+files[2]{path,scope}:
+  src/findings.ts,project
+  test/review-regressions.test.ts,project
+body: ""
