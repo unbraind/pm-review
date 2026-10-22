@@ -237,7 +237,8 @@ linked artifacts against `closeout-before:<base64>` notes. It reports missing
 states and skipped repository-wide checks explicitly. Only `--base` comparison
 requires Git; GitHub commands require provider credentials and connectivity.
 Criterion coverage reads and explicit judgment writes work in plain trackers
-without git or GitHub access, using previously imported evidence.
+without git or GitHub access, using previously imported evidence. Finding lineage
+reads and confirmations also work everywhere on existing tracker observations.
 
 ## Criterion review coverage
 
@@ -261,3 +262,28 @@ The typed SDK exports `reviewCoverage`, `coverCriterion`, `CoverageResult` and
 Review bodies and excerpts are omitted from the map, while reasons, author/date,
 reviewer and source links remain attributable. Refusals carry stable codes and
 remedies. [Contract, SDK example and limitations](docs/criterion-coverage.md).
+
+## Cross-provider finding lineage
+
+`pm review lineage <item> --with <other>` proposes one logical finding across
+provider observations and revisions. Confirm only after reviewing both sources,
+using `--confirm --revision HASH --reason 'Why they are the same finding'`.
+Near matches stay proposals until that explicit step. Confirmed observations share
+one canonical disposition through the existing `review verdict` command; duplicate
+imports and source withdrawal retain earlier reasoning without multiplying fixes.
+Decision time selects the canonical observation. Differing independent decisions
+refuse confirmation regardless of origin; invalid links produce diagnostics while
+review work continues. SDK withdrawal requires `snapshotComplete: true` and an
+unfiltered snapshot; partial imports never infer source withdrawal.
+
+```sh
+pm review lineage observation-a --with observation-b --json
+pm review lineage observation-a --with observation-b --confirm \
+  --revision HASH --reason 'Both identify the same unchecked write boundary'
+pm review lineage observation-b
+```
+
+The exported `findingLineage` SDK operation returns the same compact TOON/JSON
+shape, with typed refusal codes and remedies. It works without git or provider
+access on previously imported observations. See the [SDK example, identity and
+withdrawal contract](docs/finding-lineage.md).

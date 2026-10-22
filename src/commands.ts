@@ -1,6 +1,7 @@
 import { createPmCliExpectedError, isPmCliExpectedError, PmClient, printResult, readBooleanOption, readStringOption, suppressHostOutput } from '@unbrained/pm-cli/sdk';
 import { defineCommand } from '@unbrained/pm-cli/sdk/authoring';
 import type { CommandHandlerContext, ExtensionApi, FlagDefinition } from '@unbrained/pm-cli/sdk/authoring';
+import { findingLineage } from './lineage.ts';
 import { coverCriterion, reviewCoverage } from './coverage.ts';
 import type { CoverOptions } from './coverage-types.ts';
 import { reviewCloseout } from './closeout.ts';
@@ -43,6 +44,10 @@ export async function runReviewCommand(ctx: CommandHandlerContext, provided?: Gi
 /** Run one dispatched package command; separated so the wrapper above stays the single error boundary. */
 async function dispatchReviewCommand(ctx: CommandHandlerContext, provided?: GitHubTransport): Promise<unknown> {
   const client = ctx.sdk?.client ?? new PmClient({ cwd: ctx.source_workspace_root ?? ctx.repo_root, pmRoot: ctx.pm_root, author: ctx.global.author });
+  if (ctx.command === 'review lineage') {
+    const result = await findingLineage(client, ctx.args[0] ?? '', { with: readStringOption(ctx.options, 'with'), confirm: readBooleanOption(ctx.options, 'confirm'), revision: readStringOption(ctx.options, 'revision'), reason: readStringOption(ctx.options, 'reason') });
+    return result.ok ? result : { ...result, exit_code: 1 };
+  }
   if (ctx.command === 'review coverage' || ctx.command === 'review cover') {
     const id = ctx.args[0] ?? '';
     const options = { author: ctx.global.author ?? process.env.PM_AUTHOR, ...Object.fromEntries(['revision', 'criterion', 'evidence', 'excerpt', 'reason', 'judgment'].map(/** Preserve invalid inputs for typed validation instead of guessing a judgment. */ name => [name, readStringOption(ctx.options, name) ?? ''])) } as unknown as CoverOptions;
@@ -79,7 +84,7 @@ async function dispatchReviewCommand(ctx: CommandHandlerContext, provided?: GitH
   }
   if (ctx.command === 'review reconcile') return reconcile(client, transport, target.repo, target.pr, readBooleanOption(ctx.options, 'dryRun') === true);
   const snapshot = await transport.snapshot(target.repo, target.pr);
-  if (ctx.command === 'review import') return importFindings(client, snapshot, findingsOf(snapshot));
+  if (ctx.command === 'review import') return importFindings(client, snapshot, findingsOf(snapshot), { snapshotComplete: true });
   if (ctx.command !== 'review round') throw new Error('Unknown pm-review command');
   const result = evaluateRound(snapshot, await reviewItems(client));
   const exit = result.complete ? {} : { exit_code: 1 };
@@ -106,6 +111,7 @@ const RESPONSE_FLAGS: FlagDefinition[] = [
 /** Register help, typed positional arguments and command handlers through the host API. */
 export function registerReviewCommands(api: ExtensionApi): void {
   const commands = [
+    { name: 'lineage', description: 'Read one canonical disposition; propose or explicitly confirm matching observations', arguments: [{ name: 'item', required: true, description: 'Imported ReviewFinding item id' }], flags: [{ long: '--with', type: 'string' as const, description: 'Candidate observation id from core duplicates or pm-jev' }, { long: '--confirm', type: 'boolean' as const, description: 'Confirm the proposed identity using --revision and --reason' }, { long: '--revision', type: 'string' as const, description: 'Current pair proposal hash' }, { long: '--reason', type: 'string' as const, description: 'Why these observations describe one logical finding' }], example: 'pm review lineage finding-id --with other-finding-id --json' },
     { name: 'coverage', description: 'Read explicit criterion review attention and stale judgments; no completion claim', arguments: [{ name: 'item', required: true, description: 'Item declaring acceptance and risk criteria' }], flags: [], example: 'pm review coverage sample-task --json' },
     { name: 'cover', description: 'Record an attributed criterion judgment with an exact review excerpt', arguments: [{ name: 'item', required: true, description: 'Item declaring acceptance and risk criteria' }], flags: ['revision', 'criterion', 'evidence', 'excerpt', 'reason', 'judgment'].map(/** Each selector is explicit and validated by the SDK operation. */ name => ({ long: `--${name}`, type: 'string' as const, description: name === 'judgment' ? 'reviewed|gap (attention, never proof)' : `Explicit ${name} binding; see review coverage` })), example: 'pm review cover sample-task --criterion AC1 --revision HASH --evidence finding-id --excerpt "Exact substantive review text" --judgment reviewed --reason "Explains the validation boundary"' },
     { name: 'closeout', description: 'Verify acceptance criteria with fresh linked tests and detect gamed gates; never closes the item', arguments: [{ name: 'item', required: true, description: 'Item whose completion evidence needs independent verification' }], flags: [{ long: '--base', type: 'string' as const, description: 'Git commit to compare with the current workspace' }, { long: '--timeout', type: 'string' as const, description: 'Total test budget per run, 1 to 600 seconds (default 60)' }, { long: '--revert-check', type: 'boolean' as const, description: 'Restore changed source in another disposable copy and require a named assertion to fail' }], example: 'pm review closeout sample-task --base main --revert-check --json' },

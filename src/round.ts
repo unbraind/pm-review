@@ -1,4 +1,6 @@
 import type { ItemMetadata } from '@unbrained/pm-cli/sdk';
+import { lineageIssues } from './lineage-state.ts';
+import type { LineageIssue } from './lineage.ts';
 import { findingsOf, severityOf, summaryOf } from './findings.ts';
 import type { Contribution, PullRequest } from './types.ts';
 
@@ -10,7 +12,7 @@ export interface RoundReceipt {
   repo: string; pr: number; head: string; complete: boolean;
   checks: 'pass' | 'fail' | 'pending'; coderabbit_finished: boolean;
   unresolved_threads: string[]; unresolved_thread_details: ThreadDetail[]; unvoted_bot_comments: string[];
-  pending_items: string[]; unimported_nodes: string[];
+  pending_items: string[]; unimported_nodes: string[]; issues?: LineageIssue[];
 }
 
 /** Reject notices and pending/dismissed reviews as finished CodeRabbit evidence. */
@@ -40,10 +42,11 @@ export function evaluateRound(pr: PullRequest, items: ItemMetadata[]): RoundRece
   const pending_items = scoped.filter(/** Existing decisions remain active across head changes while the finding still exists. */ item => item.status !== 'closed' && nodes.has(String(item.review_node_id)) && item.review_verdict === 'pending').map(/** Item ids can be passed directly to verdict. */ item => item.id);
   const imported = new Set(scoped.map(/** Import provenance establishes coverage of this PR's current context. */ item => String(item.review_node_id)));
   const unimported_nodes = [...nodes].filter(/** A clean empty tracker is insufficient evidence of a completed import. */ node => !imported.has(node));
-  return { repo: pr.repo, pr: pr.number, head: pr.head, complete: checks === 'pass' && coderabbit_finished && unresolved_threads.length === 0 && unvoted_bot_comments.length === 0 && pending_items.length === 0 && unimported_nodes.length === 0, checks, coderabbit_finished, unresolved_threads, unresolved_thread_details, unvoted_bot_comments, pending_items, unimported_nodes };
+  const issues = lineageIssues(items);
+  return { ...(issues.length ? { issues } : {}), repo: pr.repo, pr: pr.number, head: pr.head, complete: checks === 'pass' && coderabbit_finished && unresolved_threads.length === 0 && unvoted_bot_comments.length === 0 && pending_items.length === 0 && unimported_nodes.length === 0, checks, coderabbit_finished, unresolved_threads, unresolved_thread_details, unvoted_bot_comments, pending_items, unimported_nodes };
 }
 
 /** Render one stable script line while JSON callers retain the full structured receipt. */
 export function compactRound(result: RoundReceipt): string {
-  return `review ${result.repo}#${result.pr} head=${result.head} complete=${result.complete} checks=${result.checks} coderabbit=${result.coderabbit_finished ? 'finished' : 'missing'} unresolved=${result.unresolved_threads.length} unvoted=${result.unvoted_bot_comments.length} pending=${result.pending_items.length} unimported=${result.unimported_nodes.length}`;
+  return `review ${result.repo}#${result.pr} head=${result.head} complete=${result.complete} checks=${result.checks} coderabbit=${result.coderabbit_finished ? 'finished' : 'missing'} unresolved=${result.unresolved_threads.length} unvoted=${result.unvoted_bot_comments.length} pending=${result.pending_items.length} unimported=${result.unimported_nodes.length}${result.issues ? ` lineage_issues=${result.issues.length}` : ''}`;
 }

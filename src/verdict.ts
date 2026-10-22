@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { PmClient } from '@unbrained/pm-cli/sdk';
+import { createPmCliExpectedError, PmClient } from '@unbrained/pm-cli/sdk';
 import { closeFinding, fieldOptions, recordVerdict, reviewItems } from './tracker.ts';
 import { isReviewNotice } from './findings.ts';
 import { VERDICTS } from './types.ts';
@@ -30,7 +30,7 @@ export async function decide(client: PmClient, transport: GitHubTransport | unde
   if (!input.reason.trim()) throw new Error('A nonempty --reason is required');
   if (input.commit && !/^[a-f0-9]{7,40}$/i.test(input.commit)) throw new Error('--commit must be a Git commit SHA');
   const item = (await reviewItems(client)).find(/** Only imported typed findings accept review decisions. */ candidate => candidate.id === input.id);
-  if (!item) throw new Error('Review item not found; import this PR first');
+  if (!item) throw createPmCliExpectedError('Review item not found; import this PR first', { context: { code: 'finding_missing', nextSteps: ['Import the ReviewFinding before recording a verdict.'] } });
   if (item.review_repo !== input.repo || item.review_pr !== input.pr) throw new Error('The item belongs to a different repository or PR');
   const receipt: VerdictReceipt = { item: item.id, verdict: input.verdict, applied: false, replied: false, reacted: false, resolved: false };
   if (!input.apply) {
