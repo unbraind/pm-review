@@ -146,3 +146,22 @@ while retaining the outer-root regression and production code, runs
 `AssertionError`, `artifact_missing` and `proof.md` in the installed closeout
 result, exit 1. The fixed baseline and final full gates are recorded separately
 on the feature item and PR; failed controls are not release-gate approvals.
+
+### Local full-gate receipt, 2026-10-22
+
+Source commit `9989ba3` passes the complete isolated npm and Bun release checks:
+
+- `env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 npm run release:check`
+- `bun run release:check`
+
+Each passes all 12 stages, 175/175 outer source tests and 1/1 packed npm/npx plus
+native Bun/bunx acceptance, with zero failures, skips or cancellations. The fixed
+PM-linked `npm run test:install` baseline also passes 1/1 with the deliberately
+inherited outer source root. The first npm attempt's fixture failure is retained
+above; no timeout caused it, and the corrected complete retry passes.
+
+Across 28 authored source files, statements/lines are 2,653/2,653, functions
+149/149 and branches 1,371/1,371: 100% in all dimensions at unchanged thresholds.
+Duplication is zero across 6,465 lines and 43 sources; all 90 declarations are
+documented. Production audit reports zero vulnerabilities; the 73-file package
+allowlist, changelog and publish-attestation checks pass. Nothing was published.
