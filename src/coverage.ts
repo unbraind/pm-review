@@ -33,17 +33,20 @@ function sourceDigest(item: ItemMetadata): string {
   return digest([item.description, item.review_node_id, item.review_repo, item.review_pr, item.review_bot, item.review_url, item.review_head, item.review_kind]);
 }
 
-/** Refuse complete line-leading notices, including Markdown prefixes, while preserving substantive topic mentions. */
+/** Refuse explicit boilerplate and line-leading notices without requiring severity markers on substantive findings. */
 function eligible(item: ItemMetadata): boolean {
   const body = item.description;
+  // Import verdicts also use topic heuristics; only explicit summary headings may apply them here.
+  const summary = /(?:^|\n)[>\t #*_-]*(?:✅ action performed|summary by coderabbit|walkthrough|no actionable (?:comments|issues)|actionable comments posted:[ \t]*0|summary of (?:changes|pull request)|full review finished|reviewer's guide)(?=[ \t*_]*(?:[.!?:](?:[ \t]|\r?\n|$)|\r?\n|$))/i.test(body.replace(/<\/?(?:details|summary)>/gi, '\n'))
+    && !/(?:^|\n)[>\t #*_-]*actionable comments posted:[ \t]*[1-9]\d*\b/i.test(body);
   return body.trim().length >= 24 && item.type === 'ReviewFinding' && typeof item.review_bot === 'string' && item.review_bot.trim().length > 0
     && typeof item.review_node_id === 'string' && item.review_node_id.length > 0
     && typeof item.review_repo === 'string' && /^[\w.-]+\/[\w.-]+$/.test(item.review_repo)
     && Number.isSafeInteger(item.review_pr) && Number(item.review_pr) > 0
     && typeof item.review_url === 'string' && item.review_url.startsWith(`https://github.com/${item.review_repo}/pull/${String(item.review_pr)}#`)
     && typeof item.review_head === 'string' && /^[a-f0-9]{40,64}$/i.test(item.review_head)
-    && !isInformational(body)
-    && !/(?:^|\n)[>\t #*_-]*(?:(?:\*\*[^*\r\n]+\*\*|_[^_\r\n]+_|severity[ \t]*[:=][ \t]*(?:critical|high|medium|low|major|minor)|!\[(?:high|medium|low)[-_]priority\](?:\([^\r\n)]*\))?)[ \t]*)?(?:quota (?:exceeded|exhausted)|rate[- ]limit(?:ed| (?:exceeded|reached))|review skipped|skipped review|review failed|review unavailable|review (?:was |is )?(?:not (?:performed|completed)|cancelled|canceled)|trial (?:has )?ended|review budget|no access(?: to (?:this repository|reviews))?|failed to (?:review|generate))(?=[*_]*(?:[.!?][*_]*(?:[ \t]|\r?\n|$)|\r?\n|$))/i.test(body);
+    && (!summary || !isInformational(body))
+    && !/(?:^|\n)[>\t #*_-]*(?:(?:\*\*[^*\r\n]+\*\*|_[^_\r\n]+_|severity[ \t]*[:=][ \t]*(?:critical|high|medium|low|major|minor)|!\[(?:high|medium|low)[-_]priority\](?:\([^\r\n)]*\))?)[ \t]*)?(?:quota (?:exceeded|exhausted)|rate[- ]limit(?:ed| (?:exceeded|reached))|review skipped|skipped review|review failed|review unavailable|review (?:was |is )?(?:not (?:performed|completed)|cancelled|canceled)|trial (?:has )?ended|review budget|no access(?: to (?:this repository|reviews))?|failed to (?:review|generate)|action not completed|you (?:do not|don't) have access(?: to (?:this repository|reviews))?|(?:you've used your own review budget|(?:Sorry [^\r\n,]+,[ \t]*)?your (?:pull request is larger than the review limit|private repo does not have access)|\d+ files exceed the limit of 100\b|this repository does not receive automatic reviews|you are seeing this message because GitHub Code Scanning has recently been set up|this pull request contains the workflow file for the Code Scanning tool)[^\r\n]*)(?=[*_]*(?:[.!?,:;][*_]*(?:[ \t]|\r?\n|$)|\r?\n|$))/i.test(body);
 }
 
 /** Validate persisted and CLI bindings identically instead of trusting stored JSON. */

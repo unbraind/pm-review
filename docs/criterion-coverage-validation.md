@@ -217,3 +217,29 @@ and 1,372/1,372 branches: 100% in every dimension. Duplication is zero across
 package allowlist, changelog and publish-attestation checks pass. No timeout
 caused a failure. The intentionally interrupted earlier attempt is excluded from
 these complete pass counts. The item remains open for orchestrator verification.
+
+## Review round: unmarked substantive findings
+
+Thread `PRRT_kwDOVGABD86vR6GO` identified a remaining broad topic veto: the import
+classifier's automatic informational verdict was applied before coverage-specific
+notice detection. Unmarked substantive findings about rate limits and quota
+errors were refused despite having complete source provenance and explicit
+judgments. Coverage now applies that heuristic only to explicit boilerplate
+headings, with actionable markers and positive comment counts retained. Service
+notices remain independently refused, including access, budget, oversized-review,
+automatic-review and setup notices with additional explanatory text.
+
+The final PM-linked `node --test test/coverage.test.ts` run passes 11/11 with zero
+failures/skips. It exercises 170 real-import scenarios through both SDK and
+registered CLI paths: the retained 60 marked cases and 110 unmarked/boilerplate
+cases. Each scenario re-imports a stable source identity so text, automatic
+verdict/lifecycle changes and content-digest invalidation are exercised together.
+The source tracker is a plain directory without git, and no SDK mocks are used.
+
+In an independent copy retaining all tests, restoring only `eligible` from
+`5657ced` makes
+`node --test --test-name-pattern='unmarked substantive findings' test/coverage.test.ts`
+fail with an `AssertionError` on the unmarked quota-exceeded finding, exit 1.
+The corrected baseline passes. A fixture syntax error was corrected before the
+behavioral reproduction and is not negative-control evidence. Shared import and
+round-classifier behavior remains owned separately; final release gates follow.

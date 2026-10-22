@@ -49,7 +49,12 @@ findings about their counters or error handling remain eligible. The coverage
 guard recognizes complete notice clauses at line starts, including Markdown
 quotes, headings, bullets, bold/italic text, severity labels and priority badges.
 Phrases such as `quota exceeded`, `no access` and `failed to generate` within substantive findings
-do not themselves constitute notices. Informational
+do not themselves constitute notices. Substantive findings need no severity marker.
+Coverage examines the original text independently of the automatic import verdict;
+an informational import verdict caused by topic words does not veto an explicit
+coverage judgment. Explicit boilerplate headings remain ineligible unless the
+body contains actionable markers or a positive actionable-comment count.
+Informational
 summaries and empty approvals are conservatively ineligible. Mixed notice/review
 bodies are also refused; select a separate substantive inline finding. Unknown-head
 issue comments cannot establish coverage. Human judgments remain judgments, and

@@ -33,6 +33,42 @@ function denied(result: CoverageResult, code: CoverageCode): void {
   assert.ok(result.refusal.remedy.length > 20);
 }
 
+
+/** Notice phrases are tested as topics and as explicit provider declarations. */
+const COVERAGE_NOTICES = [
+  'Quota exceeded', 'Quota exhausted', 'Rate-limited', 'Rate limit exceeded', 'Rate-limit reached',
+  'Review skipped', 'Skipped review', 'Review failed', 'Review unavailable',
+  'Review was not performed', 'Review is not completed', 'Review cancelled', 'Review canceled',
+  'Trial ended', 'Trial has ended', 'Review budget', 'No access', 'No access to this repository',
+  'No access to reviews', 'Failed to review', 'Failed to generate',
+];
+
+/** Re-import one real source so classifier state and content digests are exercised without growing the inventory. */
+async function checkCoverageCases(t: TestContext, cases: { body: string; allowed: boolean }[]): Promise<void> {
+  const { client, pmRoot, id, options } = await fixture(t);
+  const activation = await activateExtensionForTest(extension, { name: 'pm-review', capabilities: ['commands', 'schema'] });
+  assert.deepEqual(activation.failed, []);
+  for (const scenario of cases) {
+    const pr = pullRequest({ threads: [{ id: 'classification-source', path: 'src/counter.ts', line: 1, resolved: false, comments: [contribution({ body: scenario.body })] }], comments: [], reviews: [] });
+    const imported = await importFindings(client, pr, findingsOf(pr));
+    const binding = { ...options, evidence: imported.items[0].id };
+    const sdk = await coverCriterion(client, id, binding);
+    const command = await runRegisteredCommandForTest(activation.commands, { command: 'review cover', args: [id], options: binding, pmRoot, sdk: createExtensionCommandSdk(pmRoot, client, 'test-agent') });
+    assert.equal(command.handled, true);
+    assert.equal(sdk.ok, scenario.allowed, scenario.body);
+    if (scenario.allowed) {
+      assert.equal((sdk as CoverageMap).reviewed, 1, scenario.body);
+      assert.equal((command.result as CoverageMap).reviewed, 1, scenario.body);
+    } else {
+      denied(sdk, 'evidence_ineligible');
+      denied(command.result as CoverageResult, 'evidence_ineligible');
+      assert.equal((command.result as { exit_code: number }).exit_code, 1);
+    }
+  }
+  const accepted = cases.filter(scenario => scenario.allowed).length;
+  t.diagnostic(`${cases.length} classification scenarios: ${accepted} accepted, ${cases.length - accepted} refused through SDK and registered CLI`);
+}
+
 test('explicit coverage is attributed, compact, read-only, and supports retracted and competing judgments', async t => {
   const { client, id, options } = await fixture(t);
   await client.comments(id, { add: 'All checks are green; this is not a mapping.' });
@@ -183,21 +219,11 @@ test('missing source mappings refuse and imported attribution is normalized by t
 
 
 test('substantive quota and rate-limit findings remain eligible through SDK and registered commands', async t => {
-  const { client, pmRoot, id, options } = await fixture(t);
-  const activation = await activateExtensionForTest(extension, { name: 'pm-review', capabilities: ['commands', 'schema'] });
-  assert.deepEqual(activation.failed, []);
-  const notices = [
-    'Quota exceeded', 'Quota exhausted', 'Rate-limited', 'Rate limit exceeded', 'Rate-limit reached',
-    'Review skipped', 'Skipped review', 'Review failed', 'Review unavailable',
-    'Review was not performed', 'Review is not completed', 'Review cancelled', 'Review canceled',
-    'Trial ended', 'Trial has ended', 'Review budget', 'No access', 'No access to this repository',
-    'No access to reviews', 'Failed to review', 'Failed to generate',
-  ];
   const cases = [
     ...['allowance', 'quota', 'rate-limit'].map(topic => ({ body: `**High** Validate the input before writing. The ${topic} counter must be atomic.`, allowed: true })),
-    ...notices.map(notice => ({ body: `**Major** The ${notice.toLowerCase()} error leaks an account identifier. Validate the input before writing.`, allowed: true })),
+    ...COVERAGE_NOTICES.map(notice => ({ body: `**Major** The ${notice.toLowerCase()} error leaks an account identifier. Validate the input before writing.`, allowed: true })),
     ...['Quota exceeded errors leak an identifier', 'Rate-limit reached handling loses requests', 'No access checks protect the operation', 'Failed to generate errors expose a private value'].map(finding => ({ body: `**Major** ${finding}. Validate the input before writing.`, allowed: true })),
-    ...notices.map(notice => ({ body: `**High** ${notice}. Validate the input before writing.`, allowed: false })),
+    ...COVERAGE_NOTICES.map(notice => ({ body: `**High** ${notice}. Validate the input before writing.`, allowed: false })),
     ...[
       'Quota exhausted. **High** Validate the input before writing.',
       '**High**\n> Quota exhausted.\nValidate the input before writing.',
@@ -212,21 +238,45 @@ test('substantive quota and rate-limit findings remain eligible through SDK and 
       '![low_priority] Quota exhausted. Validate the input before writing.',
     ].map(body => ({ body, allowed: false })),
   ];
-  for (const [index, scenario] of cases.entries()) {
-    const pr = pullRequest({ threads: [{ id: `classification-${index}`, path: 'src/counter.ts', line: 1, resolved: false, comments: [contribution({ body: scenario.body })] }], comments: [], reviews: [] });
-    const imported = await importFindings(client, pr, findingsOf(pr));
-    const binding = { ...options, evidence: imported.items[0].id };
-    const sdk = await coverCriterion(client, id, binding);
-    const command = await runRegisteredCommandForTest(activation.commands, { command: 'review cover', args: [id], options: binding, pmRoot, sdk: createExtensionCommandSdk(pmRoot, client, 'test-agent') });
-    assert.equal(command.handled, true);
-    assert.equal(sdk.ok, scenario.allowed, scenario.body);
-    if (scenario.allowed) {
-      assert.equal((sdk as CoverageMap).reviewed, 1, scenario.body);
-      assert.equal((command.result as CoverageMap).reviewed, 1, scenario.body);
-    } else {
-      denied(sdk, 'evidence_ineligible');
-      denied(command.result as CoverageResult, 'evidence_ineligible');
-      assert.equal((command.result as { exit_code: number }).exit_code, 1);
-    }
-  }
+  await checkCoverageCases(t, cases);
+});
+
+
+test('unmarked substantive findings stay eligible while explicit summaries and service notices do not', async t => {
+  const providerNotices = [
+    'Action not completed', "You've used your own review budget for today",
+    'Your pull request is larger than the review limit', 'Your private repo does not have access',
+    '101 files exceed the limit of 100', 'You do not have access to this repository',
+    "You don't have access to reviews", 'This repository does not receive automatic reviews',
+    'You are seeing this message because GitHub Code Scanning has recently been set up',
+    'This pull request contains the workflow file for the Code Scanning tool',
+    'Sorry reviewer, your private repo does not have access',
+    'Your private repo does not have access to automatic reviews',
+    "You've used your own review budget until tomorrow",
+    'Your pull request is larger than the review limit and was not reviewed',
+    '101 files exceed the limit of 100, so the review was skipped',
+    'This repository does not receive automatic reviews under this plan',
+  ];
+  const cases = [
+    ...COVERAGE_NOTICES.map(notice => ({ body: `The ${notice.toLowerCase()} error leaks an account identifier. Validate the input before writing.`, allowed: true })),
+    ...[
+      'The rate-limit counter must be atomic to prevent lost updates.',
+      'Quota exceeded errors leak an identifier.', 'Rate-limit reached handling loses requests.',
+      'No access checks protect the operation.', 'Failed to generate errors expose a private value.',
+      'The walkthrough omits input validation.', 'The summary of changes hides a missing guard.',
+    ].map(finding => ({ body: `${finding} Validate the input before writing.`, allowed: true })),
+    ...COVERAGE_NOTICES.map(notice => ({ body: `${notice}. Validate the input before writing.`, allowed: false })),
+    ...providerNotices.map(notice => ({ body: `The ${notice.toLowerCase()} message handler loses valid input. Validate the input before writing.`, allowed: true })),
+    ...providerNotices.flatMap(notice => ['', '**High** '].map(prefix => ({ body: `${prefix}${notice}. Validate the input before writing.`, allowed: false }))),
+    ...[
+      'Summary by CodeRabbit', 'Walkthrough', 'No actionable issues', 'No actionable comments',
+      'Actionable comments posted: 0', 'Summary of changes', 'Summary of pull request',
+      'Full review finished', "Reviewer's guide", '✅ Action performed',
+    ].map(heading => ({ body: `**${heading}**
+Validate the input before writing.`, allowed: false })),
+    { body: '<details><summary>✅ Action performed</summary>\nValidate the input before writing.</details>', allowed: false },
+    { body: '**Summary by CodeRabbit**\n**Major** Validate the input before writing.', allowed: true },
+    { body: '**Summary by CodeRabbit**\nActionable comments posted: 1\nValidate the input before writing.', allowed: true },
+  ];
+  await checkCoverageCases(t, cases);
 });
