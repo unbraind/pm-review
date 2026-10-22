@@ -40,8 +40,10 @@ A complete provider re-import marks absent observations `review_withdrawn=true`.
 It retains their source text, local reasoning, canonical disposition and group.
 Reappearance clears withdrawal; source edits and revisions remain in native PM
 history. Re-import uses the same node-derived item ids and does not create another
-disposition. Only pass complete provider snapshots to `importFindings`; incomplete
-provider reads must fail before import, as the existing GitHub transport does.
+disposition. Import receipts name each observation's canonical item and effective
+verdict, and count newly withdrawn sources separately. Only pass complete provider
+snapshots to `importFindings`; incomplete provider reads must fail before import,
+as the existing GitHub transport does.
 
 The typed SDK has the same semantics:
 

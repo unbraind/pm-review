@@ -45,13 +45,13 @@ export async function reviewItems(client: PmClient): Promise<ItemMetadata[]> {
 }
 
 /** Receipt names durable identities so callers can follow up with verdict commands. */
-export interface ImportReceipt { repo: string; pr: number; head: string; created: number; updated: number; items: { id: string; node_id: string; verdict: string }[] }
+export interface ImportReceipt { repo: string; pr: number; head: string; created: number; updated: number; withdrawn: number; items: { id: string; node_id: string; canonical: string; verdict: string }[] }
 
 /** Upsert complete findings using stable node-derived ids, preserving every local decision. */
 export async function importFindings(client: PmClient, pr: PullRequest, findings: Finding[]): Promise<ImportReceipt> {
   await ensureReviewSchema(client);
   const existing = new Map((await lineageItems(client)).map(/** GitHub node ids identify the same source across imports and PRs. */ item => [String(item.review_node_id), item]));
-  const receipt: ImportReceipt = { repo: pr.repo, pr: pr.number, head: pr.head, created: 0, updated: 0, items: [] };
+  const receipt: ImportReceipt = { repo: pr.repo, pr: pr.number, head: pr.head, created: 0, updated: 0, withdrawn: 0, items: [] };
   for (const finding of findings) {
     const prior = existing.get(finding.id);
     // Legacy explicit decisions always retained a reason; final actionable verdicts also remain local.
@@ -74,11 +74,18 @@ export async function importFindings(client: PmClient, pr: PullRequest, findings
     } else if (prior?.status === 'closed' && prior.review_verdict_source === 'import' && String(prior.resolution).startsWith('informational:')) {
       await client.update(item.id, { status: 'open' });
     }
-    receipt.items.push({ id: item.id, node_id: finding.id, verdict });
+    receipt.items.push({ id: item.id, node_id: finding.id, canonical: item.id, verdict });
   }
   const current = new Set(findings.map(/** Only a complete snapshot can establish source withdrawal. */ finding => finding.id));
   for (const prior of existing.values()) if (prior.review_repo === pr.repo && prior.review_pr === pr.number && !current.has(String(prior.review_node_id)) && prior.review_withdrawn !== true) {
     await client.update(prior.id, fieldOptions({ review_withdrawn: true }));
+    receipt.withdrawn++;
+  }
+  const projected = new Map((await reviewItems(client)).map(/** Import receipts expose effective decisions without changing source observations. */ row => [row.id, row]));
+  for (const row of receipt.items) {
+    const current = projected.get(row.id)!;
+    row.canonical = String(current.review_canonical);
+    row.verdict = String(current.review_verdict);
   }
   return receipt;
 }
