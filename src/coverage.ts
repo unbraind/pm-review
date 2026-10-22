@@ -33,7 +33,7 @@ function sourceDigest(item: ItemMetadata): string {
   return digest([item.description, item.review_node_id, item.review_repo, item.review_pr, item.review_bot, item.review_url, item.review_head, item.review_kind]);
 }
 
-/** Fail closed on service notices even when they include severity markers or a claimed mapping. */
+/** Refuse complete line-leading notices, including Markdown prefixes, while preserving substantive topic mentions. */
 function eligible(item: ItemMetadata): boolean {
   const body = item.description;
   return body.trim().length >= 24 && item.type === 'ReviewFinding' && typeof item.review_bot === 'string' && item.review_bot.trim().length > 0
@@ -43,7 +43,7 @@ function eligible(item: ItemMetadata): boolean {
     && typeof item.review_url === 'string' && item.review_url.startsWith(`https://github.com/${item.review_repo}/pull/${String(item.review_pr)}#`)
     && typeof item.review_head === 'string' && /^[a-f0-9]{40,64}$/i.test(item.review_head)
     && !isInformational(body)
-    && !/quota (?:exceeded|exhausted)|rate[- ]limit(?:ed| (?:exceeded|reached))|review skipped|skipped review|review failed|review unavailable|review (?:was |is )?(?:not (?:performed|completed)|cancelled|canceled)|trial (?:has )?ended|review budget|no access|failed to (?:review|generate)/i.test(body);
+    && !/(?:^|\n)[>\t #*_-]*(?:\*\*[^*\r\n]+\*\*[ \t]*)?(?:quota (?:exceeded|exhausted)|rate[- ]limit(?:ed| (?:exceeded|reached))|review skipped|skipped review|review failed|review unavailable|review (?:was |is )?(?:not (?:performed|completed)|cancelled|canceled)|trial (?:has )?ended|review budget|no access(?: to (?:this repository|reviews))?|failed to (?:review|generate))(?=[*_]*(?:[.!?][*_]*(?:[ \t]|\r?\n|$)|\r?\n|$))/i.test(body);
 }
 
 /** Validate persisted and CLI bindings identically instead of trusting stored JSON. */

@@ -165,3 +165,25 @@ Across 28 authored source files, statements/lines are 2,653/2,653, functions
 Duplication is zero across 6,465 lines and 43 sources; all 90 declarations are
 documented. Production audit reports zero vulnerabilities; the 73-file package
 allowlist, changelog and publish-attestation checks pass. Nothing was published.
+
+## Review round: notice clauses versus substantive findings
+
+Thread `PRRT_kwDOVGABD86vPQ3P` exposed substring-based refusals for substantive
+findings discussing quota-exceeded errors, rate-limit handling, missing access
+checks or failed generation. The coverage predicate now recognizes complete
+notice clauses at line starts, allowing Markdown and severity prefixes. Every
+previous notice alternative follows the same boundaries, including LF/CRLF line
+ends and notice clauses within mixed review bodies. The contract document records
+these distinctions. The existing shared round-classifier issue remains separate.
+
+The retained classification regression exercises 56 real non-git scenarios through
+both SDK and registered commands: 28 substantive findings are eligible and 28
+notices are refused. Its PM-linked run passes 1/1; the complete coverage suite
+passes 10/10 with zero failures/skips. Before correction the new cases fail with
+an assertion on the substantive quota-exceeded error finding.
+
+A disposable copy retaining the expanded tests restores only `eligible` from
+`ddce5e9`. Running
+`node --test --test-name-pattern='substantive quota and rate-limit' test/coverage.test.ts`
+fails with that same `AssertionError`, exit 1. No other function is reverted and
+the source worktree remains unchanged. Final full-gate results follow separately.

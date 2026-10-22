@@ -186,9 +186,27 @@ test('substantive quota and rate-limit findings remain eligible through SDK and 
   const { client, pmRoot, id, options } = await fixture(t);
   const activation = await activateExtensionForTest(extension, { name: 'pm-review', capabilities: ['commands', 'schema'] });
   assert.deepEqual(activation.failed, []);
+  const notices = [
+    'Quota exceeded', 'Quota exhausted', 'Rate-limited', 'Rate limit exceeded', 'Rate-limit reached',
+    'Review skipped', 'Skipped review', 'Review failed', 'Review unavailable',
+    'Review was not performed', 'Review is not completed', 'Review cancelled', 'Review canceled',
+    'Trial ended', 'Trial has ended', 'Review budget', 'No access', 'No access to this repository',
+    'No access to reviews', 'Failed to review', 'Failed to generate',
+  ];
   const cases = [
     ...['allowance', 'quota', 'rate-limit'].map(topic => ({ body: `**High** Validate the input before writing. The ${topic} counter must be atomic.`, allowed: true })),
-    ...['Quota exhausted.', 'Review skipped.', 'Review unavailable.', 'rate-limit reached.'].map(notice => ({ body: `**High** ${notice} Validate the input before writing.`, allowed: false })),
+    ...notices.map(notice => ({ body: `**Major** The ${notice.toLowerCase()} error leaks an account identifier. Validate the input before writing.`, allowed: true })),
+    ...['Quota exceeded errors leak an identifier', 'Rate-limit reached handling loses requests', 'No access checks protect the operation', 'Failed to generate errors expose a private value'].map(finding => ({ body: `**Major** ${finding}. Validate the input before writing.`, allowed: true })),
+    ...notices.map(notice => ({ body: `**High** ${notice}. Validate the input before writing.`, allowed: false })),
+    ...[
+      'Quota exhausted. **High** Validate the input before writing.',
+      '**High**\n> Quota exhausted.\nValidate the input before writing.',
+      '**High**\r\n## Review unavailable!\r\nValidate the input before writing.',
+      '> ## **High** Rate-limit reached! Validate the input before writing.',
+      '- **High** No access to this repository? Validate the input before writing.',
+      '**Quota exhausted.** **High** Validate the input before writing.',
+      '**High** Validate the input before writing.\nReview failed\nReview details follow.',
+    ].map(body => ({ body, allowed: false })),
   ];
   for (const [index, scenario] of cases.entries()) {
     const pr = pullRequest({ threads: [{ id: `classification-${index}`, path: 'src/counter.ts', line: 1, resolved: false, comments: [contribution({ body: scenario.body })] }], comments: [], reviews: [] });
