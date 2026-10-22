@@ -65,6 +65,9 @@ Withdrawal retains source text, local reasoning, canonical disposition and group
 Reappearance clears it; changes remain in native PM history. Node-derived ids
 prevent duplicate observations. Import receipts name each observation's effective
 canonical id and verdict and count newly withdrawn sources separately.
+Response and status receipts report verified withdrawn sources in `withdrawn_items`
+and omit them from source reply/verdict requirements, while live siblings keep the
+shared decision. Reappearance restores normal source replies and deduplication.
 
 The typed SDK has the same semantics:
 
