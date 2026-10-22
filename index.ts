@@ -19,6 +19,10 @@ export { reconcile } from './src/reconcile.ts';
 export { respond, reviewStatus } from './src/respond.ts';
 /** Export independent closeout verification for typed hosts. */
 export { reviewCloseout } from './src/closeout.ts';
+/** Export explicit review attention mapping independently of closeout and round gates. */
+export { reviewCoverage, coverCriterion } from './src/coverage.ts';
+/** Export typed criterion bindings, judgments and actionable refusals. */
+export type { CoverOptions, CoverageBinding, CoverageCode, CoverageJudgment, CoverageMap, CoverageRefusal, CoverageResult } from './src/coverage-types.ts';
 /** Export closeout verdict vocabulary. */
 export type { CloseoutOptions, CloseoutReport, CloseoutFindingCode } from './src/closeout-types.ts';
 /** Export contribution and receipt vocabulary for package consumers. */
