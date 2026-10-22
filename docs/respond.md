@@ -6,6 +6,24 @@ Before this feature, recorded verdicts required individual application and a sep
 
 The HTTP fixture server exercises the actual GraphQL transport and real temporary PM trackers, without SDK mocks. Connections use one-element pages, including nested replies and reactions. Seven scenarios cover dry-run, fix/refusal replies, every contribution category, human exclusion, configurable policy, retries after partial failure, unsafe reasons, incomplete decisions, partial API responses, changed-reason supersession and legacy-marker migration with changed fix commits. Packed npm and Bun consumers also discover both commands.
 
+## Withdrawn observations
+
+After a verified complete import marks a source `review_withdrawn=true`, response
+planning excludes that observation from verdict/reply requirements and reply or
+resolution actions. `responsePlan`, `respond` and `status` report its id in optional
+`withdrawn_items`. Its source text, reason, audit and shared lineage disposition
+remain available in the tracker. Live siblings still receive their own replies,
+including when the withdrawn observation owns the canonical decision.
+
+Partial imports do not certify withdrawal. A missing source that has not been
+verified withdrawn still fails planning before any provider writes. Reappearance
+in an import clears withdrawal and restores normal reply eligibility and marker
+deduplication. Votes continue to use the current provider snapshot.
+
+The issue 30 regression uses real SDK trackers without git to cover fixed and
+refused decisions with either canonical or noncanonical source withdrawal,
+dry-run/status receipts, live application, retained evidence and reappearance.
+
 ## Decision fingerprints and stale replies
 
 Batch response markers use `<!-- pm-review:finding:<encoded-id> decision:<fingerprint> -->`. The fingerprint is the first 16 hexadecimal characters of SHA-256 over a JSON array containing the recorded verdict, reason and fix commit (empty for other verdicts). Only a matching marker from the authenticated account satisfies the current decision; changing the verdict, reason or fix commit requires a new reply.
