@@ -17,6 +17,10 @@ export { decide } from './src/verdict.ts';
 export { reconcile } from './src/reconcile.ts';
 /** Export batch response and live status with the registered command semantics. */
 export { respond, reviewStatus } from './src/respond.ts';
+/** Export independent closeout verification for typed hosts. */
+export { reviewCloseout } from './src/closeout.ts';
+/** Export closeout verdict vocabulary. */
+export type { CloseoutOptions, CloseoutReport, CloseoutFindingCode } from './src/closeout-types.ts';
 /** Export contribution and receipt vocabulary for package consumers. */
 export type { GitHubTransport, PullRequest, Verdict } from './src/types.ts';
 

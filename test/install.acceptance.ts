@@ -47,7 +47,7 @@ function consumerEnv(cwd: string, pmRoot: string, home = cwd): NodeJS.ProcessEnv
     const prefix = runtime === 'npm' ? ['--no-install', 'pm'] : ['--bun', '--no-install', 'pm'];
     command(cwd, runner, [...prefix, 'init', 'consumer', '--defaults', '--agent-guidance', 'skip', '--json'], pmRoot);
     command(cwd, runner, [...prefix, 'install', tarball, '--project', '--json'], pmRoot);
-    for (const action of ['import', 'verdict', 'round', 'precedents', 'reconcile', 'respond', 'status']) assert.match(command(cwd, runner, [...prefix, 'review', action, '--help'], pmRoot), /review/);
+    for (const action of ['import', 'verdict', 'round', 'precedents', 'reconcile', 'respond', 'status', 'closeout']) assert.match(command(cwd, runner, [...prefix, 'review', action, '--help'], pmRoot), /review/);
     assert.match(command(cwd, runner, [...prefix, 'review', 'reconcile', '--help'], pmRoot), /--dry-run/);
     const verdictHelp = command(cwd, runner, [...prefix, 'review', 'verdict', '--help'], pmRoot);
     assert.doesNotMatch(verdictHelp, /<value>\s+<value>/);
@@ -62,6 +62,7 @@ function consumerEnv(cwd: string, pmRoot: string, home = cwd): NodeJS.ProcessEnv
     command(cwd, runner, [...prefix, 'create', 'ReviewFinding', 'Packed searchable review context', '--description', 'Synthetic validation context', '--json'], pmRoot);
     const search = JSON.parse(command(cwd, runner, [...prefix, 'search', 'validation', '--json'], pmRoot)) as { count: number };
     assert.equal(search.count, 1);
+    await verifyCloseout(cwd, runner, prefix, pmRoot);
     verifyHostExitContract(cwd, runner, prefix, pmRoot);
     assert.ok((await readdir(cwd)).includes('node_modules'));
   }
@@ -113,4 +114,23 @@ async function importManifest(root: string): Promise<string> {
 async function writeConsumer(cwd: string): Promise<void> {
   await mkdir(cwd);
   await writeFile(join(cwd, 'package.json'), '{"name":"review-consumer","private":true,"type":"module"}\n');
+}
+
+/** Check closeout through packed TOON/JSON host normalization in both consumer runtimes. */
+async function verifyCloseout(cwd: string, runner: string, prefix: string[], pmRoot: string): Promise<void> {
+  await writeFile(join(cwd, 'proof.md'), 'Recorded evidence');
+  await writeFile(join(cwd, 'closeout.test.ts'), "import { test } from 'node:test'; import assert from 'node:assert/strict'; test('packed closeout behavior', () => assert.equal(2 + 2, 4));\n");
+  const item = JSON.parse(command(cwd, runner, [...prefix, 'create', 'Task', 'Packed closeout evidence', '--acceptance-criteria', '[test:packed closeout behavior]', '--json'], pmRoot)) as { id: string };
+  const note = `closeout-before:${Buffer.from('Recorded evidence').toString('base64')}`;
+  command(cwd, runner, [...prefix, 'files', item.id, '--add', `path=proof.md,note=${note}`, '--json'], pmRoot);
+  command(cwd, runner, [...prefix, 'test', item.id, '--add-json', JSON.stringify({ command: `${process.execPath} --test --test-reporter=tap closeout.test.ts`, path: 'closeout.test.ts' }), '--json'], pmRoot);
+  const report = JSON.parse(command(cwd, runner, [...prefix, 'review', 'closeout', item.id, '--json'], pmRoot)) as { ok: boolean; criteria: { verdict: string }[] };
+  assert.equal(report.ok, true);
+  assert.equal(report.criteria[0].verdict, 'proven');
+  assert.match(command(cwd, runner, [...prefix, 'review', 'closeout', item.id], pmRoot), /proven/);
+  command(cwd, runner, [...prefix, 'update', item.id, '--acceptance-criteria', '[test:missing proof]', '--json'], pmRoot);
+  const refused = spawnSync(runner, [...prefix, 'review', 'closeout', item.id, '--json'], { cwd, env: consumerEnv(cwd, pmRoot), encoding: 'utf8', timeout: 60_000 });
+  assert.equal(refused.error, undefined);
+  assert.equal(refused.status, 1, refused.stderr);
+  assert.equal((JSON.parse(refused.stdout) as { criteria: { verdict: string }[] }).criteria[0].verdict, 'unproven');
 }
