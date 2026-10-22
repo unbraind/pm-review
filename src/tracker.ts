@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { PmClient } from '@unbrained/pm-cli/sdk';
 import type { ItemMetadata } from '@unbrained/pm-cli/sdk';
 import type { SchemaFieldDefinition, SchemaItemTypeDefinition } from '@unbrained/pm-cli/sdk/authoring';
+import { canonicalReviewItems, lineageItems } from './lineage.ts';
 import { VERDICTS } from './types.ts';
 import type { Finding, PullRequest, Verdict } from './types.ts';
 
@@ -16,6 +17,7 @@ export const REVIEW_FIELDS: SchemaFieldDefinition[] = [
   { name: 'review_pr', type: 'number', optional: true },
   { name: 'review_line', type: 'number', optional: true },
   { name: 'review_resolved', type: 'boolean', optional: true },
+  { name: 'review_withdrawn', type: 'boolean', optional: true },
 ];
 
 /** Ensure persisted schema remains readable by pm search even without an active extension. */
@@ -39,7 +41,7 @@ export function fieldOptions(fields: Record<string, string | number | boolean>):
 
 /** Read every review item, including terminal verdict precedents, through the complete SDK reader. */
 export async function reviewItems(client: PmClient): Promise<ItemMetadata[]> {
-  return (await client.listAllComplete()).items.filter(/** Package-owned typed items are the only review corpus. */ item => item.type === REVIEW_TYPE.name);
+  return canonicalReviewItems(await lineageItems(client));
 }
 
 /** Receipt names durable identities so callers can follow up with verdict commands. */
@@ -48,14 +50,14 @@ export interface ImportReceipt { repo: string; pr: number; head: string; created
 /** Upsert complete findings using stable node-derived ids, preserving every local decision. */
 export async function importFindings(client: PmClient, pr: PullRequest, findings: Finding[]): Promise<ImportReceipt> {
   await ensureReviewSchema(client);
-  const existing = new Map((await reviewItems(client)).map(/** GitHub node ids identify the same source across imports and PRs. */ item => [String(item.review_node_id), item]));
+  const existing = new Map((await lineageItems(client)).map(/** GitHub node ids identify the same source across imports and PRs. */ item => [String(item.review_node_id), item]));
   const receipt: ImportReceipt = { repo: pr.repo, pr: pr.number, head: pr.head, created: 0, updated: 0, items: [] };
   for (const finding of findings) {
     const prior = existing.get(finding.id);
     // Legacy explicit decisions always retained a reason; final actionable verdicts also remain local.
     const local = prior !== undefined && (prior.review_verdict_source === 'local' || Boolean(prior.review_reason) || Boolean(prior.review_commit) || !['pending', 'informational'].includes(String(prior.review_verdict)));
     const verdict = local ? String(prior.review_verdict) : finding.verdict;
-    const fields = fieldOptions({ review_bot: finding.bot, review_kind: finding.kind, review_path: finding.path, review_line: finding.line ?? 0, review_severity: finding.severity, review_summary: finding.summary, review_url: finding.url, review_node_id: finding.id, review_head: finding.head ?? '', review_head_source: finding.head === null ? 'unknown' : 'github', review_verdict: verdict, review_verdict_source: local ? 'local' : 'import', review_resolved: finding.resolved, review_repo: pr.repo, review_pr: pr.number, review_thread_id: finding.thread, review_commits: pr.commits.map(/** Retain both commit identity and its public source link. */ commit => `${commit.sha} ${commit.url}`).join('\n') });
+    const fields = fieldOptions({ review_withdrawn: false, review_bot: finding.bot, review_kind: finding.kind, review_path: finding.path, review_line: finding.line ?? 0, review_severity: finding.severity, review_summary: finding.summary, review_url: finding.url, review_node_id: finding.id, review_head: finding.head ?? '', review_head_source: finding.head === null ? 'unknown' : 'github', review_verdict: verdict, review_verdict_source: local ? 'local' : 'import', review_resolved: finding.resolved, review_repo: pr.repo, review_pr: pr.number, review_thread_id: finding.thread, review_commits: pr.commits.map(/** Retain both commit identity and its public source link. */ commit => `${commit.sha} ${commit.url}`).join('\n') });
     const options = { ...fields, title: `${finding.bot}: ${finding.summary}`, description: finding.body, body: `Source: ${finding.url}\n\n${finding.body}\n\nPR commits:\n${pr.commits.map(/** Commit links connect the review context to the code under discussion. */ commit => `- [${commit.sha}](${commit.url})`).join('\n')}` };
     let item: ItemMetadata;
     if (prior) {
@@ -74,20 +76,25 @@ export async function importFindings(client: PmClient, pr: PullRequest, findings
     }
     receipt.items.push({ id: item.id, node_id: finding.id, verdict });
   }
+  const current = new Set(findings.map(/** Only a complete snapshot can establish source withdrawal. */ finding => finding.id));
+  for (const prior of existing.values()) if (prior.review_repo === pr.repo && prior.review_pr === pr.number && !current.has(String(prior.review_node_id)) && prior.review_withdrawn !== true) {
+    await client.update(prior.id, fieldOptions({ review_withdrawn: true }));
+  }
   return receipt;
 }
 
 /** Persist a local verdict and replay-safe audit comment through the SDK mutation pipeline. */
 export async function recordVerdict(client: PmClient, item: ItemMetadata, verdict: Verdict, reason: string, commit: string): Promise<void> {
-  await client.comments(item.id, { add: `pm-review ${verdict}: ${reason}${commit ? `\nCommit: ${commit}` : ''}`, ifAbsent: true });
-  await client.update(item.id, fieldOptions({ review_verdict: verdict, review_verdict_source: 'local', review_reason: reason, review_commit: commit }));
+  const canonical = String((await reviewItems(client)).find(/** Re-read identity instead of trusting a stale or raw caller snapshot. */ row => row.id === item.id)!.review_canonical);
+  await client.comments(canonical, { add: `pm-review ${verdict}: ${reason}${commit ? `\nCommit: ${commit}` : ''}`, ifAbsent: true });
+  await client.update(canonical, fieldOptions({ review_verdict: verdict, review_verdict_source: 'local', review_reason: reason, review_commit: commit }));
 }
 
 /** Search every prior fix or refusal using all query words across source text and retained reasoning. */
 export async function precedents(client: PmClient, query: string, repo?: string, pr?: number): Promise<{ id: string; verdict: string; summary: string; reason: string; url: string; commit: string }[]> {
   const words = query.trim().toLowerCase().split(/\s+/);
   if (!query.trim()) throw new Error('A nonempty precedent query is required');
-  return (await reviewItems(client)).filter(/** Current and terminal decisions are eligible; optional PR flags narrow only on request. */ item => (item.review_verdict === 'fix' || item.review_verdict === 'refuse') && (repo === undefined || item.review_repo === repo) && (pr === undefined || item.review_pr === pr) && words.every(/** Match source findings and decision reasoning without contacting a provider. */ word => `${item.title} ${item.description} ${String(item.review_reason)}`.toLowerCase().includes(word))).map(/** Return a compact precedent that links back to both item and source. */ item => ({ id: item.id, verdict: String(item.review_verdict), summary: String(item.review_summary), reason: String(item.review_reason), url: String(item.review_url), commit: String(item.review_commit) }));
+  return (await reviewItems(client)).filter(/** Current and terminal decisions are eligible; optional PR flags narrow only on request. */ item => item.id === item.review_canonical && (item.review_verdict === 'fix' || item.review_verdict === 'refuse') && (repo === undefined || item.review_repo === repo) && (pr === undefined || item.review_pr === pr) && words.every(/** Match source findings and decision reasoning without contacting a provider. */ word => `${item.title} ${item.description} ${String(item.review_reason)}`.toLowerCase().includes(word))).map(/** Return a compact precedent that links back to both item and source. */ item => ({ id: item.id, verdict: String(item.review_verdict), summary: String(item.review_summary), reason: String(item.review_reason), url: String(item.review_url), commit: String(item.review_commit) }));
 }
 
 /** Find imported source identities locally across the complete tracker, without GitHub reads. */

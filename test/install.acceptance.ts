@@ -51,7 +51,7 @@ function consumerEnv(cwd: string, pmRoot: string, home = cwd): NodeJS.ProcessEnv
     const prefix = runtime === 'npm' ? ['--no-install', 'pm'] : ['--bun', '--no-install', 'pm'];
     command(cwd, runner, [...prefix, 'init', 'consumer', '--defaults', '--agent-guidance', 'skip', '--json'], pmRoot);
     command(cwd, runner, [...prefix, 'install', tarball, '--project', '--json'], pmRoot);
-    for (const action of ['import', 'verdict', 'round', 'precedents', 'reconcile', 'respond', 'status', 'closeout', 'coverage', 'cover']) assert.match(command(cwd, runner, [...prefix, 'review', action, '--help'], pmRoot), /review/);
+    for (const action of ['import', 'verdict', 'round', 'precedents', 'reconcile', 'respond', 'status', 'closeout', 'coverage', 'cover', 'lineage']) assert.match(command(cwd, runner, [...prefix, 'review', action, '--help'], pmRoot), /review/);
     assert.match(command(cwd, runner, [...prefix, 'review', 'reconcile', '--help'], pmRoot), /--dry-run/);
     const verdictHelp = command(cwd, runner, [...prefix, 'review', 'verdict', '--help'], pmRoot);
     assert.doesNotMatch(verdictHelp, /<value>\s+<value>/);
@@ -72,6 +72,10 @@ function consumerEnv(cwd: string, pmRoot: string, home = cwd): NodeJS.ProcessEnv
     assert.equal(coverage.unreviewed, 1);
     assert.match(command(cwd, runner, [...prefix, 'review', 'coverage', coverageTarget.id], pmRoot), /unreviewed/);
     const evidence = JSON.parse(command(cwd, runner, [...prefix, 'create', 'ReviewFinding', 'Packed substantive review', '--description', 'Validate the input before writing.', '--field', 'review_bot=synthetic-reviewer', '--field', 'review_node_id=packed-node', '--field', 'review_repo=example/package', '--field', 'review_pr=2', '--field', 'review_url=https://github.com/example/package/pull/2#discussion_r1', '--field', `review_head=${'a'.repeat(40)}`, '--field', 'review_kind=thread', '--json'], pmRoot)) as { id: string };
+    const lineage = JSON.parse(command(cwd, runner, [...prefix, 'review', 'lineage', evidence.id, '--json'], pmRoot)) as { canonical: string; observations: unknown[] };
+    assert.equal(lineage.canonical, evidence.id);
+    assert.equal(lineage.observations.length, 1);
+    assert.match(command(cwd, runner, [...prefix, 'review', 'lineage', evidence.id], pmRoot), /canonical:/);
     const revision = (JSON.parse(command(cwd, runner, [...prefix, 'review', 'coverage', coverageTarget.id, '--json'], pmRoot)) as { revision: string }).revision;
     const covered = JSON.parse(command(cwd, runner, [...prefix, 'review', 'cover', coverageTarget.id, '--revision', revision, '--criterion', 'AC1', '--evidence', evidence.id, '--excerpt', 'Validate the input before writing.', '--judgment', 'reviewed', '--reason', 'Reviews the invalid input boundary', '--json'], pmRoot)) as { reviewed: number; judgments: { author: string }[] };
     assert.equal(covered.reviewed, 1);

@@ -3,6 +3,11 @@ import type { ExtensionApi } from '@unbrained/pm-cli/sdk/authoring';
 import { registerReviewCommands } from './src/commands.ts';
 import { REVIEW_FIELDS, REVIEW_TYPE } from './src/tracker.ts';
 
+/** Export explicit cross-provider identity confirmation and compact receipts. */
+export { findingLineage } from './src/lineage.ts';
+/** Export lineage input, output and refusal contracts. */
+export type { LineageOptions, LineageView, LineageResult, LineageCode } from './src/lineage.ts';
+
 /** Export typed SDK consumers without exposing a second GitHub network boundary. */
 export { createGitHubTransport } from './src/github.ts';
 /** Export core decisions for SDK hosts and real-tracker acceptance. */
