@@ -271,6 +271,10 @@ using `--confirm --revision HASH --reason 'Why they are the same finding'`.
 Near matches stay proposals until that explicit step. Confirmed observations share
 one canonical disposition through the existing `review verdict` command; duplicate
 imports and source withdrawal retain earlier reasoning without multiplying fixes.
+Decision time selects the canonical observation. Differing independent decisions
+refuse confirmation regardless of origin; invalid links produce diagnostics while
+review work continues. SDK withdrawal requires `snapshotComplete: true` and an
+unfiltered snapshot; partial imports never infer source withdrawal.
 
 ```sh
 pm review lineage observation-a --with observation-b --json

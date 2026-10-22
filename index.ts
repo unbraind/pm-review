@@ -6,12 +6,14 @@ import { REVIEW_FIELDS, REVIEW_TYPE } from './src/tracker.ts';
 /** Export explicit cross-provider identity confirmation and compact receipts. */
 export { findingLineage } from './src/lineage.ts';
 /** Export lineage input, output and refusal contracts. */
-export type { LineageOptions, LineageView, LineageResult, LineageCode } from './src/lineage.ts';
+export type { LineageOptions, LineageView, LineageResult, LineageCode, LineageIssue } from './src/lineage.ts';
 
 /** Export typed SDK consumers without exposing a second GitHub network boundary. */
 export { createGitHubTransport } from './src/github.ts';
 /** Export core decisions for SDK hosts and real-tracker acceptance. */
 export { findReviewItems, importFindings, precedents, ensureReviewSchema } from './src/tracker.ts';
+/** Export complete-snapshot withdrawal controls and canonical import receipts. */
+export type { ImportOptions, ImportReceipt } from './src/tracker.ts';
 /** Export bot marker parsing and exact-head gate computation. */
 export { findingsOf } from './src/findings.ts';
 /** Export round computation with the same semantics as the registered command. */

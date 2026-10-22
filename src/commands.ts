@@ -84,7 +84,7 @@ async function dispatchReviewCommand(ctx: CommandHandlerContext, provided?: GitH
   }
   if (ctx.command === 'review reconcile') return reconcile(client, transport, target.repo, target.pr, readBooleanOption(ctx.options, 'dryRun') === true);
   const snapshot = await transport.snapshot(target.repo, target.pr);
-  if (ctx.command === 'review import') return importFindings(client, snapshot, findingsOf(snapshot));
+  if (ctx.command === 'review import') return importFindings(client, snapshot, findingsOf(snapshot), { snapshotComplete: true });
   if (ctx.command !== 'review round') throw new Error('Unknown pm-review command');
   const result = evaluateRound(snapshot, await reviewItems(client));
   const exit = result.complete ? {} : { exit_code: 1 };

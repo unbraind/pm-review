@@ -3,6 +3,8 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { TestContext } from 'node:test';
+import { findingsOf } from '../src/findings.ts';
+import { importFindings } from '../src/tracker.ts';
 import type { Contribution, GitHubTransport, PullRequest } from '../src/types.ts';
 
 /** Construct a real temporary tracker, with cleanup registered before initialization. */
@@ -37,4 +39,13 @@ export async function inFixtureWorkspace<T>(cwd: string, action: () => Promise<T
   process.env.PM_SOURCE_WORKSPACE_ROOT = cwd;
   try { return await action(); }
   finally { if (previous === undefined) delete process.env.PM_SOURCE_WORKSPACE_ROOT; else process.env.PM_SOURCE_WORKSPACE_ROOT = previous; }
+}
+
+/** Two providers identify a suspected defect at distinct source revisions in a real plain tracker. */
+export async function lineageFixture(t: TestContext) {
+  const base = await tracker(t);
+  const pr = pullRequest({ reviews: [], comments: [] });
+  pr.threads.push({ ...pr.threads[0], id: 'other-thread', comments: [contribution({ bot: 'greptile-apps[bot]', id: 'other-comment', head: 'b'.repeat(40), url: 'https://github.com/example/package/pull/1#discussion_r2' })] });
+  const imported = await importFindings(base.client, pr, findingsOf(pr));
+  return { ...base, pr, ids: imported.items.map(row => row.id).sort() };
 }

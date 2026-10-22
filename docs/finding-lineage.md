@@ -18,32 +18,53 @@ pm review verdict observation-b fix --repo example/package --pr 1 \
   --reason 'Validated the input once for both observations' --commit COMMIT_SHA
 ```
 
-The canonical item is the lexically smallest item id in a confirmed connected
-group. The proposal names it before confirmation. Each observation keeps its own
-provider, source node, body, URL, commit revision, lifecycle and item history.
-Confirmations are attributed `review-lineage/v1` PM comments, appended through the
-SDK with lock-scoped replay protection. Groups converge deterministically even
-when confirmations form cycles. A confirmation cannot silently discard a different
-local disposition: first record the intended verdict, exact reason and commit on
-the proposed canonical item, then read a fresh proposal and confirm it. Existing
-noncanonical decisions remain historical reasoning, available through `pm get`,
-`pm comments` and `pm history`. They are never deleted or rewritten.
+The canonical observation owns the most recently recorded decision, using
+`review_decided_at` and matching decision-audit timestamps. Item ids break only
+equal-time ties. Initial provider decisions retain their source date; changed
+import-derived verdicts receive a new observation time, and unchanged re-imports
+preserve it. Legacy records without either timestamp use their original item
+creation time. Reassess and record an explicit verdict when legacy chronology is
+uncertain. Ordinary comments, title edits and confirmations do not advance the
+decision time.
 
-One current disposition is projected onto every observation for round gates,
-responses, source lookup and verdict writes. Provider-specific replies still name
-the individual source thread. Precedents return the canonical item once, avoiding
-multiple fix decisions across transports. Raw `pm get` shows the original stored
-observation, including any historical verdict; use `review lineage` for the current
-canonical disposition. Confirmation does not copy claims about tests or approval.
+Every observation retains its provider, source node, body, URL, revision and
+history. Confirmations remain attributed `review-lineage/v1` comments appended
+through the SDK. Before joining independent roots, their complete dispositions
+must agree, including import-derived decisions. Otherwise `disposition_conflict`
+requires reassessing and recording the intended verdict, reason and commit on
+both roots before a fresh confirmation. Later decisions within a confirmed group
+select the new owner by decision time. The lineage view exposes differing retained
+observations in `disagreements`, including after reverse or replayed links.
 
-A complete provider re-import marks absent observations `review_withdrawn=true`.
-It retains their source text, local reasoning, canonical disposition and group.
-Reappearance clears withdrawal; source edits and revisions remain in native PM
-history. Re-import uses the same node-derived item ids and does not create another
-disposition. Import receipts name each observation's canonical item and effective
-verdict, and count newly withdrawn sources separately. Only pass complete provider
-snapshots to `importFindings`; incomplete provider reads must fail before import,
-as the existing GitHub transport does.
+`review verdict` atomically updates the addressed observation's decision and audit
+comment through one SDK update. It does not route a second write through a cached
+canonical id. A concurrent confirmation cannot strand the decision on an old
+owner: fresh reads compute the latest decision across the whole confirmed group.
+Round gates, responses, source lookup, precedents and import receipts share this
+effective disposition. Provider-specific replies still name their source thread;
+precedents return each canonical decision once. Raw `pm get` retains original
+observation fields and historical reasoning. Confirmation makes no test or
+approval claim.
+
+Malformed confirmation payloads and deleted or retyped targets are skipped and
+reported as `issues` with item id, comment position, kind and remedy. Import,
+round, response and status receipts expose these diagnostics; `reviewItems`
+attaches them to the source observations. They do not disable unrelated review
+work. Core comments and history retain the invalid evidence for inspection.
+
+Withdrawal is opt-in for SDK callers. `importFindings(client, snapshot, findings,
+{ snapshotComplete: true })` asserts a complete snapshot from a trusted transport
+and verifies that the supplied findings match every unfiltered snapshot finding
+before any write. A mismatch refuses with `snapshot_incomplete` and a remedy.
+The GitHub CLI import uses its existing fully paginated, stable-head transport to
+make this assertion. Default, filtered and single-provider SDK imports upsert
+observations without inferring withdrawal; receipts expose `withdrawal_checked`.
+Only a verified complete snapshot marks absent sources `review_withdrawn=true`.
+
+Withdrawal retains source text, local reasoning, canonical disposition and group.
+Reappearance clears it; changes remain in native PM history. Node-derived ids
+prevent duplicate observations. Import receipts name each observation's effective
+canonical id and verdict and count newly withdrawn sources separately.
 
 The typed SDK has the same semantics:
 
@@ -74,8 +95,10 @@ format includes source bodies, excerpts or complete history. The receipt lists
 observation identities, providers, revisions, URLs, withdrawal flags and one
 canonical disposition. Read the source items separately when reviewing a match.
 Expected refusals are `{ok:false,id,refusal:{code,remedy}}`; the CLI also returns
-exit status 1. Codes cover missing findings, invalid pairs, stale revisions,
-missing reasoning, malformed confirmation records and conflicting dispositions.
+exit status 1. Codes cover missing findings, invalid pairs, stale revisions, missing reasoning
+and conflicting dispositions. Invalid confirmation records are nonfatal typed
+`issues`; missing verdict targets and incomplete snapshot assertions use native
+expected SDK errors with stable codes and `nextSteps` remedies.
 
 The feature uses complete backend-neutral SDK reads, core similarity scoring,
 idempotent attributed comments and ordinary audited item mutations. It requires

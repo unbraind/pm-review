@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { ItemMetadata, PmClient } from '@unbrained/pm-cli/sdk';
+import { lineageIssues } from './lineage-state.ts';
+import type { LineageIssue } from './lineage.ts';
 import { isReviewNotice } from './findings.ts';
 import { botComments, evaluateRound } from './round.ts';
 import { reviewItems } from './tracker.ts';
@@ -40,7 +42,7 @@ function replyBody(item: ItemMetadata, supersedes: boolean): string {
 }
 
 /** Plan votes and replies only after complete remote and tracker reads; no mutations occur here. */
-export function responsePlan(pr: PullRequest, items: ItemMetadata[], viewer: string, options: ResponseOptions): { actions: ResponseAction[]; missingVerdicts: string[]; missingReplies: string[]; staleReplies: string[] } {
+export function responsePlan(pr: PullRequest, items: ItemMetadata[], viewer: string, options: ResponseOptions): { actions: ResponseAction[]; missingVerdicts: string[]; missingReplies: string[]; staleReplies: string[]; issues?: LineageIssue[] } {
   const bots = new Set((options.bots ?? DEFAULT_BOTS).split(',').map(value => login(value.trim())));
   const notice = options.noticePattern === undefined ? null : new RegExp(options.noticePattern, 'i');
   const actions: ResponseAction[] = [];
@@ -62,11 +64,12 @@ export function responsePlan(pr: PullRequest, items: ItemMetadata[], viewer: str
     if (source.reactions.some(reaction => reaction.user.toLowerCase() === viewer.toLowerCase() && ['THUMBS_UP', 'THUMBS_DOWN'].includes(reaction.content))) continue;
     actions.push({ kind: 'vote', node: source.id, content: isReviewNotice(source.body) || notice?.test(source.body) ? 'THUMBS_DOWN' : 'THUMBS_UP' });
   }
-  return { actions, missingVerdicts, missingReplies, staleReplies };
+  const issues = lineageIssues(items);
+  return { actions, missingVerdicts, missingReplies, staleReplies, ...(issues.length ? { issues } : {}) };
 }
 
 /** Batch recorded replies and all missing service votes; GitHub writes require explicit apply. */
-export async function respond(client: PmClient, transport: GitHubTransport, repo: string, pr: number, options: ResponseOptions = {}): Promise<{ repo: string; pr: number; dry_run: boolean; actions: ResponseAction[] }> {
+export async function respond(client: PmClient, transport: GitHubTransport, repo: string, pr: number, options: ResponseOptions = {}): Promise<{ repo: string; pr: number; dry_run: boolean; actions: ResponseAction[]; issues?: LineageIssue[] }> {
   const snapshot = await transport.snapshot(repo, pr);
   const plan = responsePlan(snapshot, await reviewItems(client), await transport.viewer(), options);
   if (options.apply) {
@@ -76,7 +79,7 @@ export async function respond(client: PmClient, transport: GitHubTransport, repo
       else await transport.resolve(action.thread);
     }
   }
-  return { repo, pr, dry_run: !options.apply, actions: plan.actions };
+  return { repo, pr, dry_run: !options.apply, actions: plan.actions, ...(plan.issues ? { issues: plan.issues } : {}) };
 }
 
 /** Audit imported decisions and live threads/votes, reusing round's exact-head completion evidence. */
@@ -87,5 +90,5 @@ export async function reviewStatus(client: PmClient, transport: GitHubTransport,
   const round = evaluateRound(snapshot, items);
   const unvoted_bot_items = plan.actions.filter(action => action.kind === 'vote');
   const complete = unvoted_bot_items.length === 0 && plan.missingVerdicts.length === 0 && plan.missingReplies.length === 0 && plan.staleReplies.length === 0 && round.unresolved_threads.length === 0 && round.coderabbit_finished;
-  return { repo, pr, head: snapshot.head, complete, unvoted_bot_items, findings_without_verdict: plan.missingVerdicts, verdicts_without_reply: plan.missingReplies, stale_replies: plan.staleReplies, unresolved_threads: round.unresolved_threads, current_head_review_completed: round.coderabbit_finished, ...complete ? {} : { exit_code: 1 } };
+  return { ...(plan.issues ? { issues: plan.issues } : {}), repo, pr, head: snapshot.head, complete, unvoted_bot_items, findings_without_verdict: plan.missingVerdicts, verdicts_without_reply: plan.missingReplies, stale_replies: plan.staleReplies, unresolved_threads: round.unresolved_threads, current_head_review_completed: round.coderabbit_finished, ...complete ? {} : { exit_code: 1 } };
 }

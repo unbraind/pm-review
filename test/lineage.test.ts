@@ -7,25 +7,13 @@ import { createExtensionCommandSdk } from '@unbrained/pm-cli/sdk';
 import { activateExtensionForTest, runRegisteredCommandForTest } from '@unbrained/pm-cli/sdk/testing';
 import extension from '../index.ts';
 import { canonicalReviewItems, findingLineage, lineageGroups, lineageItems } from '../src/lineage.ts';
-import type { LineageCode, LineageResult, LineageView } from '../src/lineage.ts';
+import type { LineageCode, LineageResult, LineageView, LineageIssue } from '../src/lineage.ts';
 import { fieldOptions, importFindings, precedents, recordVerdict, reviewItems } from '../src/tracker.ts';
 import { findingsOf } from '../src/findings.ts';
 import { decide } from '../src/verdict.ts';
 import { responsePlan } from '../src/respond.ts';
 import { evaluateRound } from '../src/round.ts';
-import { contribution, inFixtureWorkspace, pullRequest, tracker } from './helpers.ts';
-import type { TestContext } from 'node:test';
-
-/** Two distinct providers describe one suspected issue at different revisions. */
-async function fixture(t: TestContext) {
-  const base = await tracker(t);
-  const pr = pullRequest({ reviews: [], comments: [] });
-  pr.threads.push({ ...pr.threads[0], id: 'other-thread', comments: [contribution({ bot: 'greptile-apps[bot]', id: 'other-comment', head: 'b'.repeat(40), url: 'https://github.com/example/package/pull/1#discussion_r2' })] });
-  const imported = await importFindings(base.client, pr, findingsOf(pr));
-  const ids = imported.items.map(row => row.id).sort();
-  return { ...base, pr, ids };
-}
-
+import { inFixtureWorkspace, tracker, lineageFixture as fixture } from './helpers.ts';
 /** Require the typed refusal and a useful remedy, including on registered CLI results. */
 function refused(result: LineageResult, code: LineageCode): void {
   if (!result.ok) {
@@ -77,29 +65,29 @@ test('duplicate imports preserve one disposition and source withdrawal retains r
   assert.equal(again.created, 0);
   assert.equal(again.updated, 2);
   assert.equal(again.withdrawn, 0);
-  assert.deepEqual([...new Set(again.items.map(row => row.canonical))], [ids[0]]);
+  assert.deepEqual([...new Set(again.items.map(row => row.canonical))], [ids[1]]);
   assert.ok(again.items.every(row => row.verdict === 'refuse'));
   await importFindings(client, pr, [...findingsOf(pr), ...findingsOf(pr)]);
   assert.equal((await findingLineage(client, ids[0]) as LineageView).observations.length, 2);
   assert.equal((await lineageItems(client)).filter(row => row.review_verdict_source === 'local').length, 1);
-  const canonical = (await lineageItems(client)).find(row => row.id === ids[0])!;
+  const canonical = (await lineageItems(client)).find(row => row.id === ids[1])!;
   const removed = pr.threads.find(row => row.id === canonical.review_node_id)!;
   pr.threads = pr.threads.filter(row => row !== removed);
-  const removal = await importFindings(client, pr, findingsOf(pr));
+  const removal = await importFindings(client, pr, findingsOf(pr), { snapshotComplete: true });
   assert.equal(removal.withdrawn, 1);
-  const repeatedRemoval = await importFindings(client, pr, findingsOf(pr));
+  const repeatedRemoval = await importFindings(client, pr, findingsOf(pr), { snapshotComplete: true });
   assert.equal(repeatedRemoval.withdrawn, 0);
   const withdrawn = await findingLineage(client, ids[1]) as LineageView;
-  assert.equal(withdrawn.observations.find(row => row.id === ids[0])!.withdrawn, true);
+  assert.equal(withdrawn.observations.find(row => row.id === ids[1])!.withdrawn, true);
   assert.equal(withdrawn.disposition.reason, 'The existing validation already covers this boundary');
-  assert.ok((await client.comments(ids[0])).comments.some(row => row.text.includes(withdrawn.disposition.reason)));
+  assert.ok((await client.comments(ids[1])).comments.some(row => row.text.includes(withdrawn.disposition.reason)));
   pr.threads.push(removed);
   removed.comments[0].head = 'd'.repeat(40);
   removed.comments[0].body += '\nRevised observation preserves the earlier audit history.';
   await importFindings(client, pr, findingsOf(pr));
   const restored = await findingLineage(client, ids[0]) as LineageView;
-  assert.equal(restored.observations.find(row => row.id === ids[0])!.withdrawn, false);
-  assert.equal(restored.observations.find(row => row.id === ids[0])!.revision, 'd'.repeat(40));
+  assert.equal(restored.observations.find(row => row.id === ids[1])!.withdrawn, false);
+  assert.equal(restored.observations.find(row => row.id === ids[1])!.revision, 'd'.repeat(40));
   assert.equal(restored.disposition.reason, withdrawn.disposition.reason);
 });
 
@@ -147,14 +135,14 @@ test('confirmed components converge across cycles, reversed links and additional
   assert.equal(group.observations.length, 3);
   await client.comments(ids[1], { add: 'review-lineage/v1 ' + JSON.stringify({ with: ids[0], revision: group.revision, reason: 'Reverse confirmation retains the same connected identity' }) });
   const result = await findingLineage(client, ids[1]) as LineageView;
-  assert.equal(result.canonical, [...ids, third.id].sort()[0]);
+  assert.equal(result.canonical, third.id);
   assert.equal(result.observations.length, 3);
   assert.equal(result.disposition.verdict, 'pending');
   assert.equal(result.disposition.reason, '');
   assert.equal(result.disposition.commit, '');
 });
 
-test('malformed lineage records fail closed with a typed remedy; unrelated comments are ignored', async t => {
+test('malformed lineage records are skipped with typed diagnostics; unrelated comments are ignored', async t => {
   const { client, ids } = await fixture(t);
   await client.comments(ids[0], { add: 'Related candidate from pm-jev; no confirmation is implied.' });
   assert.equal((await findingLineage(client, ids[0]) as LineageView).observations.length, 1);
@@ -164,15 +152,19 @@ test('malformed lineage records fail closed with a typed remedy; unrelated comme
   const invalid: unknown[] = ['{', null, 1, {}, { ...valid, with: 1 }, { ...valid, with: 'absent' }, { ...valid, with: base.id }, { ...valid, revision: 1 }, { ...valid, revision: 'bad' }, { ...valid, reason: 1 }, { ...valid, reason: '' }, { ...valid, reason: 'x'.repeat(1001) }];
   for (const row of invalid) {
     const text = 'review-lineage/v1 ' + (row === '{' ? row : JSON.stringify(row));
-    assert.throws(() => lineageGroups([{ ...base, comments: [{ text, author: 'test-agent', created_at: '2026-10-22' }] }, raw[1]]));
+    const issues: LineageIssue[] = [];
+    assert.equal(lineageGroups([{ ...base, comments: [{ text, author: 'test-agent', created_at: '2026-10-22' }] }, raw[1]], issues).size, 2);
+    assert.equal(issues.length, 1);
   }
-  assert.throws(() => lineageGroups([{ ...base, comments: [{ text: 'review-lineage/v1 ' + JSON.stringify(valid), author: '', created_at: '2026-10-22' }] }, raw[1]]));
-  assert.throws(() => lineageGroups([{ ...base, comments: [{ text: 'review-lineage/v1 ' + JSON.stringify(valid), author: 'test-agent', created_at: '' }] }, raw[1]]));
+  const attributionIssues: LineageIssue[] = [];
+  lineageGroups([{ ...base, comments: [{ text: 'review-lineage/v1 ' + JSON.stringify(valid), author: '', created_at: '2026-10-22' }] }, raw[1]], attributionIssues);
+  lineageGroups([{ ...base, comments: [{ text: 'review-lineage/v1 ' + JSON.stringify(valid), author: 'test-agent', created_at: '' }] }, raw[1]], attributionIssues);
+  assert.equal(attributionIssues.length, 2);
   const withoutComments = { ...base };
   delete withoutComments.comments;
   assert.equal(canonicalReviewItems([withoutComments])[0].review_canonical, base.id);
   await client.comments(ids[0], { add: 'review-lineage/v1 {' });
-  refused(await findingLineage(client, ids[0]), 'lineage_invalid');
+  assert.equal((await findingLineage(client, ids[0]) as LineageView).issues![0].code, 'lineage_invalid');
 });
 
 test('registered lineage CLI works without git, gives typed refusals and uses compact host TOON and JSON', async t => {
@@ -204,11 +196,16 @@ test('registered lineage CLI works without git, gives typed refusals and uses co
     const confirmed = spawnSync(process.execPath, [entry, '--path', pmRoot, 'review', 'lineage', ids[0], '--with', ids[1], '--confirm', '--revision', proposal.revision, '--reason', 'Confirm the same reviewed validation defect without git', '--json'], { cwd, encoding: 'utf8', env });
     assert.equal(confirmed.status, 0, confirmed.stdout + confirmed.stderr);
     assert.equal((JSON.parse(confirmed.stdout) as LineageView).observations.length, 2);
+    await client.comments(ids[0], { add: 'review-lineage/v1 {' });
     for (const json of [false, true]) {
       const args = [entry, '--path', pmRoot, 'review', 'lineage', ids[0], ...(json ? ['--json'] : [])];
       const run = spawnSync(process.execPath, args, { cwd, encoding: 'utf8', env: { ...process.env, PATH: executableDir, GIT_CEILING_DIRECTORIES: dirname(cwd), PM_PATH: pmRoot, PM_AUTHOR: 'test-agent' } });
       assert.equal(run.status, 0, run.stdout + run.stderr);
-      if (json) assert.equal((JSON.parse(run.stdout) as LineageView).observations.length, 2);
+      if (json) {
+        const view = JSON.parse(run.stdout) as LineageView;
+        assert.equal(view.observations.length, 2);
+        assert.equal(view.issues![0].kind, 'malformed');
+      }
       else assert.match(run.stdout, /canonical:/);
       assert.ok(Buffer.byteLength(run.stdout) < 2200, run.stdout);
       assert.doesNotMatch(run.stdout, /description|Both observations identify/);
