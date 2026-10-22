@@ -201,3 +201,19 @@ Two independent copies retaining these final cases restore only `eligible`:
 the italic unavailable-review notice. Both exit 1 with an `AssertionError`.
 The first full verification attempt was intentionally stopped before completion
 for this refinement; it is incomplete evidence and is not a release-gate pass.
+
+### Final review-round release gates
+
+Source `723ba81` passes both complete commands at unchanged thresholds:
+
+- `env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 npm run release:check`
+- `bun run release:check`
+
+Each passes all 12 stages, 175/175 outer source tests and 1/1 packed npm/npx plus
+native Bun/bunx acceptance with zero failures, skips or cancellations. Coverage
+across 28 authored sources is 2,653/2,653 statements and lines, 149/149 functions
+and 1,372/1,372 branches: 100% in every dimension. Duplication is zero across
+6,488 lines and 43 sources; all 90 declarations are documented. Production audit,
+package allowlist, changelog and publish-attestation checks pass. No timeout
+caused a failure. The intentionally interrupted earlier attempt is excluded from
+these complete pass counts. The item remains open for orchestrator verification.
