@@ -243,3 +243,22 @@ fail with an `AssertionError` on the unmarked quota-exceeded finding, exit 1.
 The corrected baseline passes. A fixture syntax error was corrected before the
 behavioral reproduction and is not negative-control evidence. Shared import and
 round-classifier behavior remains owned separately; final release gates follow.
+
+### Final unmarked-finding release gates
+
+Source `b8afa51` passes both complete commands at unchanged thresholds:
+
+- `env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 npm run release:check`
+- `bun run release:check`
+
+Each passes all 12 stages, 176/176 outer source tests and 1/1 packed npm/npx plus
+native Bun/bunx acceptance with zero failures, skips or cancellations. Both runs
+report all 170 classification cases: 74 substantive/actionable cases accepted and
+96 notice/boilerplate cases refused through SDK and registered CLI. The PM-linked
+coverage suite also passes 11/11.
+
+Across 28 authored sources, statements/lines are 2,656/2,656, functions 149/149
+and branches 1,374/1,374: 100% in every dimension. Duplication is zero across
+6,541 lines and 43 sources; all 90 declarations are documented. Production audit,
+package allowlist, changelog and publish-attestation checks pass. No host-load
+timeout occurred. The item remains open for orchestrator verification.
