@@ -2,17 +2,16 @@ id: pm-review-epic
 title: Durable bot review context and exact-head round gates
 description: "Build pm-review as a typed SDK extension with durable findings, decisions and precedents."
 type: Epic
-status: closed
+status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-12T10:47:26.382Z"
-updated_at: "2026-10-21T19:41:37.012Z"
-closed_at: "2026-10-21T19:38:24.979Z"
-completed_at: "2026-10-21T19:38:24.979Z"
+updated_at: "2026-10-22T12:12:44.943Z"
 author: codex-sol
 acceptance_criteria: Four review commands; real SDK trackers; public recorded fixtures; 100 percent coverage; npm and Bun gates; packed acceptance; local commits only.
 release: 2026.10.12
-comments[9]{created_at,author,text}:
+expected_result: Keep the audited delivery evidence available while the epic awaits orchestrator verification.
+comments[12]{created_at,author,text}:
   "2026-10-12T10:47:28.391Z",codex-sol,"Companion epic: pm-cli-website-ox5m. Package-owned implementation and receipts remain in this tracker. No remote writes or releases are authorized."
   "2026-10-12T11:01:19.881Z",codex-sol,"Verified SDK gap in the installed version: PmClient.schemaAddField(name, { type }) drops the type, storing every field as string. Public client.run(schema, { name, options: { subcommand: add-field, fieldType } }) preserves number and boolean types. The package uses that public action and tests numeric PR matching and boolean resolved state with real temp trackers. No upstream issue was filed."
   "2026-10-12T11:20:38.827Z",codex-sol,"Read-only manual CLI acceptance against public unbraind/pm-rl#68 at head 14669bcf58229e7226eed958470babc06c88d570: packed extension installed into a scratch pm project; import created 50 items, updated 0. Round exited 1 as expected: checks pending; CodeRabbit finished true; unresolved threads 0; unvoted bot comments 0; pending imported items 14; unimported nodes 0. Precedents returned 0 before a scratch-only refusal and 1 afterward. Verdict reported applied/replied/reacted/resolved false. No apply or remote mutation ran against the public PR."
@@ -22,6 +21,9 @@ comments[9]{created_at,author,text}:
   "2026-10-12T12:31:47.685Z",codex-sol,"Final source commit 5fe85ac passed npm run release:check, bun run release:check and isolated HOME with GIT_CONFIG_GLOBAL=/dev/null plus GIT_CONFIG_NOSYSTEM=1 npm run release:check: 11/11 stages each. Each run passed 69/69 behavioral/tooling tests and 1/1 packed acceptance test covering independent npm/npx and native Bun/bunx consumers; zero failures, cancellations, skipped tests or TODOs. Coverage across 16 authored executable source/tooling modules is statements 1588/1588, lines 1588/1588, functions 83/83 and branches 529/529, all 100 percent at unchanged thresholds. ESLint clean; duplication zero; 46 declarations documented; production audit zero; tarball 37 files restricted to dist, README, LICENSE, CHANGELOG, manifest and package.json; changelog and publish attestation passed without publishing. Isolated strict health passed. Eight behavioral disable proofs failed as intended and restored implementations passed; the corrected marker proof supersedes its earlier failed baseline receipt. Final source replay of the 84-request public fixture still yields 50 findings: 14 pending and 36 informational. The earlier real read-only manual acceptance receipt remains valid. Work is local only; no remote creation, push, PR, release, publish or real apply action occurred."
   "2026-10-21T19:36:10.989Z",codex-agent,"Authorized tracker reconciliation, audit 2026-10-21. Owner-authorized takeover of any historical assignment for this verified terminal transition. Reverified current main 68eea9cccf2a: merged #1 (fcf34e5); source tree exactly matches the audited snapshot. **Durable bot review context and exact-head round gates.** [PR #1](https://github.com/unbraind/pm-review/pull/1) (fcf34e5), src/ and real SDK fixtures deliver durable ReviewFinding context, verdict/reply/reconcile and exact-head round commands; later #9/#12/#16 extend the shipped source."
   "2026-10-21T19:41:37.012Z",codex-agent,"Tracker-only reconciliation applied to the authorized audit candidates. Linked git diff --check passed. After this final pm write, regenerate with npm run changelog:full; npm run changelog:check and npx pm health are the remaining local gates. Full release gates are delegated to CI; no implementation functions changed, so behavioral revert proof does not apply."
+  "2026-10-22T12:09:57.276Z",codex-agent,"PR #26 review plan: pulled remote eba5719 and merged current main 260d41c before corrections. Verified README Development and evidence requires items to remain open for orchestrator verification. Main has this epic in_progress without terminal timestamps; the only PR changes are this epic and its append-only history. Thread PRRT_kwDOVGABD86vDZ8L is valid. Latest CodeRabbit review has no Outside diff range findings. Retain historical audit receipts, reopen this epic and run tracker-only gates; no implementation revert proof applies."
+  "2026-10-22T12:10:52.704Z",codex-agent,"Tracker evidence proof for PRRT_kwDOVGABD86vDZ8L: 7/7 categories passed against main 260d41c: active status, no current terminal metadata, matching main lifecycle, README policy, unchanged main history prefix, unchanged pre-fix eba5719 history prefix, and tracker-only diff. The reopen command archived prior closure evidence rather than editing historical entries. npm ci passed (164 packages, zero vulnerabilities); initial health passed 10/10 checks with zero warnings and no merge receipt reconciliation needed. Self-review found no other changed item or implementation defect. The tracker-only evidence exception applies; no behavioral source revert is applicable. Keep this epic in_progress for orchestrator verification."
+  "2026-10-22T12:12:44.940Z",codex-agent,"PR #26 final gate receipt: npm ci passed; npm run changelog:full regenerated successfully; pm test pm-review-epic --run --only-last --progress --timeout 600 passed 1/1 (npm run changelog:check, exit 0); identity check reported zero violations; git diff --check passed. Normal-home health exposed the existing global pm-github version mismatch (pinned host 2026.10.19 versus global extension 2026.10.22), while isolated-home strict health passed all 10 checks with ok=true. Initial health with extensions disabled passed 10/10 with zero warnings; the full isolated check is the package health receipt. No timeout occurred. Claim released; epic remains in_progress. No new pm CLI/SDK defect established; the global extension environment mismatch is outside this tracker-only correction."
 files[7]{path,scope}:
   .agents/pm/epics/pm-review-epic.toon,project
   index.ts,project
@@ -30,12 +32,13 @@ files[7]{path,scope}:
   package.json,project
   README.md,project
   src/commands.ts,project
-tests[4]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+tests[5]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test test/core.test.ts,project,codex-sol,"2026-10-12T11:25:09.772Z",local_mutation,feat/review
   "npm run release:check",project,codex-sol,"2026-10-12T11:27:03.200Z",local_mutation,feat/review
   "bun run release:check",project,codex-sol,"2026-10-12T11:27:06.608Z",local_mutation,feat/review
   git diff --check,project,codex-agent,"2026-10-21T19:39:44.697Z",local_mutation,chore/reconcile-tracker-1021
-docs[1]{path,scope}:
+  "npm run changelog:check",project,codex-agent,"2026-10-22T12:10:31.924Z",local_mutation,chore/reconcile-tracker-1021
+docs[2]{path,scope}:
   CHANGELOG.md,project
-close_reason: "Reverified current main 68eea9cccf2a: merged #1 (fcf34e5); source tree exactly matches the audited snapshot. **Durable bot review context and exact-head round gates.** [PR #1](https://github.com/unbraind/pm-review/pull/1) (fcf34e5), src/ and real SDK fixtures deliver durable ReviewFinding context, verdict/reply/reconcile and exact-head round commands; later #9/#12/#16 extend the shipped source."
+  README.md,project
 body: ""
