@@ -187,3 +187,17 @@ A disposable copy retaining the expanded tests restores only `eligible` from
 `node --test --test-name-pattern='substantive quota and rate-limit' test/coverage.test.ts`
 fails with that same `AssertionError`, exit 1. No other function is reverted and
 the source worktree remains unchanged. Final full-gate results follow separately.
+
+Self-review also checked severity formats already recognized by the package.
+An italic-prefixed unavailable-review notice exposed a false acceptance in the
+first anchored draft. Final coverage includes italic labels, plain `severity:`
+labels and linked/unlinked priority badges. The final regression has 60 scenarios:
+28 substantive findings accepted and 32 notices refused through both real SDK and
+registered CLI operations. The PM-linked selector passes 1/1, and the complete
+coverage suite passes 10/10 with zero failures/skips.
+
+Two independent copies retaining these final cases restore only `eligible`:
+`ddce5e9` fails on the substantive quota-exceeded finding, and `c67c05c` fails on
+the italic unavailable-review notice. Both exit 1 with an `AssertionError`.
+The first full verification attempt was intentionally stopped before completion
+for this refinement; it is incomplete evidence and is not a release-gate pass.

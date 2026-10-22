@@ -47,8 +47,8 @@ notices contribute zero, even when they contain severity markers. The words
 quota and rate-limit alone are topics, not service-notice evidence; substantive
 findings about their counters or error handling remain eligible. The coverage
 guard recognizes complete notice clauses at line starts, including Markdown
-quotes, headings, bullets, bold text and severity prefixes. Phrases such as
-`quota exceeded`, `no access` and `failed to generate` within substantive findings
+quotes, headings, bullets, bold/italic text, severity labels and priority badges.
+Phrases such as `quota exceeded`, `no access` and `failed to generate` within substantive findings
 do not themselves constitute notices. Informational
 summaries and empty approvals are conservatively ineligible. Mixed notice/review
 bodies are also refused; select a separate substantive inline finding. Unknown-head

@@ -43,7 +43,7 @@ function eligible(item: ItemMetadata): boolean {
     && typeof item.review_url === 'string' && item.review_url.startsWith(`https://github.com/${item.review_repo}/pull/${String(item.review_pr)}#`)
     && typeof item.review_head === 'string' && /^[a-f0-9]{40,64}$/i.test(item.review_head)
     && !isInformational(body)
-    && !/(?:^|\n)[>\t #*_-]*(?:\*\*[^*\r\n]+\*\*[ \t]*)?(?:quota (?:exceeded|exhausted)|rate[- ]limit(?:ed| (?:exceeded|reached))|review skipped|skipped review|review failed|review unavailable|review (?:was |is )?(?:not (?:performed|completed)|cancelled|canceled)|trial (?:has )?ended|review budget|no access(?: to (?:this repository|reviews))?|failed to (?:review|generate))(?=[*_]*(?:[.!?][*_]*(?:[ \t]|\r?\n|$)|\r?\n|$))/i.test(body);
+    && !/(?:^|\n)[>\t #*_-]*(?:(?:\*\*[^*\r\n]+\*\*|_[^_\r\n]+_|severity[ \t]*[:=][ \t]*(?:critical|high|medium|low|major|minor)|!\[(?:high|medium|low)[-_]priority\](?:\([^\r\n)]*\))?)[ \t]*)?(?:quota (?:exceeded|exhausted)|rate[- ]limit(?:ed| (?:exceeded|reached))|review skipped|skipped review|review failed|review unavailable|review (?:was |is )?(?:not (?:performed|completed)|cancelled|canceled)|trial (?:has )?ended|review budget|no access(?: to (?:this repository|reviews))?|failed to (?:review|generate))(?=[*_]*(?:[.!?][*_]*(?:[ \t]|\r?\n|$)|\r?\n|$))/i.test(body);
 }
 
 /** Validate persisted and CLI bindings identically instead of trusting stored JSON. */

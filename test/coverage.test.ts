@@ -206,6 +206,10 @@ test('substantive quota and rate-limit findings remain eligible through SDK and 
       '- **High** No access to this repository? Validate the input before writing.',
       '**Quota exhausted.** **High** Validate the input before writing.',
       '**High** Validate the input before writing.\nReview failed\nReview details follow.',
+      '_🟠 Major_ Review unavailable. Validate the input before writing.',
+      'severity: high No access. Validate the input before writing.',
+      '![high-priority](https://example.invalid/severity.svg) Review failed. Validate the input before writing.',
+      '![low_priority] Quota exhausted. Validate the input before writing.',
     ].map(body => ({ body, allowed: false })),
   ];
   for (const [index, scenario] of cases.entries()) {
@@ -215,6 +219,7 @@ test('substantive quota and rate-limit findings remain eligible through SDK and 
     const sdk = await coverCriterion(client, id, binding);
     const command = await runRegisteredCommandForTest(activation.commands, { command: 'review cover', args: [id], options: binding, pmRoot, sdk: createExtensionCommandSdk(pmRoot, client, 'test-agent') });
     assert.equal(command.handled, true);
+    assert.equal(sdk.ok, scenario.allowed, scenario.body);
     if (scenario.allowed) {
       assert.equal((sdk as CoverageMap).reviewed, 1, scenario.body);
       assert.equal((command.result as CoverageMap).reviewed, 1, scenario.body);
