@@ -16,15 +16,19 @@ function command(cwd: string, name: string, args: string[], pmRoot: string, home
   return result.stdout;
 }
 
-/** Keep package-manager configuration and Git identity outside consumer proofs. */
+/** Bind source provenance to the consumer while isolating package-manager and Git configuration. */
 function consumerEnv(cwd: string, pmRoot: string, home = cwd): NodeJS.ProcessEnv {
-  const env: NodeJS.ProcessEnv = { ...process.env, HOME: home, PM_PATH: pmRoot, PM_AUTHOR: 'install-test', GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', NPM_CONFIG_USERCONFIG: '/dev/null', npm_config_userconfig: '/dev/null' };
+  const env: NodeJS.ProcessEnv = { ...process.env, HOME: home, PM_PATH: pmRoot, PM_SOURCE_WORKSPACE_ROOT: cwd, PM_AUTHOR: 'install-test', GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', NPM_CONFIG_USERCONFIG: '/dev/null', npm_config_userconfig: '/dev/null' };
   for (const key of Object.keys(env)) if (key.toLowerCase() === 'npm_config_allow_scripts') delete env[key];
   return env;
 }
 
  test('packed npm/npx and native Bun/bunx consumers activate commands and search a real tracker', async t => {
   const root = resolve(import.meta.dirname, '..');
+  // Reproduce an outer linked-test host whose source root differs from both consumers.
+  const previousSourceRoot = process.env.PM_SOURCE_WORKSPACE_ROOT;
+  process.env.PM_SOURCE_WORKSPACE_ROOT = root;
+  t.after(() => { if (previousSourceRoot === undefined) delete process.env.PM_SOURCE_WORKSPACE_ROOT; else process.env.PM_SOURCE_WORKSPACE_ROOT = previousSourceRoot; });
   const scratch = await mkdtemp(join(tmpdir(), 'pm-review-install-'));
   // Recursive removal can race Bun's install cache and throw ENOTEMPTY. Node retries that error only when asked.
   t.after(async () => { await rm(scratch, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); });

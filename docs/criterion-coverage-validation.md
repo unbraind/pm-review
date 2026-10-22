@@ -132,3 +132,17 @@ to main's implementation fails that retained activation test with
 `AssertionError: 9 !== 11`, exit 1. An earlier probe selected the independent schema
 test and passed; it is not negative-control evidence. The corrected selector
 verifies that dropping coverage registration during conflict resolution is caught.
+
+The first local isolated full npm gate passed 175/175 source tests and all coverage
+thresholds, then failed installed closeout acceptance: the outer PM linked-test
+host's `PM_SOURCE_WORKSPACE_ROOT` leaked into the consumer environment. The fixture
+now binds that coordinate to the command's own workspace, and deliberately sets
+an outer package root in the retained regression. Shared closeout source remains
+identical to main. This was a fixture defect, rather than a timeout.
+
+A disposable copy restoring only `consumerEnv` to its pre-fix implementation,
+while retaining the outer-root regression and production code, runs
+`node --test --test-reporter=spec test/install.acceptance.ts` and fails with an
+`AssertionError`, `artifact_missing` and `proof.md` in the installed closeout
+result, exit 1. The fixed baseline and final full gates are recorded separately
+on the feature item and PR; failed controls are not release-gate approvals.
