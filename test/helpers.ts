@@ -30,3 +30,11 @@ export function syntheticTransport(pr: PullRequest): GitHubTransport & { calls: 
   const calls: string[] = [];
   return { calls, async lifecycle() { return { merged: false, mergeCommit: null, alerts: [] }; }, async snapshot() { return pr; }, async viewer() { return 'author'; }, async reply(thread, body) { calls.push('reply'); pr.threads.find(item => item.id === thread)!.comments.push(contribution({ id: 'reply-one', bot: 'author', isBot: false, body })); }, async react(node, content) { calls.push(content); const source = pr.threads.flatMap(thread => thread.comments).find(comment => comment.id === node)!; source.reactions.push({ content, user: 'author' }); }, async resolve(thread) { calls.push('resolve'); pr.threads.find(item => item.id === thread)!.resolved = true; } };
 }
+
+/** Bind intake provenance to a real fixture instead of an inherited parent test workspace. */
+export async function inFixtureWorkspace<T>(cwd: string, action: () => Promise<T>): Promise<T> {
+  const previous = process.env.PM_SOURCE_WORKSPACE_ROOT;
+  process.env.PM_SOURCE_WORKSPACE_ROOT = cwd;
+  try { return await action(); }
+  finally { if (previous === undefined) delete process.env.PM_SOURCE_WORKSPACE_ROOT; else process.env.PM_SOURCE_WORKSPACE_ROOT = previous; }
+}
