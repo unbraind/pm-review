@@ -115,3 +115,20 @@ Nested deliberate failure fixtures in tooling tests are negative controls; the
 outer source-suite result is the 175/175 receipt. No thresholds, dependency pins,
 release workflow or telemetry settings changed. The final receipt/claim-release
 commit changes only documentation and PM records; its CI is reported in the PR.
+
+## Squash-stack reconciliation
+
+PR #27 was merged with main `260d41c` after #25 was squash-merged. Conflict
+resolution retains #27's coverage commands, exports, README and consumer checks.
+Twelve shared closeout, fixture and toolchain files match main exactly; ten
+coverage source, test and documentation files matched the original PR head before
+this receipt. The changelog is regenerated, and no `dist/` files are tracked.
+
+The current `node --test test/coverage.test.ts` run passes 10/10 with no failures
+or skips. The activation selector
+`node --test --test-name-pattern='extension activation exposes all commands' test/core.test.ts`
+passes 1/1. In a disposable source copy, restoring only `registerReviewCommands`
+to main's implementation fails that retained activation test with
+`AssertionError: 9 !== 11`, exit 1. An earlier probe selected the independent schema
+test and passed; it is not negative-control evidence. The corrected selector
+verifies that dropping coverage registration during conflict resolution is caught.
