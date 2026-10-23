@@ -1,7 +1,7 @@
 import type { ItemMetadata } from '@unbrained/pm-cli/sdk';
 import { lineageIssues } from './lineage-state.ts';
 import type { LineageIssue } from './lineage.ts';
-import { findingsOf, severityOf, summaryOf } from './findings.ts';
+import { findingsOf, isReviewNotice, severityOf, summaryOf } from './findings.ts';
 import type { Contribution, PullRequest } from './types.ts';
 
 /** Current unresolved source mapped to its durable item, or null before import. */
@@ -18,7 +18,7 @@ export interface RoundReceipt {
 /** Reject notices and pending/dismissed reviews as finished CodeRabbit evidence. */
 function coderabbitFinished(pr: PullRequest): boolean {
   const isRabbit = (comment: Contribution): boolean => comment.isBot && /^coderabbitai(?:\[bot\])?$/i.test(comment.bot);
-  return pr.reviews.some(/** Completion requires a submitted review tied to the exact current commit. */ review => isRabbit(review) && review.head === pr.head && ['APPROVED', 'CHANGES_REQUESTED', 'COMMENTED'].includes(review.state) && !/review failed|rate[- ]limit|review skipped|trial (?:has )?ended/i.test(review.body));
+  return pr.reviews.some(/** Completion requires a submitted review tied to the exact current commit. */ review => isRabbit(review) && review.head === pr.head && ['APPROVED', 'CHANGES_REQUESTED', 'COMMENTED'].includes(review.state) && !isReviewNotice(review.body));
 }
 
 /** Collect all nonempty bot comments; every reaction must come from the PR author account. */
