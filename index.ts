@@ -1,3 +1,10 @@
+/** Export explicit backend-neutral artifact ingestion and its portable contracts. */
+export { importEvidenceEnvelope } from './src/envelopes.ts';
+/** Export bounded local-file and HTTP artifact imports. */
+export { importReviewArtifact } from './src/envelope-artifact.ts';
+/** Export typed source identity, receipts and remedies for review providers. */
+export type { ReviewEvidenceEnvelope, EnvelopeInput, EnvelopeResult, EnvelopeReceipt, EnvelopeRefusal, EnvelopeCode } from './src/envelope-types.ts';
+
 import { defineExtension } from '@unbrained/pm-cli/sdk/authoring';
 import type { ExtensionApi } from '@unbrained/pm-cli/sdk/authoring';
 import { registerReviewCommands } from './src/commands.ts';

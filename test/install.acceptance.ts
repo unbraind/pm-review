@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { envelope } from './envelope-fixture.ts';
 import { spawnSync } from 'node:child_process';
 import { mkdtemp, mkdir, readFile, rm, writeFile, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -51,7 +53,7 @@ function consumerEnv(cwd: string, pmRoot: string, home = cwd): NodeJS.ProcessEnv
     const prefix = runtime === 'npm' ? ['--no-install', 'pm'] : ['--bun', '--no-install', 'pm'];
     command(cwd, runner, [...prefix, 'init', 'consumer', '--defaults', '--agent-guidance', 'skip', '--json'], pmRoot);
     command(cwd, runner, [...prefix, 'install', tarball, '--project', '--json'], pmRoot);
-    for (const action of ['import', 'verdict', 'round', 'precedents', 'reconcile', 'respond', 'status', 'closeout', 'coverage', 'cover', 'lineage']) assert.match(command(cwd, runner, [...prefix, 'review', action, '--help'], pmRoot), /review/);
+    for (const action of ['ingest', 'import', 'verdict', 'round', 'precedents', 'reconcile', 'respond', 'status', 'closeout', 'coverage', 'cover', 'lineage']) assert.match(command(cwd, runner, [...prefix, 'review', action, '--help'], pmRoot), /review/);
     assert.match(command(cwd, runner, [...prefix, 'review', 'reconcile', '--help'], pmRoot), /--dry-run/);
     const verdictHelp = command(cwd, runner, [...prefix, 'review', 'verdict', '--help'], pmRoot);
     assert.doesNotMatch(verdictHelp, /<value>\s+<value>/);
@@ -83,6 +85,14 @@ function consumerEnv(cwd: string, pmRoot: string, home = cwd): NodeJS.ProcessEnv
     const refused = spawnSync(runner, [...prefix, 'review', 'cover', coverageTarget.id, '--json'], { cwd, env: consumerEnv(cwd, pmRoot), encoding: 'utf8' });
     assert.equal(refused.status, 1, refused.stderr);
     assert.equal((JSON.parse(refused.stdout) as { refusal: { code: string } }).refusal.code, 'judgment_invalid');
+    const artifact = JSON.stringify(envelope());
+    await writeFile(join(cwd, 'review.json'), artifact);
+    const artifactDigest = createHash('sha256').update(artifact).digest('hex');
+    const ingestArgs = [...prefix, 'review', 'ingest', '--file', 'review.json', '--sha256', artifactDigest];
+    const importedEnvelope = JSON.parse(command(cwd, runner, [...ingestArgs, '--json'], pmRoot)) as { created: number; completion: string };
+    assert.equal(importedEnvelope.created, 2);
+    assert.equal(importedEnvelope.completion, 'unverified');
+    assert.match(command(cwd, runner, ingestArgs, pmRoot), /reused: 2/);
     await verifyCloseout(cwd, runner, prefix, pmRoot);
     verifyHostExitContract(cwd, runner, prefix, pmRoot);
     assert.ok((await readdir(cwd)).includes('node_modules'));

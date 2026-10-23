@@ -8,12 +8,12 @@ import { importFindings } from '../src/tracker.ts';
 import type { Contribution, GitHubTransport, PullRequest } from '../src/types.ts';
 
 /** Construct a real temporary tracker, with cleanup registered before initialization. */
-export async function tracker(t: TestContext): Promise<{ client: PmClient; cwd: string; pmRoot: string }> {
+export async function tracker(t: TestContext, prefix = 'sample'): Promise<{ client: PmClient; cwd: string; pmRoot: string }> {
   const cwd = await mkdtemp(join(tmpdir(), 'pm-review-test-'));
   t.after(async () => { await rm(cwd, { recursive: true, force: true }); });
   const pmRoot = join(cwd, '.agents/pm');
   const client = new PmClient({ cwd, pmRoot, author: 'test-agent', noExtensions: true });
-  await client.init('sample', { defaults: true, mergeFence: false, agentGuidance: 'skip' });
+  await client.init(prefix, { defaults: true, mergeFence: false, agentGuidance: 'skip' });
   return { client, cwd, pmRoot };
 }
 
