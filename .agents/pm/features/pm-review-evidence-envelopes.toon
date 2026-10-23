@@ -2,20 +2,23 @@ id: pm-review-evidence-envelopes
 title: Import provider-neutral review evidence envelopes
 description: "Import explicit code or document review artifacts through a common typed envelope with bounded inputs, immutable source identity and honest provenance."
 type: Feature
+pm_format_version: 2
 status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-23T16:45:35.791Z"
-updated_at: "2026-10-23T16:57:58.598Z"
+updated_at: "2026-10-23T17:06:01.604Z"
 assignee: codex-agent
 claim_principal: codex-agent
 author: codex-agent
 acceptance_criteria: Local-file and synthetic HTTP imports deduplicate and preserve source revisions; Unsupported provenance cannot establish review completion; Typed SDK and CLI return compact TOON or JSON with remedies; Read-only public fleet tracker validation works without git; CI release gates pass with unchanged npm and Bun thresholds
 parent: pm-review-epic
-comments[3]{created_at,author,text}:
+comments[5]{created_at,author,text}:
   "2026-10-23T16:45:55.154Z",codex-agent,"Overlap rechecked against current CLI 2026.10.23 and sibling packages: core structured notes provide storage and attribution without review lifecycle; pm-observer captures explicit agent-event exports and summaries, not ReviewFinding provenance or review completion. Existing pm-review import remains the GitHub live adapter. Plan: typed explicit artifact envelope, canonical provider/origin/artifact/revision/finding identity, digest-pinned file and HTTP input, immutable replay and typed refusals. Declared artifact provenance never establishes completion. Use SDK schema, certified complete reads, native create locks/history, and host output; no git on ingestion paths. Pinned SDK retained as requested."
   "2026-10-23T16:53:38.830Z",codex-agent,"Initial targeted suite: 8/8 passed, including real host TOON/JSON with PATH containing no git, pinned local and synthetic HTTP replay, revision preservation, completion/coverage refusal and concurrent SDK creates. Local typecheck and lint passed; duplication remains 0%; 114 declarations documented. Read-only public validation: 51 items, 22 ReviewFinding rows, 17 with known revisions imported once and replayed over synthetic HTTP (17 reused); 5 missing-revision rows held; 2 revisions preserved; 108 durable public-source files unchanged; largest JSON receipt 254 bytes; zero completion claims. Added packed npm/Bun ingest assertions for CI and checking governance/error paths before final gates."
   "2026-10-23T16:57:58.598Z",codex-agent,"Behavioral revert proof completed in an isolated source copy: removed only source.revision from importEvidenceEnvelope identity scope, then ran node --test --test-name-pattern=\"envelopes deduplicate immutable revisions\" test/envelopes.test.ts. The named test failed its new-revision assertion (created undefined instead of 2; 0 pass, 1 fail). Original implementation passes. No export or test was removed. Source artifact ids and declared reviewer/origin/subject are retained; per-observation immutable hashes support subset imports, native concurrent creates and preservation of existing local decisions. Unrelated SDK governance failures retain their original typed error."
+  "2026-10-23T17:02:08.267Z",codex-agent,"PR opened ready for review: https://github.com/unbraind/pm-review/pull/38. Real-data validation rerun against the current importer with read-only durable source files: same 51/22/17/17/5/2/108 counts and 254-byte maximum receipt. The pm-linked targeted run reached its default 120-second limit on the saturated host; retained that receipt and raised only this linked test timeout to 1200 seconds. No release or coverage threshold changed; CI provides the full npm/Bun gate evidence."
+  "2026-10-23T17:06:01.476Z",codex-agent,"CI run 39991602774 executed 221/221 behavioral tests successfully on Node 22 and Node 26, then refused coverage because the new erased envelope-types.ts module was imported only as types and therefore appeared unloaded. All three runtime envelope modules measured 100/100/100/100. Added the same explicit erased-module load used by the existing coverage inventory contract; no source omission, ignore list, threshold or gate change. Targeted local suite passed 10/10, and the type-only module now measures 100% after loading. Re-running the unchanged full CI gates."
 files[7]{path,scope}:
   src/commands.ts,project
   src/envelope-artifact.ts,project
@@ -24,8 +27,8 @@ files[7]{path,scope}:
   src/envelopes.ts,project
   test/envelope-public-tracker.ts,project
   test/envelopes.test.ts,project
-tests[1]{command,path,scope,provenance{author,created_at,source_kind,source_ref}}:
-  node --test test/envelopes.test.ts,test/envelopes.test.ts,project,codex-agent,"2026-10-23T16:51:00.512Z",local_mutation,feat/evidence-envelopes
+tests[1]{command,path,scope,timeout_seconds,provenance{author,created_at,source_kind,source_ref},updated_by,updated_at}:
+  node --test test/envelopes.test.ts,test/envelopes.test.ts,project,1200,codex-agent,"2026-10-23T16:51:00.512Z",local_mutation,feat/evidence-envelopes,codex-agent,"2026-10-23T17:01:45.815Z"
 docs[3]{path,scope}:
   docs/evidence-envelopes-validation.md,project
   examples/review-evidence.json,project

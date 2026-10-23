@@ -1,3 +1,5 @@
+// Load erased contracts so the unchanged authored-source coverage inventory measures this module.
+import '../src/envelope-types.ts';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { createServer } from 'node:http';
