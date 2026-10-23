@@ -7,17 +7,17 @@ import { cp, mkdir, readFile, symlink, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { test } from 'node:test';
-import { createExtensionCommandSdk } from '@unbrained/pm-cli/sdk';
+import { createExtensionCommandSdk, isPmCliExpectedError } from '@unbrained/pm-cli/sdk';
 import { activateExtensionForTest, runRegisteredCommandForTest } from '@unbrained/pm-cli/sdk/testing';
-import extension, { importEvidenceEnvelope, importReviewArtifact } from '../index.ts';
-import type { EnvelopeCode, EnvelopeResult, EnvelopeReceipt } from '../index.ts';
+import extension, { decide, findingsOf, importFindings, importEvidenceEnvelope, importReviewArtifact } from '../index.ts';
+import type { EnvelopeCode, EnvelopeResult, EnvelopeReceipt, VerdictReceipt } from '../index.ts';
 import { validateEnvelope } from '../src/envelope-validation.ts';
-import { ensureReviewSchema, fieldOptions, recordVerdict, reviewItems } from '../src/tracker.ts';
+import { ensureReviewSchema, fieldOptions, reviewItems } from '../src/tracker.ts';
 import { evaluateRound } from '../src/round.ts';
 import { coverCriterion, reviewCoverage } from '../src/coverage.ts';
 import type { CoverageMap } from '../src/coverage-types.ts';
 import { envelope } from './envelope-fixture.ts';
-import { inFixtureWorkspace, pullRequest, tracker } from './helpers.ts';
+import { inFixtureWorkspace, pullRequest, syntheticTransport, tracker } from './helpers.ts';
 
 /** Require a stable code and an actionable remedy without provider text leakage. */
 function denied(result: EnvelopeResult, code: EnvelopeCode): void {
@@ -30,13 +30,15 @@ function denied(result: EnvelopeResult, code: EnvelopeCode): void {
 function digest(bytes: string): string { return createHash('sha256').update(bytes).digest('hex'); }
 
 test('envelopes deduplicate immutable revisions, preserve local decisions, and isolate provider namespaces', async t => {
-  const { client } = await tracker(t);
+  const { client, pmRoot } = await tracker(t);
   const input = envelope();
   const first = await importEvidenceEnvelope(client, input) as EnvelopeReceipt;
   assert.equal(first.created, 2);
   assert.equal(first.completion, 'unverified');
   const original = (await reviewItems(client)).find(row => row.id === first.items[0].id)!;
-  await recordVerdict(client, original, 'refuse', 'The input boundary is intentionally described in the companion contract', '');
+  const activated = await activateExtensionForTest(extension, { name: 'pm-review', capabilities: ['commands', 'schema'] });
+  const decision = await runRegisteredCommandForTest(activated.commands, { command: 'review verdict', args: [original.id, 'refuse'], options: { reason: 'The input boundary is intentionally described in the companion contract' }, pmRoot, sdk: createExtensionCommandSdk(pmRoot, client, 'test-agent') });
+  assert.equal((decision.result as VerdictReceipt).verdict, 'refuse');
   const before = JSON.stringify((await client.listAllComplete()).items);
   const replay = await importEvidenceEnvelope(client, { findings: [...input.findings].reverse(), provenance: input.provenance, source: { ...input.source }, version: 1 }) as EnvelopeReceipt;
   assert.equal(replay.created, 0);
@@ -159,7 +161,7 @@ async function host(cwd: string, args: string[], env: NodeJS.ProcessEnv): Promis
   });
 }
 
-test('real host imports without a git executable in a plain tracker and renders TOON and JSON', async t => {
+test('public envelope verdict CLI records and preserves decisions without git or GitHub coordinates', async t => {
   const { client, cwd, pmRoot } = await tracker(t);
   const source = join(cwd, 'package-source');
   await mkdir(source);
@@ -172,15 +174,30 @@ test('real host imports without a git executable in a plain tracker and renders 
   const file = join(cwd, 'review.json');
   const bytes = JSON.stringify(envelope());
   await writeFile(file, bytes);
-  const env = { ...process.env, PATH: bin, GIT_CEILING_DIRECTORIES: dirname(cwd), PM_AUTHOR: 'test-agent', PM_SOURCE_WORKSPACE_ROOT: cwd };
+  const env = { ...process.env, PATH: bin, GIT_CEILING_DIRECTORIES: dirname(cwd), PM_AUTHOR: 'test-agent', PM_SOURCE_WORKSPACE_ROOT: cwd, GITHUB_TOKEN: '', GH_TOKEN: '' };
   const args = ['--path', pmRoot, 'review', 'ingest', '--file', file, '--sha256', digest(bytes)];
   const json = await host(cwd, [...args, '--json'], env);
   assert.equal(json.code, 0, json.output);
-  assert.equal((JSON.parse(json.output) as EnvelopeReceipt).created, 2);
+  const imported = JSON.parse(json.output) as EnvelopeReceipt;
+  assert.equal(imported.created, 2);
+  const id = imported.items[0].id;
+  const verdict = await host(cwd, ['--path', pmRoot, 'review', 'verdict', id, 'refuse', '--reason', 'The document contract already describes the invalid input boundary', '--json'], env);
+  assert.equal(verdict.code, 0, verdict.output);
+  assert.deepEqual(JSON.parse(verdict.output), { item: id, verdict: 'refuse', applied: false, replied: false, reacted: false, resolved: false });
+  const remote = await host(cwd, ['--path', pmRoot, 'review', 'verdict', id, 'refuse', '--reason', 'Explicit artifact decisions remain local', '--apply', '--json'], env);
+  assert.notEqual(remote.code, 0, remote.output);
+  assert.match(remote.output, /envelope_verdict_local_only/);
+  const decided = (await client.get(id, { full: true })).item;
+  assert.equal(decided.review_verdict_source, 'local');
+  assert.equal(decided.review_reason, 'The document contract already describes the invalid input boundary');
+  const sdk = await decide(client, undefined, { id: imported.items[1].id, verdict: 'fix', reason: 'The timeout behavior is now specified in the document', commit: '', apply: false });
+  assert.equal(sdk.verdict, 'fix');
   const toon = await host(cwd, args, env);
   assert.equal(toon.code, 0, toon.output);
   assert.match(toon.output, /reused: 2/);
   assert.match(toon.output, /completion:.*unverified/);
+  assert.equal((await client.get(id, { full: true })).item.review_verdict, 'refuse');
+  assert.equal((await client.get(imported.items[1].id, { full: true })).item.review_verdict, 'fix');
   assert.ok(Buffer.byteLength(toon.output) < 1000);
   const refused = await host(cwd, ['--path', pmRoot, 'review', 'ingest', '--json'], env);
   assert.equal(refused.code, 1, refused.output);
@@ -234,4 +251,44 @@ test('SDK governance failures retain the original refusal and do not masquerade 
   await client.config('project', 'set', 'governance.duplicate_detection_mode', 'strict');
   await assert.rejects(importEvidenceEnvelope(client, { ...input, findings: [first] }), /duplicate|similar/i);
   assert.equal((await client.listAllComplete()).items.length, 1);
+});
+
+
+test('public envelope verdict SDK refuses remote targets and preserves GitHub ownership', async t => {
+  const { client, pmRoot } = await tracker(t);
+  const imported = await importEvidenceEnvelope(client, envelope()) as EnvelopeReceipt;
+  const id = imported.items[0].id;
+  const input = { id, verdict: 'refuse' as const, reason: 'The document already specifies this input boundary', commit: '', apply: false };
+  const before = JSON.stringify((await client.get(id, { full: true })).item);
+  let transportLoads = 0;
+  const github = pullRequest({ reviews: [], comments: [] });
+  const transport = syntheticTransport(github);
+  const lazy = () => { transportLoads++; return transport; };
+  for (const options of [{ apply: true }, { repo: 'example/package' }, { pr: 1 }, { repo: 'example/package', pr: 1 }, { apply: true, repo: 'example/package', pr: 1 }]) {
+    await assert.rejects(decide(client, lazy, { ...input, ...options }), failure => isPmCliExpectedError(failure) && failure.code === 'envelope_verdict_local_only' && Boolean(failure.context.nextSteps?.length));
+  }
+  const sdk = createExtensionCommandSdk(pmRoot, client, 'test-agent');
+  const activation = await activateExtensionForTest(extension, { name: 'pm-review', capabilities: ['commands', 'schema'] });
+  for (const [options, expected] of [
+    [{ apply: true }, 'envelope_verdict_local_only'],
+    [{ apply: true, repo: 'example/package', pr: '1' }, 'envelope_verdict_local_only'],
+    [{ repo: 'example/package', pr: '1' }, 'envelope_verdict_local_only'],
+    [{ repo: 'example/package' }, /owner\/name.*positive/],
+    [{ pr: '1' }, /owner\/name.*positive/],
+  ] as const) {
+    await assert.rejects(runRegisteredCommandForTest(activation.commands, { command: 'review verdict', args: [id, 'refuse'], options: { reason: input.reason, ...options }, pmRoot, sdk }), failure => isPmCliExpectedError(failure) && (typeof expected === 'string' ? failure.code === expected : expected.test(failure.message)));
+  }
+  assert.equal(transportLoads, 0);
+  assert.equal(JSON.stringify((await client.get(id, { full: true })).item), before);
+  const gh = await importFindings(client, github, findingsOf(github));
+  for (const options of [{}, { repo: github.repo }, { pr: github.number }]) {
+    await assert.rejects(decide(client, lazy, { ...input, id: gh.items[0].id, ...options }), failure => isPmCliExpectedError(failure) && failure.code === 'github_target_required');
+  }
+  const incomplete = (await client.create({ type: 'ReviewFinding', title: 'Incomplete envelope identity', ...fieldOptions({ review_head_source: 'envelope', review_node_id: 'not-an-envelope-identity' }) })).item;
+  await assert.rejects(decide(client, lazy, { ...input, id: incomplete.id }), failure => isPmCliExpectedError(failure) && failure.code === 'github_target_required');
+  assert.equal(transportLoads, 0);
+  const applied = await decide(client, lazy, { ...input, id: gh.items[0].id, repo: github.repo, pr: github.number, apply: true });
+  assert.equal(applied.applied, true);
+  assert.equal(transportLoads, 1);
+  assert.deepEqual(transport.calls, ['reply', 'THUMBS_DOWN', 'resolve']);
 });

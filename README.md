@@ -357,6 +357,33 @@ const receipt = await importReviewArtifact(client, {
 if (!receipt.ok) console.error(receipt.refusal.code, receipt.refusal.remedy);
 ```
 
+Use the item id returned by ingestion to record a local decision:
+
+```sh
+pm review verdict sample-ev-IDENTITY refuse --reason 'The contract already defines this behavior' --json
+```
+
+Envelope item ids derive from the provider, origin, artifact, revision and finding
+identity. Their persisted envelope namespace selects the local verdict path;
+`--repo`, `--pr` and `--apply` are refused with `envelope_verdict_local_only`.
+No GitHub credentials, provider call or git executable is needed. GitHub findings
+continue to require their original repo/PR coordinates and ownership checks.
+Replay preserves the decision and reason; a verdict does not authenticate the
+review source or establish review completion.
+
+```ts
+import { decide } from 'pm-review';
+import type { VerdictInput } from 'pm-review';
+
+if (result.ok) {
+  const decision: VerdictInput = {
+    id: result.items[0].id, verdict: 'refuse',
+    reason: 'The contract already defines this behavior', commit: '', apply: false,
+  };
+  await decide(client, undefined, decision);
+}
+```
+
 The typed importer validates runtime JSON before tracker writes. SDK consumers
 passing parsed objects own their transport integrity checks; use
 `importReviewArtifact` to enforce byte pins. Schema persistence, certified complete

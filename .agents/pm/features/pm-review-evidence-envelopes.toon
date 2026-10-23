@@ -7,18 +7,21 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-23T16:45:35.791Z"
-updated_at: "2026-10-23T17:14:44.935Z"
+updated_at: "2026-10-23T17:37:21.061Z"
 author: codex-agent
-acceptance_criteria: Local-file and synthetic HTTP imports deduplicate and preserve source revisions; Unsupported provenance cannot establish review completion; Typed SDK and CLI return compact TOON or JSON with remedies; Read-only public fleet tracker validation works without git; CI release gates pass with unchanged npm and Bun thresholds
+acceptance_criteria: Local-file and synthetic HTTP imports deduplicate and preserve source revisions; Unsupported provenance cannot establish review completion; Typed SDK and CLI return compact TOON or JSON with remedies; Read-only public fleet tracker validation works without git; CI release gates pass with unchanged npm and Bun thresholds; Envelope findings receive local verdicts through the public CLI and SDK without GitHub coordinates
 parent: pm-review-epic
-comments[6]{created_at,author,text}:
+comments[9]{created_at,author,text}:
   "2026-10-23T16:45:55.154Z",codex-agent,"Overlap rechecked against current CLI 2026.10.23 and sibling packages: core structured notes provide storage and attribution without review lifecycle; pm-observer captures explicit agent-event exports and summaries, not ReviewFinding provenance or review completion. Existing pm-review import remains the GitHub live adapter. Plan: typed explicit artifact envelope, canonical provider/origin/artifact/revision/finding identity, digest-pinned file and HTTP input, immutable replay and typed refusals. Declared artifact provenance never establishes completion. Use SDK schema, certified complete reads, native create locks/history, and host output; no git on ingestion paths. Pinned SDK retained as requested."
   "2026-10-23T16:53:38.830Z",codex-agent,"Initial targeted suite: 8/8 passed, including real host TOON/JSON with PATH containing no git, pinned local and synthetic HTTP replay, revision preservation, completion/coverage refusal and concurrent SDK creates. Local typecheck and lint passed; duplication remains 0%; 114 declarations documented. Read-only public validation: 51 items, 22 ReviewFinding rows, 17 with known revisions imported once and replayed over synthetic HTTP (17 reused); 5 missing-revision rows held; 2 revisions preserved; 108 durable public-source files unchanged; largest JSON receipt 254 bytes; zero completion claims. Added packed npm/Bun ingest assertions for CI and checking governance/error paths before final gates."
   "2026-10-23T16:57:58.598Z",codex-agent,"Behavioral revert proof completed in an isolated source copy: removed only source.revision from importEvidenceEnvelope identity scope, then ran node --test --test-name-pattern=\"envelopes deduplicate immutable revisions\" test/envelopes.test.ts. The named test failed its new-revision assertion (created undefined instead of 2; 0 pass, 1 fail). Original implementation passes. No export or test was removed. Source artifact ids and declared reviewer/origin/subject are retained; per-observation immutable hashes support subset imports, native concurrent creates and preservation of existing local decisions. Unrelated SDK governance failures retain their original typed error."
   "2026-10-23T17:02:08.267Z",codex-agent,"PR opened ready for review: https://github.com/unbraind/pm-review/pull/38. Real-data validation rerun against the current importer with read-only durable source files: same 51/22/17/17/5/2/108 counts and 254-byte maximum receipt. The pm-linked targeted run reached its default 120-second limit on the saturated host; retained that receipt and raised only this linked test timeout to 1200 seconds. No release or coverage threshold changed; CI provides the full npm/Bun gate evidence."
   "2026-10-23T17:06:01.476Z",codex-agent,"CI run 39991602774 executed 221/221 behavioral tests successfully on Node 22 and Node 26, then refused coverage because the new erased envelope-types.ts module was imported only as types and therefore appeared unloaded. All three runtime envelope modules measured 100/100/100/100. Added the same explicit erased-module load used by the existing coverage inventory contract; no source omission, ignore list, threshold or gate change. Targeted local suite passed 10/10, and the type-only module now measures 100% after loading. Re-running the unchanged full CI gates."
   "2026-10-23T17:14:37.349Z",codex-agent,"Verified code candidate 235148e: https://github.com/unbraind/pm-review/actions/runs/39992563740 passed both jobs. npm Node 22, npm Node 26 and Bun release gates each passed 221/221 behavioral tests and 1/1 packed npm/Bun acceptance; all 34 authored source files measured 100/100/100/100, 114 declarations documented, duplication 0%. Local pm test pm-review-evidence-envelopes --run --progress passed node --test test/envelopes.test.ts (10/10; exit 0; 1200-second linked budget). npm run typecheck, npm run build:test, npm run lint, npm run docstring, npm run duplication and npm run changelog:check passed. Installed CLI 2026.10.23 structured notes still lack review lifecycle; pm-observer remains agent-event capture. Host-global pm-github skew clears with isolated HOME and fresh CI health passes. No upstream CLI/SDK defect reproduced. Real-data results and revert proof are in docs/evidence-envelopes-validation.md. Remaining boundary: source provenance is declared; remote backends are not separately certified. Work ready for orchestrator verification; leave item unclosed."
-files[13]{path,scope}:
+  "2026-10-23T17:29:17.817Z",codex-agent,"Reopened implementation work for the blocking public-verdict review finding on PR 38. Branch pulled from origin; main has not advanced from the original base. Envelope imports currently omit GitHub coordinates but public review verdict requires them, and the replay test bypasses that public path. Fix plan: select envelope observations by their stable namespaced envelope identity, permit coordinate-free local decisions through the public command and exported SDK, reject remote application and GitHub selectors on that path, and replace the helper shortcut with public command coverage. Add a real no-git CLI regression and behavioral revert proof; retain GitHub ownership checks."
+  "2026-10-23T17:37:14.798Z",codex-agent,"Fixed the blocking verdict finding: public review verdict selects envelope observations by the imported item id and persisted envelope namespace, with no repo/PR coordinates. Exported decide supports the same local path and exposes VerdictInput/VerdictReceipt/VerdictTransport. Envelope --apply and GitHub selectors refuse with envelope_verdict_local_only and a remedy before any credentials load; GitHub findings still require matching repo/PR ownership. GitHub transport creation is deferred until a validated remote application. Replaced recordVerdict helper use in the preservation test with the registered public command. Real no-git CLI regression imports, decides, refuses remote application, uses public SDK, and verifies decisions survive replay. Packed npm/Bun acceptance now records a public envelope verdict."
+  "2026-10-23T17:37:18.382Z",codex-agent,"Behavioral revert proof: copied sources to an isolated scratch workspace, restored only the mandatory targetOf(ctx.options) call in dispatchReviewCommand verdict handling, rebuilt with tsc, then ran node --test --test-name-pattern=\"public envelope verdict CLI\" test/envelopes.test.ts. The named public CLI regression failed at the verdict exit assertion (2 instead of 0; 0 pass, 1 fail); import and module loading succeeded. Fixed code passed node --test --test-name-pattern=\"envelopes deduplicate|public envelope verdict\" test/envelopes.test.ts through pm test --only-last --run --progress (3/3). GitHub compatibility and SDK guard selection passed 3/3; the final consolidated SDK guard cases passed 1/1. npm run typecheck, npm run build:test, npm run lint and npm run docstring passed (115 declarations); duplication remains 0%. No original import/public-corpus work was repeated. Final exact-head npm/Bun gate evidence will be published in the linked PR once complete."
+files[14]{path,scope}:
   index.ts,project
   src/commands.ts,project
   src/envelope-artifact.ts,project
@@ -26,14 +29,34 @@ files[13]{path,scope}:
   src/envelope-validation.ts,project
   src/envelopes.ts,project
   src/tracker.ts,project
+  src/verdict.ts,project
   test/core.test.ts,project
   test/envelope-fixture.ts,project
   test/envelope-public-tracker.ts,project
   test/envelopes.test.ts,project
   test/helpers.ts,project
   test/install.acceptance.ts,project
-tests[1]{command,path,scope,timeout_seconds,provenance{author,created_at,source_kind,source_ref},updated_by,updated_at}:
-  node --test test/envelopes.test.ts,test/envelopes.test.ts,project,1200,codex-agent,"2026-10-23T16:51:00.512Z",local_mutation,feat/evidence-envelopes,codex-agent,"2026-10-23T17:01:45.815Z"
+tests[2]:
+  - command: node --test test/envelopes.test.ts
+    path: test/envelopes.test.ts
+    scope: project
+    timeout_seconds: 1200
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-23T16:51:00.512Z"
+      source_kind: local_mutation
+      source_ref: feat/evidence-envelopes
+    updated_by: codex-agent
+    updated_at: "2026-10-23T17:01:45.815Z"
+  - command: "node --test --test-name-pattern=\"envelopes deduplicate|public envelope verdict\" test/envelopes.test.ts"
+    path: test/envelopes.test.ts
+    scope: project
+    timeout_seconds: 1200
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-23T17:32:58.377Z"
+      source_kind: local_mutation
+      source_ref: feat/evidence-envelopes
 docs[3]{path,scope}:
   docs/evidence-envelopes-validation.md,project
   examples/review-evidence.json,project

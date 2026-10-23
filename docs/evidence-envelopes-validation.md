@@ -73,3 +73,39 @@ agent-event evidence and notes; this package owns review observations and lifecy
 The pinned development SDK remains unchanged. Host-global pm-github version skew
 requires a clean HOME for local health parity; isolated health and both fresh CI
 jobs pass. No upstream CLI/SDK defect was reproduced.
+
+## Public envelope verdicts
+
+The public `review verdict` command accepts an ingested envelope item id and a
+reason, with no GitHub coordinates. The exported `decide` SDK uses the same source
+identity checks and native decision/history pipeline. Envelope decisions remain
+local; GitHub selectors and remote application produce a typed refusal before
+credential loading. GitHub findings retain coordinate and ownership validation.
+
+The replay-preservation test now records its decision through the registered
+public command. `public envelope verdict CLI records and preserves decisions
+without git or GitHub coordinates` imports through the real installed command,
+records a local verdict, refuses `--apply`, records another decision through the
+public SDK, and verifies both survive replay. The tracker is plain, PATH contains
+only Node, and GitHub token variables are empty. Packed npm/Bun acceptance also
+records an envelope verdict through the installed public command.
+
+`public envelope verdict SDK refuses remote targets and preserves GitHub
+ownership` checks typed remedies, no credential loading or mutation on refusals,
+partial-coordinate validation, invalid envelope identities, and a valid GitHub
+application through a deferred synthetic transport.
+
+Behavioral revert proof: in an isolated source copy, restore the mandatory
+`targetOf(ctx.options)` call inside `dispatchReviewCommand`'s verdict branch,
+leaving the SDK, exports and tests unchanged. Rebuild the package with `tsc`, then:
+
+```sh
+node --test --test-name-pattern='public envelope verdict CLI' test/envelopes.test.ts
+```
+
+The named regression fails its public verdict exit assertion (actual 2, expected
+0; 0 passed / 1 failed), after a successful import. This demonstrates the original
+coordinate-validation failure through the compiled public command. The unchanged
+fix passes. Focused envelope verdict/replay checks passed 3/3 via the pm-linked
+runner; focused GitHub validation and SDK checks passed 3/3. Typecheck, test
+compilation and lint passed. Final full-gate evidence is linked from PR 38.

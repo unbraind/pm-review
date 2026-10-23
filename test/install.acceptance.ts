@@ -89,9 +89,12 @@ function consumerEnv(cwd: string, pmRoot: string, home = cwd): NodeJS.ProcessEnv
     await writeFile(join(cwd, 'review.json'), artifact);
     const artifactDigest = createHash('sha256').update(artifact).digest('hex');
     const ingestArgs = [...prefix, 'review', 'ingest', '--file', 'review.json', '--sha256', artifactDigest];
-    const importedEnvelope = JSON.parse(command(cwd, runner, [...ingestArgs, '--json'], pmRoot)) as { created: number; completion: string };
+    const importedEnvelope = JSON.parse(command(cwd, runner, [...ingestArgs, '--json'], pmRoot)) as { created: number; completion: string; items: { id: string }[] };
     assert.equal(importedEnvelope.created, 2);
     assert.equal(importedEnvelope.completion, 'unverified');
+    const localVerdict = JSON.parse(command(cwd, runner, [...prefix, 'review', 'verdict', importedEnvelope.items[0].id, 'refuse', '--reason', 'The document already explains this boundary', '--json'], pmRoot)) as { verdict: string; applied: boolean };
+    assert.equal(localVerdict.verdict, 'refuse');
+    assert.equal(localVerdict.applied, false);
     assert.match(command(cwd, runner, ingestArgs, pmRoot), /reused: 2/);
     await verifyCloseout(cwd, runner, prefix, pmRoot);
     verifyHostExitContract(cwd, runner, prefix, pmRoot);

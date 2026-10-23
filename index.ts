@@ -27,6 +27,8 @@ export { findingsOf } from './src/findings.ts';
 export { evaluateRound, compactRound } from './src/round.ts';
 /** Export durable decision application for typed clients. */
 export { decide } from './src/verdict.ts';
+/** Export source-aware verdict inputs, local receipts and deferred GitHub transports. */
+export type { VerdictInput, VerdictReceipt, VerdictTransport } from './src/verdict.ts';
 /** Export read-only source reconciliation for typed hosts. */
 export { reconcile } from './src/reconcile.ts';
 /** Export batch response and live status with the registered command semantics. */
