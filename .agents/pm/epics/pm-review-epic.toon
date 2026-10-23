@@ -2,16 +2,16 @@ id: pm-review-epic
 title: Durable bot review context and exact-head round gates
 description: "Build pm-review as a typed SDK extension with durable findings, decisions and precedents."
 type: Epic
-status: in_progress
+status: open
 priority: 2
 tags: []
 created_at: "2026-10-12T10:47:26.382Z"
-updated_at: "2026-10-22T12:12:44.943Z"
+updated_at: "2026-10-23T15:23:06.112Z"
 author: codex-sol
 acceptance_criteria: Four review commands; real SDK trackers; public recorded fixtures; 100 percent coverage; npm and Bun gates; packed acceptance; local commits only.
 release: 2026.10.12
 expected_result: Keep the audited delivery evidence available while the epic awaits orchestrator verification.
-comments[12]{created_at,author,text}:
+comments[13]{created_at,author,text}:
   "2026-10-12T10:47:28.391Z",codex-sol,"Companion epic: pm-cli-website-ox5m. Package-owned implementation and receipts remain in this tracker. No remote writes or releases are authorized."
   "2026-10-12T11:01:19.881Z",codex-sol,"Verified SDK gap in the installed version: PmClient.schemaAddField(name, { type }) drops the type, storing every field as string. Public client.run(schema, { name, options: { subcommand: add-field, fieldType } }) preserves number and boolean types. The package uses that public action and tests numeric PR matching and boolean resolved state with real temp trackers. No upstream issue was filed."
   "2026-10-12T11:20:38.827Z",codex-sol,"Read-only manual CLI acceptance against public unbraind/pm-rl#68 at head 14669bcf58229e7226eed958470babc06c88d570: packed extension installed into a scratch pm project; import created 50 items, updated 0. Round exited 1 as expected: checks pending; CodeRabbit finished true; unresolved threads 0; unvoted bot comments 0; pending imported items 14; unimported nodes 0. Precedents returned 0 before a scratch-only refusal and 1 afterward. Verdict reported applied/replied/reacted/resolved false. No apply or remote mutation ran against the public PR."
@@ -24,6 +24,7 @@ comments[12]{created_at,author,text}:
   "2026-10-22T12:09:57.276Z",codex-agent,"PR #26 review plan: pulled remote eba5719 and merged current main 260d41c before corrections. Verified README Development and evidence requires items to remain open for orchestrator verification. Main has this epic in_progress without terminal timestamps; the only PR changes are this epic and its append-only history. Thread PRRT_kwDOVGABD86vDZ8L is valid. Latest CodeRabbit review has no Outside diff range findings. Retain historical audit receipts, reopen this epic and run tracker-only gates; no implementation revert proof applies."
   "2026-10-22T12:10:52.704Z",codex-agent,"Tracker evidence proof for PRRT_kwDOVGABD86vDZ8L: 7/7 categories passed against main 260d41c: active status, no current terminal metadata, matching main lifecycle, README policy, unchanged main history prefix, unchanged pre-fix eba5719 history prefix, and tracker-only diff. The reopen command archived prior closure evidence rather than editing historical entries. npm ci passed (164 packages, zero vulnerabilities); initial health passed 10/10 checks with zero warnings and no merge receipt reconciliation needed. Self-review found no other changed item or implementation defect. The tracker-only evidence exception applies; no behavioral source revert is applicable. Keep this epic in_progress for orchestrator verification."
   "2026-10-22T12:12:44.940Z",codex-agent,"PR #26 final gate receipt: npm ci passed; npm run changelog:full regenerated successfully; pm test pm-review-epic --run --only-last --progress --timeout 600 passed 1/1 (npm run changelog:check, exit 0); identity check reported zero violations; git diff --check passed. Normal-home health exposed the existing global pm-github version mismatch (pinned host 2026.10.19 versus global extension 2026.10.22), while isolated-home strict health passed all 10 checks with ok=true. Initial health with extensions disabled passed 10/10 with zero warnings; the full isolated check is the package health receipt. No timeout occurred. Claim released; epic remains in_progress. No new pm CLI/SDK defect established; the global extension environment mismatch is outside this tracker-only correction."
+  "2026-10-23T15:22:54.612Z",codex-agent,"STALE-CLAIM: audited main e1fc83a81507ca6a91f1675b74863c050f1a89f1; no open PR or recently pushed live branch references this record. Inspected: README.md, .agents/pm/epics/pm-review-epic.toon. Remaining: PR 26 deliberately restored this epic pending orchestrator/maintainer verification; its expected_result retains that owner decision. Source delivery alone is insufficient. Release contention and leave approval/verification open. Release historical contention and retain real work as open; no delivery/cancellation is claimed."
 files[7]{path,scope}:
   .agents/pm/epics/pm-review-epic.toon,project
   index.ts,project
