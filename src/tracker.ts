@@ -13,7 +13,7 @@ import type { Finding, PullRequest, Verdict } from './types.ts';
 export const REVIEW_TYPE: SchemaItemTypeDefinition = { name: 'ReviewFinding', folder: 'review-findings', description: 'Bot finding with source identity, decision reasoning and commit provenance', default_status: 'open' };
 /** Namespaced fields remain optional for non-review item types in a shared tracker. */
 export const REVIEW_FIELDS: SchemaFieldDefinition[] = [
-  ...['bot', 'path', 'severity', 'summary', 'url', 'node_id', 'head', 'repo', 'thread_id', 'reason', 'commit', 'commits', 'head_source', 'decided_at'].map(/** Register textual provenance without clashing with built-in fields. */ name => ({ name: `review_${name}`, type: 'string' as const, optional: true })),
+  ...['bot', 'path', 'severity', 'summary', 'url', 'node_id', 'head', 'repo', 'thread_id', 'reason', 'commit', 'commits', 'head_source', 'decided_at', 'provider', 'origin', 'artifact', 'artifact_digest', 'envelope_scope', 'provenance', 'subject'].map(/** Register textual provenance without clashing with built-in fields. */ name => ({ name: `review_${name}`, type: 'string' as const, optional: true })),
   { name: 'review_kind', type: 'string', optional: true, values: ['thread', 'review', 'comment'] },
   { name: 'review_verdict', type: 'string', optional: true, values: [...VERDICTS] },
   { name: 'review_verdict_source', type: 'string', optional: true, values: ['import', 'local'] },

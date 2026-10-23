@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "source": {
+    "provider": "document-review",
+    "origin": "https://reviews.example.org",
+    "artifact": "review-42",
+    "revision": "document-v3",
+    "subject": "urn:example:document:api-contract",
+    "url": "https://reviews.example.org/reviews/42",
+    "reviewer": "contract-reviewer"
+  },
+  "provenance": { "kind": "declared" },
+  "findings": [
+    {
+      "id": "invalid-input",
+      "summary": "Specify the invalid input response",
+      "body": "The API contract omits the invalid input response. Specify the error code before publishing.",
+      "path": "docs/api.md",
+      "line": 12
+    }
+  ]
+}

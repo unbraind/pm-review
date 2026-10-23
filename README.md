@@ -294,3 +294,98 @@ The exported `findingLineage` SDK operation returns the same compact TOON/JSON
 shape, with typed refusal codes and remedies. It works without git or provider
 access on previously imported observations. See the [SDK example, identity and
 withdrawal contract](docs/finding-lineage.md).
+
+## Provider-neutral review artifacts
+
+`pm review ingest` imports an explicit code or document review artifact as
+`ReviewFinding` items. It works in plain trackers through the PM SDK; git and
+GitHub credentials are unnecessary. Existing `pm review import --repo ... --pr ...`
+remains the live GitHub adapter with its current completion semantics.
+
+Start with [the complete envelope example](examples/review-evidence.json):
+
+```sh
+# Verify the bytes against a digest obtained from the artifact's trusted source.
+pm review ingest --file review-evidence.json --sha256 VERIFIED_SHA256
+pm review ingest --url https://reviews.example.org/export/42 --sha256 VERIFIED_SHA256 --json
+```
+
+The v1 envelope requires `source.provider` (a lowercase slug), canonical HTTPS
+`origin`, provider-native `artifact`, exact source `revision`, reviewed `subject`,
+attributable `reviewer`, source `url` on that origin, `provenance.kind=declared`,
+and 1–50 findings with distinct `id`, `summary` and `body`. Optional `path` and
+positive `line` locate a finding. Revisions can be document versions or commit
+hashes. Preserve the provider's revision verbatim; never substitute a current
+workspace revision for a missing source revision. Unknown fields are refused.
+
+Identity is the structured tuple `(provider, origin, artifact, revision, finding id)`.
+Replaying the same content, including reordered JSON keys or finding rows, reuses
+items without changing history or local verdicts. A new revision creates separate
+observations and retains earlier revisions. Changed finding content under the same artifact
+revision returns `identity_conflict` before writes; export a new revision. Finding lists may be imported in subsets;
+each observation is immutable independently. Core
+SDK locks protect deterministic item creation; retrying an interrupted import is
+safe. An artifact import is a sequence of native item creates, so an unrelated
+backend failure can leave a partial import; retry the original artifact.
+
+The caller must pin file or HTTP bytes with a lowercase SHA-256 digest. HTTP(S)
+GET requests have a 10-second timeout, refuse redirects and non-200 responses, and
+send no credentials. Files must be regular files. Both transports read at most
+1 MiB; finding bodies allow 16,000 characters and summaries 200. Source text stays
+in the tracker. Receipts contain counts and at most 50 item selectors, rendered
+as compact host TOON by default or JSON with `--json`. Refusals include stable
+`refusal.code`, `refusal.remedy` and a nonzero CLI exit.
+
+A digest proves byte integrity against the caller's pin. Provider, reviewer,
+subject and revision remain **declared assertions**, not authenticated provider
+attestations. Unsupported provenance is refused; every successful receipt says
+`completion: unverified`. A claimed approval, provider name, GitHub-looking URL,
+or commit-shaped revision cannot establish `review round` completion or criterion
+coverage. Use a supported live adapter for completion evidence. Ingestion does
+not resolve, close or withdraw findings. Explicit cross-provider identity remains
+available through `review lineage`.
+
+```ts
+import { importEvidenceEnvelope, importReviewArtifact } from 'pm-review';
+import type { ReviewEvidenceEnvelope } from 'pm-review';
+
+// client is the host's PmClient; envelope is an explicit provider export.
+const result = await importEvidenceEnvelope(client, envelope satisfies ReviewEvidenceEnvelope);
+const receipt = await importReviewArtifact(client, {
+  file: 'review-evidence.json', sha256: verifiedDigest,
+});
+if (!receipt.ok) console.error(receipt.refusal.code, receipt.refusal.remedy);
+```
+
+Use the item id returned by ingestion to record a local decision:
+
+```sh
+pm review verdict sample-ev-IDENTITY refuse --reason 'The contract already defines this behavior' --json
+```
+
+Envelope item ids derive from the provider, origin, artifact, revision and finding
+identity. Their persisted envelope namespace selects the local verdict path;
+`--repo`, `--pr` and `--apply` are refused with `envelope_verdict_local_only`.
+No GitHub credentials, provider call or git executable is needed. GitHub findings
+continue to require their original repo/PR coordinates and ownership checks.
+Replay preserves the decision and reason; a verdict does not authenticate the
+review source or establish review completion.
+
+```ts
+import { decide } from 'pm-review';
+import type { VerdictInput } from 'pm-review';
+
+if (result.ok) {
+  const decision: VerdictInput = {
+    id: result.items[0].id, verdict: 'refuse',
+    reason: 'The contract already defines this behavior', commit: '', apply: false,
+  };
+  await decide(client, undefined, decision);
+}
+```
+
+The typed importer validates runtime JSON before tracker writes. SDK consumers
+passing parsed objects own their transport integrity checks; use
+`importReviewArtifact` to enforce byte pins. Schema persistence, certified complete
+reads, item creation, attribution and history use the PM SDK rather than a separate
+storage or locking implementation.

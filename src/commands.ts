@@ -1,3 +1,4 @@
+import { importReviewArtifact } from './envelope-artifact.ts';
 import { createPmCliExpectedError, isPmCliExpectedError, PmClient, printResult, readBooleanOption, readStringOption, suppressHostOutput } from '@unbrained/pm-cli/sdk';
 import { defineCommand } from '@unbrained/pm-cli/sdk/authoring';
 import type { CommandHandlerContext, ExtensionApi, FlagDefinition } from '@unbrained/pm-cli/sdk/authoring';
@@ -44,6 +45,10 @@ export async function runReviewCommand(ctx: CommandHandlerContext, provided?: Gi
 /** Run one dispatched package command; separated so the wrapper above stays the single error boundary. */
 async function dispatchReviewCommand(ctx: CommandHandlerContext, provided?: GitHubTransport): Promise<unknown> {
   const client = ctx.sdk?.client ?? new PmClient({ cwd: ctx.source_workspace_root ?? ctx.repo_root, pmRoot: ctx.pm_root, author: ctx.global.author });
+  if (ctx.command === 'review ingest') {
+    const result = await importReviewArtifact(client, { file: readStringOption(ctx.options, 'file'), url: readStringOption(ctx.options, 'url'), sha256: readStringOption(ctx.options, 'sha256') ?? '' });
+    return result.ok ? result : { ...result, exit_code: 1 };
+  }
   if (ctx.command === 'review lineage') {
     const result = await findingLineage(client, ctx.args[0] ?? '', { with: readStringOption(ctx.options, 'with'), confirm: readBooleanOption(ctx.options, 'confirm'), revision: readStringOption(ctx.options, 'revision'), reason: readStringOption(ctx.options, 'reason') });
     return result.ok ? result : { ...result, exit_code: 1 };
@@ -72,11 +77,12 @@ async function dispatchReviewCommand(ctx: CommandHandlerContext, provided?: GitH
     const items = await precedents(client, ctx.args[0] ?? '', repo === undefined ? undefined : repositoryOf(repo), pr === undefined ? undefined : pullRequestOf(pr));
     return { query: ctx.args[0], count: items.length, items };
   }
-  const target = targetOf(ctx.options);
   if (ctx.command === 'review verdict') {
+    const target = readStringOption(ctx.options, 'repo') !== undefined || readStringOption(ctx.options, 'pr') !== undefined ? targetOf(ctx.options) : {};
     const apply = readBooleanOption(ctx.options, 'apply') === true;
-    return decide(client, apply ? provided ?? createGitHubTransport() : undefined, { ...target, id: ctx.args[0] ?? '', verdict: parseVerdict(ctx.args[1] ?? ''), reason: readStringOption(ctx.options, 'reason') ?? '', commit: readStringOption(ctx.options, 'commit') ?? '', apply });
+    return decide(client, apply ? provided ?? createGitHubTransport : undefined, { ...target, id: ctx.args[0] ?? '', verdict: parseVerdict(ctx.args[1] ?? ''), reason: readStringOption(ctx.options, 'reason') ?? '', commit: readStringOption(ctx.options, 'commit') ?? '', apply });
   }
+  const target = targetOf(ctx.options);
   const transport = provided ?? createGitHubTransport();
   if (ctx.command === 'review respond' || ctx.command === 'review status') {
     const options = { bots: readStringOption(ctx.options, 'bots'), noticePattern: readStringOption(ctx.options, 'noticePattern'), apply: readBooleanOption(ctx.options, 'apply'), resolve: readBooleanOption(ctx.options, 'resolve') };
@@ -111,6 +117,7 @@ const RESPONSE_FLAGS: FlagDefinition[] = [
 /** Register help, typed positional arguments and command handlers through the host API. */
 export function registerReviewCommands(api: ExtensionApi): void {
   const commands = [
+    { name: 'ingest', description: 'Import a digest-pinned provider-neutral review artifact; completion remains unverified', arguments: [], flags: ['file', 'url', 'sha256'].map(/** Explicit selectors keep ingestion separate from live GitHub snapshots. */ name => ({ long: `--${name}`, type: 'string' as const, description: name === 'sha256' ? 'Independently verified SHA-256 of the artifact bytes' : `Explicit artifact ${name}; select exactly one file or URL` })), example: 'pm review ingest --file review.json --sha256 DIGEST --json' },
     { name: 'lineage', description: 'Read one canonical disposition; propose or explicitly confirm matching observations', arguments: [{ name: 'item', required: true, description: 'Imported ReviewFinding item id' }], flags: [{ long: '--with', type: 'string' as const, description: 'Candidate observation id from core duplicates or pm-jev' }, { long: '--confirm', type: 'boolean' as const, description: 'Confirm the proposed identity using --revision and --reason' }, { long: '--revision', type: 'string' as const, description: 'Current pair proposal hash' }, { long: '--reason', type: 'string' as const, description: 'Why these observations describe one logical finding' }], example: 'pm review lineage finding-id --with other-finding-id --json' },
     { name: 'coverage', description: 'Read explicit criterion review attention and stale judgments; no completion claim', arguments: [{ name: 'item', required: true, description: 'Item declaring acceptance and risk criteria' }], flags: [], example: 'pm review coverage sample-task --json' },
     { name: 'cover', description: 'Record an attributed criterion judgment with an exact review excerpt', arguments: [{ name: 'item', required: true, description: 'Item declaring acceptance and risk criteria' }], flags: ['revision', 'criterion', 'evidence', 'excerpt', 'reason', 'judgment'].map(/** Each selector is explicit and validated by the SDK operation. */ name => ({ long: `--${name}`, type: 'string' as const, description: name === 'judgment' ? 'reviewed|gap (attention, never proof)' : `Explicit ${name} binding; see review coverage` })), example: 'pm review cover sample-task --criterion AC1 --revision HASH --evidence finding-id --excerpt "Exact substantive review text" --judgment reviewed --reason "Explains the validation boundary"' },
@@ -120,7 +127,7 @@ export function registerReviewCommands(api: ExtensionApi): void {
     { name: 'reconcile', description: 'Close findings from live resolved threads, terminal alerts and merged PRs (GitHub read-only)', arguments: [], flags: [...TARGET_FLAGS, { long: '--dry-run', type: 'boolean' as const, description: 'Report planned closures without tracker writes' }], example: 'pm review reconcile --repo unbraind/pm-review --pr 1 --dry-run' },
     { name: 'find', description: 'Find imported tracker items by GitHub thread id or review-comment URL', arguments: [], flags: [{ long: '--thread', type: 'string' as const, description: 'PRRT_ thread id or GitHub review-comment URL' }], example: 'pm review find --thread PRRT_example' },
     { name: 'import', description: 'Import every bot thread, review body and issue comment as durable pm context', arguments: [], flags: TARGET_FLAGS, example: 'pm review import --repo unbraind/pm-rl --pr 68' },
-    { name: 'verdict', description: 'Record a verdict and reason; apply only when explicitly requested', arguments: [{ name: 'item', required: true, description: 'Imported ReviewFinding item id' }, { name: 'verdict', required: true, description: 'pending|fix|refuse|duplicate|stale|informational' }], flags: [...TARGET_FLAGS, { long: '--reason', type: 'string' as const, description: 'Durable decision reasoning' }, { long: '--commit', type: 'string' as const, description: 'Commit SHA implementing or explaining this decision' }, { long: '--apply', type: 'boolean' as const, description: 'Vote on source content; also reply and resolve threads; requires write access' }], example: 'pm review verdict sample-gh-abcd refuse --repo unbraind/pm-rl --pr 68 --reason "Existing validation covers this input"' },
+    { name: 'verdict', description: 'Record a local verdict by envelope item id, or use GitHub coordinates for GitHub findings; apply only to GitHub', arguments: [{ name: 'item', required: true, description: 'Imported ReviewFinding item id' }, { name: 'verdict', required: true, description: 'pending|fix|refuse|duplicate|stale|informational' }], flags: [...TARGET_FLAGS, { long: '--reason', type: 'string' as const, description: 'Durable decision reasoning' }, { long: '--commit', type: 'string' as const, description: 'Commit SHA implementing or explaining this decision' }, { long: '--apply', type: 'boolean' as const, description: 'Vote on source content; also reply and resolve threads; requires write access' }], example: 'pm review verdict sample-gh-abcd refuse --repo unbraind/pm-rl --pr 68 --reason "Existing validation covers this input"' },
     { name: 'round', description: 'Gate the current head on finished review, checks, threads, votes and durable decisions', arguments: [], flags: [...TARGET_FLAGS, { long: '--compact', type: 'boolean' as const, description: 'Emit one host-rendered script line (JSON retains the full receipt)' }], example: 'pm review round --repo unbraind/pm-rl --pr 68 --compact' },
     { name: 'precedents', description: 'Find earlier fix and refuse reasoning across the complete tracker', arguments: [{ name: 'query', required: true, description: 'Words from a finding or its decision' }], flags: TARGET_FLAGS, example: 'pm review precedents "input validation"' },
   ];

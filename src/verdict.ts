@@ -14,7 +14,9 @@ export function parseVerdict(value: string): Verdict {
 }
 
 /** Decision input separates durable tracker writes from explicit remote application. */
-export interface VerdictInput { id: string; verdict: Verdict; reason: string; commit: string; repo: string; pr: number; apply: boolean }
+export interface VerdictInput { id: string; verdict: Verdict; reason: string; commit: string; repo?: string; pr?: number; apply: boolean }
+/** Resolve live transport credentials only after remote application has passed source ownership checks. */
+export type VerdictTransport = GitHubTransport | (() => GitHubTransport);
 /** Application receipt reports only mutations actually performed by this invocation. */
 export interface VerdictReceipt { item: string; verdict: Verdict; applied: boolean; replied: boolean; reacted: boolean; resolved: boolean }
 
@@ -26,30 +28,38 @@ async function voteSource(transport: GitHubTransport, source: Contribution, view
 }
 
 /** Record a decision and optionally replay-safe thread reply, vote and resolution. */
-export async function decide(client: PmClient, transport: GitHubTransport | undefined, input: VerdictInput): Promise<VerdictReceipt> {
+export async function decide(client: PmClient, transport: VerdictTransport | undefined, input: VerdictInput): Promise<VerdictReceipt> {
   if (!input.reason.trim()) throw new Error('A nonempty --reason is required');
   if (input.commit && !/^[a-f0-9]{7,40}$/i.test(input.commit)) throw new Error('--commit must be a Git commit SHA');
   const item = (await reviewItems(client)).find(/** Only imported typed findings accept review decisions. */ candidate => candidate.id === input.id);
-  if (!item) throw createPmCliExpectedError('Review item not found; import this PR first', { context: { code: 'finding_missing', nextSteps: ['Import the ReviewFinding before recording a verdict.'] } });
-  if (item.review_repo !== input.repo || item.review_pr !== input.pr) throw new Error('The item belongs to a different repository or PR');
+  if (!item) throw createPmCliExpectedError('Review item not found; import the review finding first', { context: { code: 'finding_missing', nextSteps: ['Import the ReviewFinding before recording a verdict.'] } });
   const receipt: VerdictReceipt = { item: item.id, verdict: input.verdict, applied: false, replied: false, reacted: false, resolved: false };
+  const envelope = item.review_head_source === 'envelope' && /^envelope:[a-f0-9]{64}$/.test(String(item.review_node_id));
+  if (envelope) {
+    if (input.apply || input.repo !== undefined || input.pr !== undefined) throw createPmCliExpectedError('Envelope findings accept local verdicts without GitHub coordinates or --apply.', { context: { code: 'envelope_verdict_local_only', nextSteps: ['Use the item id returned by review ingest with a verdict and --reason; omit --repo, --pr and --apply.'] } });
+    await recordVerdict(client, item, input.verdict, input.reason, input.commit);
+    return receipt;
+  }
+  if (input.repo === undefined || input.pr === undefined) throw createPmCliExpectedError('GitHub findings require --repo owner/name and a positive --pr N.', { context: { code: 'github_target_required', nextSteps: ['Supply this finding\'s original GitHub coordinates; only envelope-imported findings allow coordinate-free local verdicts.'] } });
+  if (item.review_repo !== input.repo || item.review_pr !== input.pr) throw new Error('The item belongs to a different repository or PR');
   if (!input.apply) {
     await recordVerdict(client, item, input.verdict, input.reason, input.commit);
     return receipt;
   }
   if (input.verdict === 'pending') throw new Error('--apply requires a final verdict; pending decisions stay local');
   if (input.verdict === 'fix' && !input.commit) throw new Error('--apply fix requires --commit evidence');
-  if (!transport) throw new Error('GitHub transport is required for --apply');
+  const github = typeof transport === 'function' ? transport() : transport;
+  if (!github) throw new Error('GitHub transport is required for --apply');
   const evidence = `${input.verdict}: ${input.reason}${input.commit ? `; commit ${input.commit}` : ''}`;
-  const snapshot = await transport.snapshot(input.repo, input.pr);
+  const snapshot = await github.snapshot(input.repo, input.pr);
   if (item.review_kind !== 'thread') {
     const sources = item.review_kind === 'review' ? snapshot.reviews : snapshot.comments;
     const source = sources.find(/** Validate source provenance against the current PR before voting. */ candidate => candidate.id === item.review_node_id && candidate.isBot);
     if (!source) throw new Error('Bot review content no longer exists on this PR');
-    const viewer = await transport.viewer();
+    const viewer = await github.viewer();
     const reaction = isReviewNotice(source.body) ? 'THUMBS_DOWN' : 'THUMBS_UP';
     await recordVerdict(client, item, input.verdict, input.reason, input.commit);
-    receipt.reacted = await voteSource(transport, source, viewer, reaction);
+    receipt.reacted = await voteSource(github, source, viewer, reaction);
     await closeFinding(client, item, evidence);
     receipt.applied = true;
     return receipt;
@@ -58,19 +68,19 @@ export async function decide(client: PmClient, transport: GitHubTransport | unde
   if (!thread) throw new Error('Review thread no longer exists on this PR');
   const source = thread.comments.find(/** The first bot contribution is the thread finding imported by this package. */ comment => comment.isBot);
   if (!source) throw new Error('Review thread has no bot contribution');
-  const viewer = await transport.viewer();
+  const viewer = await github.viewer();
   const marker = createHash('sha256').update(JSON.stringify([thread.id, input.verdict, input.reason, input.commit])).digest('hex');
   const reply = `pm-review: ${input.verdict}\n\n${input.reason}${input.commit ? `\n\nCommit: ${input.commit}` : ''}\n\n<!-- pm-review:${marker} -->`;
   // Save the durable decision before remote writes, so a failed action can be retried with its reasoning intact.
   await recordVerdict(client, item, input.verdict, input.reason, input.commit);
   if (!thread.comments.some(/** A stable decision marker plus actor identity deduplicates retries across trackers. */ comment => comment.bot.toLowerCase() === viewer.toLowerCase() && comment.body === reply)) {
-    await transport.reply(thread.id, reply);
+    await github.reply(thread.id, reply);
     receipt.replied = true;
   }
   const reaction = input.verdict === 'refuse' ? 'THUMBS_DOWN' : 'THUMBS_UP';
-  receipt.reacted = await voteSource(transport, source, viewer, reaction);
+  receipt.reacted = await voteSource(github, source, viewer, reaction);
   if (!thread.resolved) {
-    await transport.resolve(thread.id);
+    await github.resolve(thread.id);
     receipt.resolved = true;
   }
   await client.update(item.id, fieldOptions({ review_resolved: true }));
