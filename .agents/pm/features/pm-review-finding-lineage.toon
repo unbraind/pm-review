@@ -2,14 +2,19 @@ id: pm-review-finding-lineage
 title: Keep one disposition across provider finding observations
 description: "Preserve review-specific finding identity across providers and revisions, with explicit confirmation, retained observations and one canonical disposition. Core duplicate detection and pm-jev remain candidate proposers."
 type: Feature
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-22T19:22:39.664Z"
-updated_at: "2026-10-22T20:48:14.997Z"
+updated_at: "2026-10-23T08:57:51.480Z"
+closed_at: "2026-10-23T08:57:51.474Z"
+completed_at: "2026-10-22T20:59:44.000Z"
 author: codex-agent
 acceptance_criteria: Near matches remain proposals until confirmed; Source withdrawal does not erase prior reasoning; Duplicate imports add no second disposition; Typed SDK and CLI provide compact TOON and JSON with actionable typed refusals; Works without git and validates a read-only public tracker copy
 parent: pm-review-epic
+resolution: "Delivered by https://github.com/unbraind/pm-review/pull/29 (merge 22fdfd58e5f3, head 4312cfc43fd5)"
+expected_result: Near matches remain proposals until confirmed; Source withdrawal does not erase prior reasoning; Duplicate imports add no second disposition; Typed SDK and CLI provide compact TOON and JSON with actionable typed refusals; Works without git and validates a read-only public tracker copy
+actual_result: "Merged at 2026-10-22T20:59:44Z; no readable required checks, so every completed head check run had to succeed, be neutral or be skipped; successful checks: CodeQL, CodeRabbit, codeql, cubic · AI code reviewer, test (22), test (26)"
 comments[7]{created_at,author,text}:
   "2026-10-22T19:23:23.079Z",codex-agent,"Overlap rechecked against installed core SDK 2026.10.18 and current CLI registry 2026.10.22, pm-jev dedupe.ts and index.ts, and pm-review import/verdict/coverage/round code. Core duplicates and scoreItemSimilarity rank lexical candidates; pm-jev dedupe proposes or explicitly links duplicate/related work. Neither preserves review-specific cross-provider observations and a canonical review disposition. Reuse complete SDK reads, similarity scoring, lock-scoped idempotent comments and the existing item mutation/history pipeline. Preserve original imported decisions as historical observations; compute one canonical disposition for confirmed groups. Local checks are targeted; CI npm and Bun release gates provide the complete evidence."
   "2026-10-22T19:32:32.670Z",codex-agent,"Public real-data validation completed read-only against an origin/main tracker export in a plain directory with git discovery fenced off: 48 total items, 22 review observations, 3 providers, 2 known source revisions, 22 independent canonical dispositions, 4 core candidate clusters, 3 review pair proposals checked and all 3 left unconfirmed. All 102 original durable files remained byte-identical. Largest compact JSON lineage receipt: 894 bytes. Details and repeatable validator: docs/finding-lineage-validation.md and test/lineage-public-tracker.ts."
@@ -42,4 +47,5 @@ docs[3]{path,scope}:
   docs/finding-lineage-validation.md,project
   docs/finding-lineage.md,project
   README.md,project
+close_reason: "{\"pr\":29,\"url\":\"https://github.com/unbraind/pm-review/pull/29\",\"merge_commit_sha\":\"22fdfd58e5f3f48491a9fa97cca61875505bc669\",\"head_sha\":\"4312cfc43fd5cc53ce412a63b99c9b7889d1c939\",\"merged_at\":\"2026-10-22T20:59:44Z\",\"checks\":[\"CodeQL\",\"CodeRabbit\",\"codeql\",\"cubic · AI code reviewer\",\"test (22)\",\"test (26)\"]}"
 body: ""
