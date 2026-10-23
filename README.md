@@ -169,6 +169,8 @@ Completion requires:
 - A reaction from the PR author account on every nonempty bot comment/review body. Another account's vote does not substitute.
 - No pending imported findings and no current source nodes missing from the tracker.
 
+Completion uses the same actionable-aware notice classifier as import and response voting. Unavailable notices (quota, access, ended trial, failed generation or incomplete actions) cannot establish completion. A substantive severity-marked review remains eligible when its body also contains a rate-limit notice or discusses rate-limit handling, once its findings are decided. Empty submitted reviews and genuine no-actionable-issues reviews remain supported.
+
 The gate reads GitHub again each time. A local `review_resolved` field is never accepted as live resolution evidence. A completed round describes these measured conditions; it does not grant merge, release or deployment authority.
 
 ## Find
