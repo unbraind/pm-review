@@ -3,13 +3,18 @@ title: Verify closeout evidence and detect gamed gates
 description: "Independently evaluate acceptance criteria against fresh linked tests, linked artifacts, comments and change baselines. Emit compact verdicts without closing items."
 type: Feature
 pm_format_version: 2
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-21T15:11:44.530Z"
-updated_at: "2026-10-21T21:28:14.946Z"
+updated_at: "2026-10-23T08:57:51.419Z"
+closed_at: "2026-10-23T08:57:51.403Z"
+completed_at: "2026-10-22T11:05:18.000Z"
 author: codex-agent
 acceptance_criteria: Closeout reports each criterion with concrete evidence and fails closed on gaps; detects weakened gates and skipped focused deleted or ineffective tests; supports plain trackers and optional isolated behavioral revert checks; demonstrates three merged fleet items and a seeded gamed change; unchanged npm and Bun release gates pass
+resolution: "Delivered by https://github.com/unbraind/pm-review/pull/25 (merge 260d41c13b4e, head a405f62ac6a5)"
+expected_result: Closeout reports each criterion with concrete evidence and fails closed on gaps; detects weakened gates and skipped focused deleted or ineffective tests; supports plain trackers and optional isolated behavioral revert checks; demonstrates three merged fleet items and a seeded gamed change; unchanged npm and Bun release gates pass
+actual_result: "Merged at 2026-10-22T11:05:18Z; no readable required checks, so every completed head check run had to succeed, be neutral or be skipped; successful checks: CodeQL, CodeRabbit, codeql, cubic · AI code reviewer, test (22), test (26)"
 comments[32]{created_at,author,text}:
   "2026-10-21T15:11:53.850Z",codex-agent,"Overlap checked: pm help exposes linked-test execution but no independent criterion verification; pm-ops verify-release executes package gates and assurance measures thresholds; pm-lint validates context quality and explicitly does not certify evidence; pm-context assembles handoff evidence. pm-review owns the independent closeout verdict. Design: conservative criterion binding to fresh named test results, typed gate findings, git baseline or recorded linked-file state, isolated optional source revert. No automatic closure."
   "2026-10-21T15:21:21.114Z",codex-agent,"Initial behavioral acceptance now passes: a plain tracker proves a named criterion from a fresh run and becomes sensitive after source-only restore; a vacuous passing test is flagged source_unexecuted and revert_survived. Source item bytes remain unchanged. The pinned host rejects universal read-output controls on test mutations; the runner omits those controls. Full release coverage and three merged-item demonstrations are next."
@@ -96,4 +101,5 @@ docs[3]{path,scope}:
   docs/closeout-dogfood.md,project
   docs/closeout.md,project
   README.md,project
+close_reason: "{\"pr\":25,\"url\":\"https://github.com/unbraind/pm-review/pull/25\",\"merge_commit_sha\":\"260d41c13b4e97fd623973cd16eb5b196b13c651\",\"head_sha\":\"a405f62ac6a51364852931e228dafb73c4b44447\",\"merged_at\":\"2026-10-22T11:05:18Z\",\"checks\":[\"CodeQL\",\"CodeRabbit\",\"codeql\",\"cubic · AI code reviewer\",\"test (22)\",\"test (26)\"]}"
 body: ""
