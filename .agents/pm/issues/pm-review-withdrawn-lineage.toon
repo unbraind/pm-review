@@ -2,18 +2,21 @@ id: pm-review-withdrawn-lineage
 title: Keep live finding responses usable after source withdrawal
 description: "Fix https://github.com/unbraind/pm-review/issues/30 . A verified withdrawn observation must retain lineage evidence without blocking responses and status for live siblings."
 type: Issue
-status: in_progress
+status: closed
 priority: 1
-tags: []
+tags[1]: "gh:unbraind/pm-review#30"
 created_at: "2026-10-22T21:57:59.333Z"
-updated_at: "2026-10-22T22:01:53.852Z"
+updated_at: "2026-10-23T06:43:15.367Z"
+closed_at: "2026-10-23T06:43:15.330Z"
+completed_at: "2026-10-23T06:43:15.330Z"
 author: codex-agent
 acceptance_criteria: Fixed/refused canonical and noncanonical source withdrawal preserves live responses and status; Withdrawn evidence remains intact and is reported; Reappearance restores response eligibility and deduplication; Unverified missing sources still refuse and partial imports do not infer withdrawal
 parent: pm-review-finding-lineage
-comments[3]{created_at,author,text}:
+comments[4]{created_at,author,text}:
   "2026-10-22T21:58:16.748Z",codex-agent,"Read issue 30 in full, including its evidence limits and regression criteria; no comments were present. Existing lineage work is merged and remains unchanged. Reproduce the exact two-provider confirmed-lineage scenario in real SDK temporary trackers, then skip only explicitly withdrawn sources and expose their ids in response/status receipts. Keep unverified missing-source failures, test fix/refuse and canonical/noncanonical withdrawal, preserved audit and reappearance. CLI registry remains 2026.10.22; dependency pins stay unchanged. Full npm/Bun release gates will run in CI under the existing shared-host constraint."
   "2026-10-22T21:59:56.798Z",codex-agent,"Baseline reproduction fails with the exact issue error: Recorded verdict thread is missing from the complete PR snapshot. The fix scopes response requirements to non-withdrawn observations and exposes optional withdrawn_items in planner, respond and status receipts. The real tracker matrix covers fix/refuse and canonical/noncanonical withdrawal, including the exact B-only local fix from issue 30, unchanged retained body/reason/commit/comments, live dry-run/application, reappearance and retry deduplication, pending withdrawn exclusion, partial-import behavior and all three missing-source guards. Each test runs with an empty PATH and fenced git discovery; no GitHub or SDK mocks are used for persistence."
   "2026-10-22T22:01:48.097Z",codex-agent,"Verification: pm test pm-review-withdrawn-lineage --run --progress --timeout 600 passed 3/3 linked commands: node --test test/withdrawn-lineage.test.ts (4 passed, 0 failed), npm run typecheck, npm run lint. npm run build:test and npm run build also pass. Documentation gate covers 103 declarations across 30 files; duplication is 0/7338 lines across 49 sources. Three independent scratch-copy function-only reverts from origin/main each exit 1 for node --test --test-name-pattern=\"fix, canonical withdrawn\" test/withdrawn-lineage.test.ts: restoring responsePlan reproduces the original missing-thread raw error; restoring respond fails its withdrawn_items assertion; restoring reviewStatus fails its withdrawn_items assertion. Real SDK tracker persistence is used throughout. Full exact-head npm/Bun release counts and run URL will be recorded in the fix PR. No thresholds changed; no issue closure or release."
+  "2026-10-23T06:43:12.364Z",claude-orchestrator,"Linked to GitHub issue #30 with the gh:unbraind/pm-review#30 provenance tag, so the gated issue sync updates this item instead of importing a duplicate (sync PR #32 had created pm-review-github-d686d81c4a08-30 for the same fix). Verified delivery: PR #31 merged 2026-10-22T22:08Z as f72250e4 with test/withdrawn-lineage.test.ts; issue #30 closed as completed."
 files[2]{path,scope}:
   src/respond.ts,project
   test/withdrawn-lineage.test.ts,project
@@ -25,4 +28,5 @@ docs[3]{path,scope}:
   docs/finding-lineage.md,project
   docs/respond.md,project
   README.md,project
+close_reason: "Delivered by PR #31 (merged f72250e4, 2026-10-22): responsePlan skips verified-withdrawn sources and keeps live sibling replies and reviewStatus working; regression tests in test/withdrawn-lineage.test.ts; issue #30 closed as completed."
 body: "Issue: https://github.com/unbraind/pm-review/issues/30"
