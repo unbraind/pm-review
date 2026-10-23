@@ -1,0 +1,18 @@
+id: pm-review-bun-closeout-copy
+title: Investigate intermittent native Bun closeout copy failure
+description: Packed acceptance on Node 22 reached the native Bun closeout smoke test and returned workspace-copy/ENOENT. Envelope verdict assertions had already passed. The same code passed both packed checks on Node 26. Cause is not established; investigate disposable copy stability without weakening artifact-link policy.
+type: Issue
+status: open
+priority: 2
+tags: []
+created_at: "2026-10-23T17:48:22.873Z"
+updated_at: "2026-10-23T17:48:25.637Z"
+author: codex-agent
+parent: pm-review-epic
+repro_steps: "Inspect https://github.com/unbraind/pm-review/actions/runs/39996625199/job/120561709283 and compare the successful Node 26 packed executions at the same code commit 82f0c24. Run packed npm/Bun acceptance repeatedly in isolated consumers to determine which copy entry disappears."
+expected_result: Native Bun closeout prepares a stable disposable workspace or a precise actionable refusal.
+actual_result: "CI run 39996625199, attempt 1: test (22) packed acceptance failed at closeout preparation with execution_missing and workspace-copy/ENOENT; test (26), including Bun release gates, passed."
+files[2]{path,scope}:
+  src/closeout-run.ts,project
+  test/install.acceptance.ts,project
+body: ""
