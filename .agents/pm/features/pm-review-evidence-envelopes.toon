@@ -3,14 +3,19 @@ title: Import provider-neutral review evidence envelopes
 description: "Import explicit code or document review artifacts through a common typed envelope with bounded inputs, immutable source identity and honest provenance."
 type: Feature
 pm_format_version: 2
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-23T16:45:35.791Z"
-updated_at: "2026-10-23T17:48:34.813Z"
+updated_at: "2026-10-24T08:37:53.019Z"
+closed_at: "2026-10-24T08:37:53.004Z"
+completed_at: "2026-10-23T18:04:35.000Z"
 author: codex-agent
 acceptance_criteria: Local-file and synthetic HTTP imports deduplicate and preserve source revisions; Unsupported provenance cannot establish review completion; Typed SDK and CLI return compact TOON or JSON with remedies; Read-only public fleet tracker validation works without git; CI release gates pass with unchanged npm and Bun thresholds; Envelope findings receive local verdicts through the public CLI and SDK without GitHub coordinates
 parent: pm-review-epic
+resolution: "Delivered by https://github.com/unbraind/pm-review/pull/38 (merge 536af20dbe24, head 03ce2b22150a)"
+expected_result: Local-file and synthetic HTTP imports deduplicate and preserve source revisions; Unsupported provenance cannot establish review completion; Typed SDK and CLI return compact TOON or JSON with remedies; Read-only public fleet tracker validation works without git; CI release gates pass with unchanged npm and Bun thresholds; Envelope findings receive local verdicts through the public CLI and SDK without GitHub coordinates
+actual_result: "Merged at 2026-10-23T18:04:35Z; no readable required checks, so every completed head check run had to succeed, be neutral or be skipped; successful checks: CodeQL, CodeRabbit, codeql, test (22), test (26)"
 comments[10]{created_at,author,text}:
   "2026-10-23T16:45:55.154Z",codex-agent,"Overlap rechecked against current CLI 2026.10.23 and sibling packages: core structured notes provide storage and attribution without review lifecycle; pm-observer captures explicit agent-event exports and summaries, not ReviewFinding provenance or review completion. Existing pm-review import remains the GitHub live adapter. Plan: typed explicit artifact envelope, canonical provider/origin/artifact/revision/finding identity, digest-pinned file and HTTP input, immutable replay and typed refusals. Declared artifact provenance never establishes completion. Use SDK schema, certified complete reads, native create locks/history, and host output; no git on ingestion paths. Pinned SDK retained as requested."
   "2026-10-23T16:53:38.830Z",codex-agent,"Initial targeted suite: 8/8 passed, including real host TOON/JSON with PATH containing no git, pinned local and synthetic HTTP replay, revision preservation, completion/coverage refusal and concurrent SDK creates. Local typecheck and lint passed; duplication remains 0%; 114 declarations documented. Read-only public validation: 51 items, 22 ReviewFinding rows, 17 with known revisions imported once and replayed over synthetic HTTP (17 reused); 5 missing-revision rows held; 2 revisions preserved; 108 durable public-source files unchanged; largest JSON receipt 254 bytes; zero completion claims. Added packed npm/Bun ingest assertions for CI and checking governance/error paths before final gates."
@@ -62,4 +67,5 @@ docs[3]{path,scope}:
   docs/evidence-envelopes-validation.md,project
   examples/review-evidence.json,project
   README.md,project
+close_reason: "{\"pr\":38,\"url\":\"https://github.com/unbraind/pm-review/pull/38\",\"merge_commit_sha\":\"536af20dbe24b5faa5f8597046bc6d02571a6f3c\",\"head_sha\":\"03ce2b22150ae24f2f3671fd4e45c2a5f0ec24b7\",\"merged_at\":\"2026-10-23T18:04:35Z\",\"checks\":[\"CodeQL\",\"CodeRabbit\",\"codeql\",\"test (22)\",\"test (26)\"]}"
 body: ""
