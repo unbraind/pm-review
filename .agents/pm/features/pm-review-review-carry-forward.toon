@@ -2,14 +2,19 @@ id: pm-review-review-carry-forward
 title: Carry review attention across unaffected artifact revisions
 description: Compare explicitly reviewed artifact and criterion digests across revisions while keeping retained attention separate from exact-artifact approval.
 type: Feature
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-25T05:49:03.857Z"
-updated_at: "2026-10-25T06:18:11.536Z"
+updated_at: "2026-10-25T09:06:15.380Z"
+closed_at: "2026-10-25T09:06:15.371Z"
+completed_at: "2026-10-25T06:32:20.000Z"
 author: codex-agent
 acceptance_criteria: Unrelated artifact edits preserve only unaffected obligations; Touched evidence invalidates its judgments; Retained attention never becomes fresh exact-artifact approval; Typed SDK and agent-sized CLI with actionable refusals work without git; Seeded state and replay properties and every read interleaving are verified on a plain tracker; Read-only public tracker measurements and npm plus Bun CI release gates are recorded
 parent: pm-review-epic
+resolution: "Delivered by https://github.com/unbraind/pm-review/pull/42 (merge c4915fedb0c4, head a0828b8550a0)"
+expected_result: Unrelated artifact edits preserve only unaffected obligations; Touched evidence invalidates its judgments; Retained attention never becomes fresh exact-artifact approval; Typed SDK and agent-sized CLI with actionable refusals work without git; Seeded state and replay properties and every read interleaving are verified on a plain tracker; Read-only public tracker measurements and npm plus Bun CI release gates are recorded
+actual_result: "Merged at 2026-10-25T06:32:20Z; no readable required checks, so every completed head check run had to succeed, be neutral or be skipped; successful checks: CodeQL, CodeRabbit, codeql, test (22), test (26)"
 comments[6]{created_at,author,text}:
   "2026-10-25T05:49:32.753Z",codex-agent,"Overlap rechecked against the pinned CLI SDK and fleet pm-review, pm-evidence and pm-context sources. Coverage records whole-contract criterion attention; lineage joins equivalent observations; core supplies verified historical item reads and complete native fields; pm-evidence owns citation/version resolution. None computes obligation scope across artifact revisions. Design: read-only explicit review scope receipts captured from verified SDK history; compare per-criterion selected native fields and complete evidence digests against current SDK state, report unchanged/stale/never-reviewed/removed obligations, always leave exact-artifact approval unverified. No new import/export/sync mutations, leases, outboxes or idempotency keys. Exercise receipt JSON replay plus all touched native fields and relationships through real SDK readback. Published CLI is now 2026.10.25; retain the existing 2026.10.20 pin as instructed."
   "2026-10-25T06:02:57.472Z",codex-agent,"Implemented read-only captureReviewScope/carryForwardReview and review scope/review carry-forward. Uses core verified historical get and typed history_target_out_of_range version facts; no native tracker serialization, SDK mocks, writer state, imports or idempotency keys. Successor evidence revisions invalidate even restored bytes/timestamps. Functional and every-read-boundary tests currently pass. Public origin/main snapshot: 54 items, 733 history versions, 23 artifacts and JSON/CRLF receipt replays, 21 unchanged obligations, 2 stale, 93 never reviewed, 31 no-criterion/history refusals, 114 source files byte-identical, largest report 1209 bytes, zero exact-artifact approvals."
@@ -41,4 +46,5 @@ docs[3]{path,scope}:
   docs/review-carry-forward-validation.md,project
   docs/review-carry-forward.md,project
   README.md,project
+close_reason: "{\"pr\":42,\"url\":\"https://github.com/unbraind/pm-review/pull/42\",\"merge_commit_sha\":\"c4915fedb0c42c67b10f02279089601bc58e3cbe\",\"head_sha\":\"a0828b8550a01cbe5eb69570f55ac0858ff51a7e\",\"merged_at\":\"2026-10-25T06:32:20Z\",\"checks\":[\"CodeQL\",\"CodeRabbit\",\"codeql\",\"test (22)\",\"test (26)\"]}"
 body: ""
