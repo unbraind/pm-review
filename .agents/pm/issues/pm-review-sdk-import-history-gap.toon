@@ -1,0 +1,19 @@
+id: pm-review-sdk-import-history-gap
+title: Track core imported relationship history replay refusal
+description: "Pinned core SDK 2026.10.20 reproduction on a plain tracker: create a source Task, create a target Task with a related dependency, verify historical version 1, readLocatedItem, change only description, and call commitImportedItem with that document. get at version 2 then refuses with history_replay_invalid and verify_failed:before_hash_mismatch:entry_2. This is outside revision-scoped review implementation; review scope safely returns history_unavailable instead of trusting the artifact. No source tracker history was repaired or rewritten."
+type: Issue
+status: open
+priority: 2
+tags: []
+created_at: "2026-10-25T06:04:42.850Z"
+updated_at: "2026-10-25T06:12:58.549Z"
+author: codex-agent
+acceptance_criteria: Reproduce against current core SDK; Preserve existing native relationship fields and append-only replay integrity across imported updates; Keep review history refusals conservative until the upstream import path is fixed
+parent: pm-review-epic
+comments[1]{created_at,author,text}:
+  "2026-10-25T06:06:39.645Z",codex-agent,"Confirmed independently with a minimal real non-git tracker on pinned SDK 2026.10.20: the only imported change was description on an existing Task with one related dependency. Historical version 1 read succeeded before import; version 2 read failed afterward with history_replay_invalid / verify_failed:before_hash_mismatch:entry_2. New-item SDK imports used for model seeding remain replayable. No workaround repairs or rewrites history. Report this SDK gap in the handoff; do not file upstream from this task."
+files[1]{path,scope}:
+  test/scope-model.test.ts,project
+docs[1]{path,scope}:
+  docs/review-carry-forward.md,project
+body: ""

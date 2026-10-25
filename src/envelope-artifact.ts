@@ -10,7 +10,7 @@ import type { EnvelopeInput, EnvelopeResult } from './envelope-types.ts';
 const LIMIT = 1024 * 1024;
 
 /** Read exactly one regular file with a bounded buffer, including concurrent file growth. */
-async function fileBytes(file: string): Promise<Buffer | undefined> {
+export async function fileBytes(file: string): Promise<Buffer | undefined> {
   const handle = await open(file, constants.O_RDONLY | constants.O_NONBLOCK);
   try {
     if (!(await handle.stat()).isFile()) throw new Error('regular file required');

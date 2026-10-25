@@ -246,6 +246,8 @@ requires Git; GitHub commands require provider credentials and connectivity.
 Criterion coverage reads and explicit judgment writes work in plain trackers
 without git or GitHub access, using previously imported evidence. Finding lineage
 reads and confirmations also work everywhere on existing tracker observations.
+Revision-scoped review capture and comparison work in plain trackers using
+verified SDK history; they need neither Git nor a review provider.
 
 ## Criterion review coverage
 
@@ -389,3 +391,21 @@ passing parsed objects own their transport integrity checks; use
 `importReviewArtifact` to enforce byte pins. Schema persistence, certified complete
 reads, item creation, attribution and history use the PM SDK rather than a separate
 storage or locking implementation.
+
+
+## Revision-scoped review carry-forward
+
+Capture explicitly reviewed native item fields and evidence at verified history
+versions, then compare their digests with a new artifact:
+
+```sh
+pm review scope sample-task --file selection.json --json > baseline.json
+pm review carry-forward sample-task --file baseline.json --json
+```
+
+Unrelated edits preserve unaffected obligations as attention. Changed criteria,
+selected fields, or evidence revisions make dependent judgments stale. Omitted
+criteria remain never reviewed. Retained attention always returns
+`approval: unverified`; it cannot satisfy fresh exact-artifact review gates.
+
+[Selection example, typed SDK, refusals and concurrency semantics](docs/review-carry-forward.md).
