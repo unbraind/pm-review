@@ -7,7 +7,7 @@ import { canonicalDocument, commitImportedItem, getHistoryPath, getItemPath, loc
 import type { GetResult, ItemDocument } from '@unbrained/pm-cli/sdk';
 import { captureReviewScope } from '../src/scope.ts';
 import { reviewScopeFile } from '../src/scope-file.ts';
-import type { CarryForwardReport, ReviewScope } from '../src/scope-types.ts';
+import type { CarryForwardReport, ReviewScope, ScopeObligation } from '../src/scope-types.ts';
 import { scopeFixture } from './scope-fixture.ts';
 import { richScopeDocument } from './scope-model-fixture.ts';
 import { inFixtureWorkspace } from './helpers.ts';
@@ -20,15 +20,15 @@ function random(seed: number): () => number {
 
 /** Reference state stores SDK-native values and explicit revision identity, with no private normalization rules. */
 interface Reference {
-  receipt: ReviewScope; artifact: GetResult['item']; evidence: GetResult['item']; evidenceVersion: number;
+  receipt: ReviewScope; obligations: ScopeObligation[]; artifact: GetResult['item']; evidence: GetResult['item']; evidenceVersion: number;
 }
 
 /** Independent value-equality model: field values and evidence version must match the reviewed observations. */
 function referenceCounts(model: Reference, current: GetResult['item'], evidence: GetResult['item'], evidenceVersion: number): CarryForwardReport['counts'] {
   const counts = { unchanged: 0, stale: 0, never_reviewed: 0, removed: 0 };
-  for (const row of model.receipt.obligations) {
+  for (const row of model.obligations) {
     if (row.judgment === 'gap') counts.never_reviewed++;
-    else if (row.fields.some(field => !isDeepStrictEqual(model.artifact[field.name], current[field.name])) || row.evidence.length > 0 && (model.evidenceVersion !== evidenceVersion || !isDeepStrictEqual(model.evidence, evidence))) counts.stale++;
+    else if (row.fields.some(field => !isDeepStrictEqual(model.artifact[field], current[field])) || row.evidence.length > 0 && (model.evidenceVersion !== evidenceVersion || !isDeepStrictEqual(model.evidence, evidence))) counts.stale++;
     else counts.unchanged++;
   }
   return counts;
@@ -65,9 +65,10 @@ test('seeded model: 500 random operation sequences preserve all native SDK state
       await client.get(id, { full: true, at: String(input.version) });
       const receipt = await captureReviewScope(client, id, input) as ReviewScope;
       assert.equal(receipt.ok, true, `seed=${seed} sequence=${sequence} receipt=${JSON.stringify(receipt)}`);
+      assert.deepEqual(receipt.obligations.map(row => ({ criterion: row.criterion, fields: row.fields.map(field => field.name), evidence: row.evidence.map(source => ({ id: source.id, version: source.version })), judgment: row.judgment })), input.obligations, 'Receipt silently dropped or changed declared scope');
       const sdkState = (await client.get(id, { full: true })).item;
       // Recapture evidence at its explicitly selected historical version, not current values.
-      references.push({ receipt, artifact: sdkState, evidence: (await client.get(evidence, { full: true, at: '1' })).item, evidenceVersion: 1 });
+      references.push({ receipt, obligations: structuredClone(input.obligations) as ScopeObligation[], artifact: sdkState, evidence: (await client.get(evidence, { full: true, at: '1' })).item, evidenceVersion: 1 });
       await writeFile(file, JSON.stringify(input, null, sequence % 2 === 0 ? 2 : 0).replaceAll('\n', sequence % 2 === 0 ? '\r\n' : '\n'));
       assert.deepEqual(await reviewScopeFile(client, id, file, true), receipt);
       operations++;
@@ -76,7 +77,12 @@ test('seeded model: 500 random operation sequences preserve all native SDK state
     const length = 3 + next() % 3;
     for (let operation = 0; operation < length; operation++) {
       const choice = next() % 5;
-      if (choice === 0) await client.update(id, { description: `  value ${next()}\r\nsecond line  `, body: `  body ${next()}\nlast line  ` });
+      if (choice === 0) {
+        const value = next();
+        const body = next();
+        const previous = (await client.get(id, { full: true })).item;
+        await client.update(id, { description: sequence % 2 === 0 ? `${previous.description}\r\n  ` : `  value ${value}\r\nsecond line  `, body: sequence % 2 === 0 ? `${previous.body}\r\n  ` : `  body ${body}\nlast line  ` });
+      }
       else if (choice === 1) await client.update(id, { dep: [`id=${evidence},kind=${next() % 2 ? 'blocks' : 'related'},author=model-agent,created_at=2026-10-01T10:00:00.000Z,source_kind=related_to`] });
       else if (choice === 2) await client.update(evidence, { description: `  evidence ${next()}\r\nsecond line  ` });
       else if (choice === 3) {
