@@ -1,3 +1,4 @@
+import { reviewScopeFile } from './scope-file.ts';
 import { importReviewArtifact } from './envelope-artifact.ts';
 import { createPmCliExpectedError, isPmCliExpectedError, PmClient, printResult, readBooleanOption, readStringOption, suppressHostOutput } from '@unbrained/pm-cli/sdk';
 import { defineCommand } from '@unbrained/pm-cli/sdk/authoring';
@@ -45,6 +46,10 @@ export async function runReviewCommand(ctx: CommandHandlerContext, provided?: Gi
 /** Run one dispatched package command; separated so the wrapper above stays the single error boundary. */
 async function dispatchReviewCommand(ctx: CommandHandlerContext, provided?: GitHubTransport): Promise<unknown> {
   const client = ctx.sdk?.client ?? new PmClient({ cwd: ctx.source_workspace_root ?? ctx.repo_root, pmRoot: ctx.pm_root, author: ctx.global.author });
+  if (ctx.command === 'review scope' || ctx.command === 'review carry-forward') {
+    const result = await reviewScopeFile(client, ctx.args[0] ?? '', readStringOption(ctx.options, 'file') ?? '', ctx.command === 'review scope');
+    return result.ok ? result : { ...result, exit_code: 1 };
+  }
   if (ctx.command === 'review ingest') {
     const result = await importReviewArtifact(client, { file: readStringOption(ctx.options, 'file'), url: readStringOption(ctx.options, 'url'), sha256: readStringOption(ctx.options, 'sha256') ?? '' });
     return result.ok ? result : { ...result, exit_code: 1 };
@@ -117,6 +122,7 @@ const RESPONSE_FLAGS: FlagDefinition[] = [
 /** Register help, typed positional arguments and command handlers through the host API. */
 export function registerReviewCommands(api: ExtensionApi): void {
   const commands = [
+    ...['scope', 'carry-forward'].map(/** The host renders compact TOON by default and JSON on request. */ name => ({ name, description: name === 'scope' ? 'Capture explicitly reviewed native fields at verified historical revisions' : 'Compare review obligations across artifact revisions; attention never grants approval', arguments: [{ name: 'item', required: true, description: 'Target artifact tracker item' }], flags: [{ long: '--file', type: 'string' as const, description: 'Explicit scope selection JSON (scope) or captured receipt JSON (carry-forward)' }], example: `pm review ${name} sample-task --file ${name === 'scope' ? 'selection' : 'baseline'}.json --json` })),
     { name: 'ingest', description: 'Import a digest-pinned provider-neutral review artifact; completion remains unverified', arguments: [], flags: ['file', 'url', 'sha256'].map(/** Explicit selectors keep ingestion separate from live GitHub snapshots. */ name => ({ long: `--${name}`, type: 'string' as const, description: name === 'sha256' ? 'Independently verified SHA-256 of the artifact bytes' : `Explicit artifact ${name}; select exactly one file or URL` })), example: 'pm review ingest --file review.json --sha256 DIGEST --json' },
     { name: 'lineage', description: 'Read one canonical disposition; propose or explicitly confirm matching observations', arguments: [{ name: 'item', required: true, description: 'Imported ReviewFinding item id' }], flags: [{ long: '--with', type: 'string' as const, description: 'Candidate observation id from core duplicates or pm-jev' }, { long: '--confirm', type: 'boolean' as const, description: 'Confirm the proposed identity using --revision and --reason' }, { long: '--revision', type: 'string' as const, description: 'Current pair proposal hash' }, { long: '--reason', type: 'string' as const, description: 'Why these observations describe one logical finding' }], example: 'pm review lineage finding-id --with other-finding-id --json' },
     { name: 'coverage', description: 'Read explicit criterion review attention and stale judgments; no completion claim', arguments: [{ name: 'item', required: true, description: 'Item declaring acceptance and risk criteria' }], flags: [], example: 'pm review coverage sample-task --json' },

@@ -53,7 +53,7 @@ function consumerEnv(cwd: string, pmRoot: string, home = cwd): NodeJS.ProcessEnv
     const prefix = runtime === 'npm' ? ['--no-install', 'pm'] : ['--bun', '--no-install', 'pm'];
     command(cwd, runner, [...prefix, 'init', 'consumer', '--defaults', '--agent-guidance', 'skip', '--json'], pmRoot);
     command(cwd, runner, [...prefix, 'install', tarball, '--project', '--json'], pmRoot);
-    for (const action of ['ingest', 'import', 'verdict', 'round', 'precedents', 'reconcile', 'respond', 'status', 'closeout', 'coverage', 'cover', 'lineage']) assert.match(command(cwd, runner, [...prefix, 'review', action, '--help'], pmRoot), /review/);
+    for (const action of ['ingest', 'import', 'verdict', 'round', 'precedents', 'reconcile', 'respond', 'status', 'closeout', 'coverage', 'cover', 'lineage', 'scope', 'carry-forward']) assert.match(command(cwd, runner, [...prefix, 'review', action, '--help'], pmRoot), /review/);
     assert.match(command(cwd, runner, [...prefix, 'review', 'reconcile', '--help'], pmRoot), /--dry-run/);
     const verdictHelp = command(cwd, runner, [...prefix, 'review', 'verdict', '--help'], pmRoot);
     assert.doesNotMatch(verdictHelp, /<value>\s+<value>/);
@@ -73,6 +73,7 @@ function consumerEnv(cwd: string, pmRoot: string, home = cwd): NodeJS.ProcessEnv
     assert.equal(coverage.total, 1);
     assert.equal(coverage.unreviewed, 1);
     assert.match(command(cwd, runner, [...prefix, 'review', 'coverage', coverageTarget.id], pmRoot), /unreviewed/);
+    await verifyCarryForward(cwd, runner, prefix, pmRoot, coverageTarget.id);
     const evidence = JSON.parse(command(cwd, runner, [...prefix, 'create', 'ReviewFinding', 'Packed substantive review', '--description', 'Validate the input before writing.', '--field', 'review_bot=synthetic-reviewer', '--field', 'review_node_id=packed-node', '--field', 'review_repo=example/package', '--field', 'review_pr=2', '--field', 'review_url=https://github.com/example/package/pull/2#discussion_r1', '--field', `review_head=${'a'.repeat(40)}`, '--field', 'review_kind=thread', '--json'], pmRoot)) as { id: string };
     const lineage = JSON.parse(command(cwd, runner, [...prefix, 'review', 'lineage', evidence.id, '--json'], pmRoot)) as { canonical: string; observations: unknown[] };
     assert.equal(lineage.canonical, evidence.id);
@@ -167,4 +168,22 @@ async function verifyCloseout(cwd: string, runner: string, prefix: string[], pmR
   assert.equal(refused.error, undefined);
   assert.equal(refused.status, 1, refused.stderr);
   assert.equal((JSON.parse(refused.stdout) as { criteria: { verdict: string }[] }).criteria[0].verdict, 'unproven');
+}
+
+/** Verify installed capture/JSON transport/TOON comparison and typed process refusals on both runtimes. */
+async function verifyCarryForward(cwd: string, runner: string, prefix: string[], pmRoot: string, id: string): Promise<void> {
+  const file = join(cwd, 'scope.json');
+  await writeFile(file, JSON.stringify({ version: 1, author: 'install-test', reason: 'Explicit packed validation review', obligations: [{ criterion: 'AC1', fields: ['description'], evidence: [], judgment: 'reviewed' }] }));
+  const capture = command(cwd, runner, [...prefix, 'review', 'scope', id, '--file', 'scope.json', '--json'], pmRoot);
+  await writeFile(file, capture);
+  command(cwd, runner, [...prefix, 'update', id, '--priority', '1', '--json'], pmRoot);
+  const args = [...prefix, 'review', 'carry-forward', id, '--file', 'scope.json'];
+  const report = JSON.parse(command(cwd, runner, [...args, '--json'], pmRoot)) as { counts: { unchanged: number }; approval: string; artifact_changed: boolean };
+  assert.equal(report.counts.unchanged, 1);
+  assert.equal(report.approval, 'unverified');
+  assert.equal(report.artifact_changed, true);
+  assert.match(command(cwd, runner, args, pmRoot), /unchanged: 1/);
+  const invalid = spawnSync(runner, [...prefix, 'review', 'carry-forward', id, '--file', 'absent.json', '--json'], { cwd, env: consumerEnv(cwd, pmRoot), encoding: 'utf8' });
+  assert.equal(invalid.status, 1);
+  assert.equal((JSON.parse(invalid.stdout) as { refusal: { code: string } }).refusal.code, 'scope_unavailable');
 }

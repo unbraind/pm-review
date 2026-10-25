@@ -1,3 +1,8 @@
+/** Export revision-scoped attention capture and read-only carry-forward. */
+export { captureReviewScope, carryForwardReview } from './src/scope.ts';
+/** Export portable scope receipts, reports and typed remedies. */
+export type { ScopeObligation, ScopeSelection, ReviewScope, ScopeCode, ScopeRefusal, ScopeResult, CarryForwardReport, CarryForwardResult } from './src/scope-types.ts';
+
 /** Export explicit backend-neutral artifact ingestion and its portable contracts. */
 export { importEvidenceEnvelope } from './src/envelopes.ts';
 /** Export bounded local-file and HTTP artifact imports. */
