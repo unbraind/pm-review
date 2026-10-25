@@ -134,3 +134,20 @@ test('bounded UTF-8 receipt files and registered commands run without git and pr
     if (previousCeiling === undefined) delete process.env.GIT_CEILING_DIRECTORIES; else process.env.GIT_CEILING_DIRECTORIES = previousCeiling;
   }
 });
+
+
+test('cache-primed historical scope still detects subsequently corrupted native history', async t => {
+  const { client, id, evidence, selection, pmRoot } = await scopeFixture(t);
+  const baseline = await captureReviewScope(client, id, selection);
+  assert.equal(baseline.ok, true);
+  await client.get(evidence, { full: true });
+  await client.listAllComplete();
+  const artifactHistory = await readFile(join(pmRoot, 'history', `${id}.jsonl`), 'utf8');
+  const source = join(pmRoot, 'history', `${evidence}.jsonl`);
+  const entries = (await readFile(source, 'utf8')).trim().split('\n').map(line => JSON.parse(line));
+  entries[0].after_hash = '0'.repeat(64);
+  await writeFile(source, entries.map(entry => JSON.stringify(entry)).join('\n') + '\n');
+  scopeDenied(await captureReviewScope(client, id, selection), 'history_unavailable');
+  scopeDenied(await carryForwardReview(client, id, baseline), 'history_unavailable');
+  assert.equal(await readFile(join(pmRoot, 'history', `${id}.jsonl`), 'utf8'), artifactHistory);
+});

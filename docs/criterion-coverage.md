@@ -1,7 +1,8 @@
 # Criterion review coverage
 
 The authoritative declaration is the target item's `acceptance_criteria`, split at
-semicolons and newlines just like closeout. Risk criteria belong in that declaration;
+semicolons through the pm SDK `splitAcceptanceCriteria`, like closeout and review
+scope. Newlines are retained inside one criterion. Risk criteria belong in that declaration;
 this package does not create a competing assurance language. Core assurance continues
 to own quantitative contracts, assertions and lifecycle enforcement.
 
@@ -10,6 +11,27 @@ of the complete, exact declaration, ordered `AC1`, `AC2`, ... criteria, and coun
 reviewed and unreviewed criteria. Gap criteria count as unreviewed. Even whitespace
 changes invalidate old mappings. Returning to the identical declaration restores
 its content revision; this is content binding, not a monotonic edit counter.
+
+SDK adoption changes multiline declarations: `First line\ncontinuation; Second`
+now has two criteria, rather than three. All declarations containing a newline
+use a versioned revision hash (`["review-criteria/v2", declaration]`); existing
+mappings for those declarations are refused with `criteria_changed` and must be
+reassessed using the newly displayed AC identifiers. Single-line declarations
+retain their existing revision and identifiers. Old review scope receipts for
+changed criterion wording must also be recaptured; closeout uses the same SDK
+boundaries. Multiline closeout contracts require explicit `closeout-v2 AC1:`
+comment bindings; legacy `closeout AC1:` bindings are ignored to prevent silent
+retargeting. Stored comments and history remain unchanged.
+
+A cover request retrieves its named evidence with `PmClient.get(..., { full: true })`.
+Only native not-found errors become `evidence_missing`; storage and other SDK
+failures propagate. Native validation also rejects unsafe or malformed evidence
+selectors rather than treating them as absent. Exact canonical evidence
+identifiers remain required.
+Coverage map reads retain `listAllComplete` certification for the judgment corpus.
+Neither replaced path previously verified history chains: coverage binds current
+item content and does not attest history integrity. Historical review scope still
+uses verified SDK reconstruction, including after read caches have been primed.
 
 Record a judgment with `pm review cover <item> --revision HASH --criterion AC1
 --evidence FINDING --excerpt 'Exact review text of at least 24 characters'

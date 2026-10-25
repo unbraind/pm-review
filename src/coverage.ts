@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { EXIT_CODE, isPmCliExpectedError, splitAcceptanceCriteria } from '@unbrained/pm-cli/sdk';
 import type { ItemMetadata, PmClient } from '@unbrained/pm-cli/sdk';
 import { itemEvidence } from './closeout.ts';
 import { isInformational } from './findings.ts';
@@ -73,9 +74,9 @@ function validate(binding: CoverageBinding, map: CoverageMap, evidence: ItemMeta
 export async function reviewCoverage(client: PmClient, id: string): Promise<CoverageResult> {
   const item = (await client.get(id, { full: true })).item;
   const { acceptance_criteria: contract, comments } = itemEvidence(item);
-  const texts = contract.split(/[;\n]/).map(/** Match the closeout criterion selector contract. */ text => text.trim()).filter(Boolean);
+  const texts = splitAcceptanceCriteria(contract);
   if (texts.length === 0) return { ok: false, id, refusal: refusal('criteria_missing') };
-  const map: CoverageMap = { ok: true, id, revision: digest(contract), total: texts.length, reviewed: 0, unreviewed: texts.length, criteria: texts.map(/** Keep criterion wording available while omitting full review bodies. */ (text, index) => ({ id: `AC${index + 1}`, text, state: 'unreviewed' })), judgments: [] };
+  const map: CoverageMap = { ok: true, id, revision: digest(contract.includes('\n') ? ['review-criteria/v2', contract] : contract), total: texts.length, reviewed: 0, unreviewed: texts.length, criteria: texts.map(/** Keep criterion wording available while omitting full review bodies. */ (text, index) => ({ id: `AC${index + 1}`, text, state: 'unreviewed' })), judgments: [] };
   const sources = new Map((await client.listAllComplete()).items.map(/** Complete reads prevent terminal or paginated evidence disappearing. */ source => [source.id, source]));
   for (const [index, comment] of comments.entries()) {
     if (!comment.text.startsWith(PREFIX)) continue;
@@ -106,7 +107,14 @@ export async function reviewCoverage(client: PmClient, id: string): Promise<Cove
 export async function coverCriterion(client: PmClient, id: string, options: CoverOptions): Promise<CoverageResult> {
   const map = await reviewCoverage(client, id);
   if (!map.ok) return map;
-  const evidence = (await client.listAllComplete()).items.find(/** Missing evidence is a typed refusal, not an SDK item lookup exception. */ item => item.id === options.evidence);
+  let evidence: ItemMetadata | undefined;
+  try {
+    if (options.evidence) evidence = (await client.get(options.evidence, { full: true })).item as ItemMetadata;
+    if (evidence?.id !== options.evidence) evidence = undefined;
+  }
+  catch (error) {
+    if (!isPmCliExpectedError(error) || error.exitCode !== EXIT_CODE.NOT_FOUND) throw error;
+  }
   const { author, ...selection } = options;
   const raw = { ...selection, digest: evidence ? sourceDigest(evidence) : '' };
   const binding = bindingOf(raw);

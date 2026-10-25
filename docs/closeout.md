@@ -97,3 +97,11 @@ comparison reads.
 The pinned PM host still makes an optional Git provenance probe; missing Git is
 tolerated and the plain-tracker regression runs with Git absent from PATH.
 No source Git checkout is needed for the plain-tracker path.
+
+
+Criterion boundaries follow SDK `splitAcceptanceCriteria`: semicolons delimit
+criteria and newlines stay inside a criterion. For a declaration containing a
+newline, record mappings as `closeout-v2 AC1: test="exact test title"`. Legacy
+`closeout AC1:` comments are ignored on multiline declarations because their old
+identifiers may select different criteria. Single-line declarations continue
+using `closeout AC1:`; explicit `[test:...]` declarations work in both forms.
