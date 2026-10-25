@@ -1,3 +1,4 @@
+import { splitAcceptanceCriteria } from '@unbrained/pm-cli/sdk';
 import { resolve } from 'node:path';
 import type { ItemMetadata, PmClient } from '@unbrained/pm-cli/sdk';
 import { detectGaming, isTestFile, namedTests } from './closeout-detectors.ts';
@@ -20,8 +21,9 @@ export function criterionEvidence(text: string, index: number, item: EvidenceIte
   const names = [...text.matchAll(/\[test:([^\]]+)\]/g)].map(/** Explicit titles avoid guessing from shared vocabulary. */ match => match[1].trim());
   if (names.length === 0) names.push(text.replace(/^[-*\d.)\s]+/, '').trim());
   const comments = (item.comments ?? []).flatMap(/** Comment ids are stable one-based positions in the append-only collection. */ (comment, position) => {
-    const match = /^closeout (AC[1-9]\d*): test="([^"]+)"(?: file="([^"]+)")?$/.exec(comment.text.trim());
-    return match && match[1] === id ? [{ name: match[2], file: match[3] ?? '', comment_id: `comment:${position + 1}` }] : [];
+    const marker = item.acceptance_criteria?.includes('\n') ? 'closeout-v2' : 'closeout';
+    const match = /^(closeout(?:-v2)?) (AC[1-9]\d*): test="([^"]+)"(?: file="([^"]+)")?$/.exec(comment.text.trim());
+    return match && match[1] === marker && match[2] === id ? [{ name: match[3], file: match[4] ?? '', comment_id: `comment:${position + 1}` }] : [];
   });
   const bindings = [...(comments.length > 0 && !text.includes('[test:') ? [] : names).map(/** Direct criteria need no separate comment assertion. */ name => ({ name, file: '', comment_id: '' })), ...comments];
   const evidence = bindings.flatMap(/** A stored assertion is only a selector for independently executed evidence. */ binding => {
@@ -95,7 +97,7 @@ export async function reviewCloseout(client: PmClient, id: string, options: Clos
     checkInvocation(state.changes, execution, report);
   }
   if (item.comments.some(/** Stored success claims need an independently observed run. */ comment => /EXIT\s*:\s*0/i.test(comment.text)) && report.tests.length === 0) report.findings.push({ code: 'exit_claim_without_run', file: '', detail: 'A stored EXIT:0 claim has no fresh named test execution' });
-  const texts = item.acceptance_criteria.split(/[;\n]/).map(/** Ignore empty list separators, preserving criterion wording. */ text => text.trim()).filter(Boolean);
+  const texts = splitAcceptanceCriteria(item.acceptance_criteria);
   report.criteria = texts.map(/** Every acceptance assertion gets its own conservative verdict. */ (text, index) => criterionEvidence(text, index, item, report));
   if (options.revertCheck) {
     report.revert_check = 'inconclusive';

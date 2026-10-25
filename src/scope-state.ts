@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { isRuntimeRecord, PmCliError } from '@unbrained/pm-cli/sdk';
+import { isRuntimeRecord, PmCliError, splitAcceptanceCriteria } from '@unbrained/pm-cli/sdk';
 import type { GetResult, PmClient } from '@unbrained/pm-cli/sdk';
 import type { ScopeCode, ScopeRefusal, ScopeSelection } from './scope-types.ts';
 
@@ -54,7 +54,7 @@ export async function historicalItem(client: PmClient, id: string, version: numb
 
 /** Match the criterion selectors already used by coverage and closeout. */
 export function scopeCriteria(item: GetResult['item']): Map<string, string> {
-  return new Map((item.acceptance_criteria ?? '').split(/[;\n]/).map(/** Core's criterion boundary convention ignores list padding. */ text => text.trim()).filter(Boolean).map(/** Order changes conservatively invalidate affected AC identifiers. */ (text, index) => [`AC${index + 1}`, scopeDigest(text)]));
+  return new Map(splitAcceptanceCriteria(item.acceptance_criteria).map(/** Order changes conservatively invalidate affected AC identifiers. */ (text, index) => [`AC${index + 1}`, scopeDigest(text)]));
 }
 
 

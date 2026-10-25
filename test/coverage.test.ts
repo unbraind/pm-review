@@ -1,12 +1,16 @@
 import '../src/coverage-types.ts';
 import assert from 'node:assert/strict';
-import { mkdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { readFileSync, writeFileSync, unlinkSync, rmdirSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { createExtensionCommandSdk, commitImportedItem, locateItem, readLocatedItem, readSettings } from '@unbrained/pm-cli/sdk';
 import { activateExtensionForTest, runRegisteredCommandForTest } from '@unbrained/pm-cli/sdk/testing';
 import extension from '../index.ts';
 import type { TestContext } from 'node:test';
+import type { GetOptions } from '@unbrained/pm-cli/sdk';
+import { scopeCriteria } from '../src/scope-state.ts';
+import { reviewCloseout } from '../src/closeout.ts';
 import { coverCriterion, reviewCoverage } from '../src/coverage.ts';
 import type { CoverOptions, CoverageCode, CoverageMap, CoverageResult } from '../src/coverage-types.ts';
 import { runReviewCommand } from '../src/commands.ts';
@@ -279,4 +283,62 @@ Validate the input before writing.`, allowed: false })),
     { body: '**Summary by CodeRabbit**\nActionable comments posted: 1\nValidate the input before writing.', allowed: true },
   ];
   await checkCoverageCases(t, cases);
+});
+
+test('SDK criteria preserve multiline wording and version legacy multiline identifiers across review surfaces', async t => {
+  const { client, id, options, cwd, pmRoot } = await fixture(t);
+  await coverCriterion(client, id, options);
+  const original = (await client.get(id, { full: true })).item.comments![0];
+  const contract = 'Reject invalid input\nwith a clear error; Preserve valid values';
+  await client.update(id, { acceptanceCriteria: contract });
+  const legacy = { ...JSON.parse(original.text.slice('review-coverage/v1 '.length)), revision: createHash('sha256').update(JSON.stringify(contract)).digest('hex') };
+  await client.comments(id, { add: 'review-coverage/v1 ' + JSON.stringify(legacy) });
+  const map = await reviewCoverage(client, id) as CoverageMap;
+  assert.deepEqual(map.criteria.map(row => row.text), ['Reject invalid input\nwith a clear error', 'Preserve valid values']);
+  assert.notEqual(map.revision, legacy.revision);
+  assert.equal(map.judgments.at(-1)!.refusal?.code, 'criteria_changed');
+  assert.deepEqual([...scopeCriteria((await client.get(id, { full: true })).item).keys()], ['AC1', 'AC2']);
+  const closeout = await reviewCloseout(client, id, { cwd, pmRoot });
+  assert.deepEqual(closeout.criteria.map(row => row.criterion), map.criteria.map(row => row.text));
+});
+
+test('direct SDK evidence lookup retains full projection, exact identity and only two necessary corpus reads', async t => {
+  const { client, id, options } = await fixture(t);
+  let scans = 0;
+  const reads: { id: string; full: boolean | undefined }[] = [];
+  const observed = new Proxy(client, {
+    get(target, property, receiver) {
+      if (property === 'listAllComplete') return async () => { scans++; return target.listAllComplete(); };
+      if (property === 'get') return async (key: string, projection?: GetOptions) => { reads.push({ id: key, full: projection?.full }); return target.get(key, projection); };
+      return Reflect.get(target, property, receiver);
+    },
+  });
+  assert.equal((await coverCriterion(observed, id, options) as CoverageMap).reviewed, 1);
+  assert.equal(scans, 2, 'Only the before/after coverage maps need a complete corpus');
+  assert.ok(reads.some(row => row.id === options.evidence && row.full === true));
+  denied(await coverCriterion(client, id, { ...options, evidence: options.evidence.toUpperCase() }), 'evidence_missing');
+});
+
+test('direct evidence read propagates storage failures instead of reporting missing evidence', async t => {
+  const { client, pmRoot, id, options } = await fixture(t);
+  const path = join(pmRoot, 'review-findings', `${options.evidence}.toon`);
+  const original = readFileSync(path, 'utf8');
+  for (const corruption of ['not a valid item document', 'directory']) {
+    const observed = new Proxy(client, {
+      get(target, property, receiver) {
+        if (property !== 'listAllComplete') return Reflect.get(target, property, receiver);
+        return async () => {
+          const result = await target.listAllComplete();
+          if (corruption === 'directory') { unlinkSync(path); mkdirSync(path); }
+          else writeFileSync(path, corruption);
+          return result;
+        };
+      },
+    });
+    try { await assert.rejects(coverCriterion(observed, id, options)); }
+    finally {
+      if (corruption === 'directory') rmdirSync(path);
+      writeFileSync(path, original);
+    }
+  }
 });

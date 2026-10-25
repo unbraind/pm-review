@@ -320,3 +320,17 @@ test('package-manager and tooling caches stay outside executable snapshots', asy
   writeFileSync(testPath, readFileSync(testPath, 'utf8') + "\nimport { existsSync } from 'node:fs'; test('volatile caches are absent', () => { for (const cache of ['.bun', '.npm', '.cache']) assert.equal(existsSync(cache), false); });\n");
   assert.equal((await reviewCloseout(client, id, options)).ok, true);
 });
+
+
+test('multiline SDK criterion migration refuses legacy closeout comment selectors until explicitly rebound', async t => {
+  const { client, id, options } = await closeoutFixture(t);
+  await client.update(id, { acceptanceCriteria: 'Reject invalid input\nwith a clear error; Preserve valid values' });
+  await client.comments(id, { add: 'closeout AC2: test="returns fixed result"' });
+  const legacy = await reviewCloseout(client, id, options);
+  assert.equal(legacy.criteria[1].verdict, 'unproven');
+  assert.equal(legacy.criteria[1].evidence[0].comment_id, '');
+  await client.comments(id, { add: 'closeout-v2 AC2: test="returns fixed result"' });
+  const rebound = await reviewCloseout(client, id, options);
+  assert.equal(rebound.criteria[1].verdict, 'proven');
+  assert.equal(rebound.criteria[1].evidence[0].comment_id, 'comment:2');
+});

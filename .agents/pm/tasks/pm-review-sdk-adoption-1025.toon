@@ -1,0 +1,36 @@
+id: pm-review-sdk-adoption-1025
+title: Use the pm SDK for review criterion parsing and evidence lookup
+description: Replace both unused SDK capabilities identified by the 2026-10-25 audit in coverage. Preserve integrity and public tracker behavior with differential and behavioral revert proofs.
+type: Task
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-25T18:39:50.821Z"
+updated_at: "2026-10-25T19:27:04.043Z"
+author: codex-agent
+acceptance_criteria: SDK criterion parsing and direct evidence lookup replace both audited implementations; Differential proof documents intentional differences; Integrity regression and npm plus Bun gates pass
+parent: pm-review-epic
+comments[8]{created_at,author,text}:
+  "2026-10-25T18:39:54.930Z",codex-agent,"Search found no existing SDK-adoption item. Related SDK work: pm-review-sdk-gap and pm-review-sdk-import-history-gap; coverage ownership: pm-review-criterion-coverage-map. Plan: adopt splitAcceptanceCriteria, direct full get with native not-found classification, preserve corpus completeness, verify cache-primed history corruption and publish differential/revert receipts."
+  "2026-10-25T18:45:18.638Z",codex-agent,Both audit findings replaced. splitAcceptanceCriteria now also supplies closeout and scope boundaries to avoid conflicting AC selectors. SDK preserves newlines within semicolon-delimited criteria; multiline coverage revisions use review-criteria/v2 and old bindings refuse criteria_changed. Direct full get preserves exact canonical IDs and classifies only native NOT_FOUND; certified corpus reads remain for all judgments. Neither replaced path formerly verified history chains; verified historical scope reconstruction remains unchanged and its cache-primed corruption regression passes.
+  "2026-10-25T18:45:20.111Z",codex-agent,"Behavioral revert proofs: reverting only reviewCoverage fails SDK criteria preserve multiline wording (3 criteria versus 2); reverting only coverCriterion fails direct SDK evidence lookup (3 complete corpus reads versus 2); reverting only scopeCriteria fails the AC list (AC3 unexpectedly present); reverting only reviewCloseout fails multiline wording (3 criteria versus 2). Each is a real assertion failure, exit 1; candidate restored after each probe."
+  "2026-10-25T18:50:43.444Z",codex-agent,"Differential PASS: baseline origin/main d65d149 versus candidate on read-only non-git exports of public pm-review d65d149 (56 items, 171 function comparisons, 118 durable files) and pm-evidence 603e57d (10 items, 33 comparisons, 26 files). All 204 comparisons identical; all 144 durable files unchanged; no git in PATH. Includes coverage, refused cover requests, scope criteria, and three sampled closeout outcomes per tracker (two reports and one native refusal each). No multiline declarations in these exports; the separate synthetic multiline migration regression covers the intentional change. Reproduction and boundaries: docs/sdk-adoption-1025.md."
+  "2026-10-25T19:02:45.595Z",codex-agent,"Full npm release gate PASS with isolated HOME and Git config: env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 npm run release:check. Main suite 233/233, zero failed/skipped; 100% statements/branches/functions/lines across 38 measured source files. Scope model: 500 sequences, 2988 operations, 1988 comparisons, 75 native SDK fields. Packed npm/npx plus native Bun/bunx acceptance 1/1. Identity, typecheck, lint, duplication (0%), docstrings (129 declarations), audit, pack, changelog and publish-attestation gates passed. Isolated strict health passes all 10 checks. Default-home health observes unrelated global pm-github host version skew (pinned 2026.10.20 versus global 2026.10.25); no pins changed. Separate Bun release gate running."
+  "2026-10-25T19:06:42.488Z",codex-agent,"Additional migration safeguard: legacy closeout AC comments have no contract digest, so SDK multiline regrouping could silently retarget them. Multiline declarations now require closeout-v2 AC selectors; old comments are preserved but ignored. New real-tracker regression passes; reverting only criterionEvidence makes the old AC2 comment falsely prove the regrouped criterion and fails an assertion. This is the fifth function-revert proof. The preceding npm 233-test gate is superseded by this safeguard; the in-flight Bun gate was deliberately stopped (not approval evidence). Rerunning both complete gates on the final candidate."
+  "2026-10-25T19:18:23.565Z",codex-agent,"Five targeted regression tests pass on the final candidate; all 204 public differential comparisons still match after the closeout binding safeguard. The declared SDK peer floor already exports splitAcceptanceCriteria, so no version changes are needed. Commit the implementation and tracker together, then run the independent Bun full gate in a separate verification worktree while npm completes, with separate build and coverage outputs."
+  "2026-10-25T19:27:01.406Z",codex-agent,"Local final-candidate verification: typecheck, test typecheck, lint, 0% duplication, 129 documented declarations, and all five linked targeted regressions PASS. Both final-candidate local full gate runs were deliberately stopped while active; they are incomplete evidence, not approval. Follow the requested split: use the PR CI npm matrix and Bun release gate as the complete-gate authority at unchanged 100% thresholds. No source changes after implementation commit 6414fa6. All 204 public differential comparisons and five behavioral revert proofs are recorded above. SDK API blockers: none. Migration risk: multiline criteria require fresh coverage/scope assessment and closeout-v2 mappings."
+files[7]{path,scope}:
+  src/closeout.ts,project
+  src/coverage.ts,project
+  src/scope-state.ts,project
+  test/closeout.test.ts,project
+  test/coverage.test.ts,project
+  test/scope.test.ts,project
+  test/sdk-adoption-public-tracker.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  "node --test --test-name-pattern=\"SDK criteria|direct SDK|direct evidence|cache-primed|multiline SDK criterion\" test/coverage.test.ts test/scope.test.ts test/closeout.test.ts",project,codex-agent,"2026-10-25T19:06:47.979Z",local_mutation,refactor/sdk-adoption-1025
+docs[3]{path,scope}:
+  docs/closeout.md,project
+  docs/criterion-coverage.md,project
+  docs/sdk-adoption-1025.md,project
+body: ""
