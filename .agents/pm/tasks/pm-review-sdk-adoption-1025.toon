@@ -2,14 +2,19 @@ id: pm-review-sdk-adoption-1025
 title: Use the pm SDK for review criterion parsing and evidence lookup
 description: Replace both unused SDK capabilities identified by the 2026-10-25 audit in coverage. Preserve integrity and public tracker behavior with differential and behavioral revert proofs.
 type: Task
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-25T18:39:50.821Z"
-updated_at: "2026-10-25T19:27:04.043Z"
+updated_at: "2026-10-26T10:15:44.338Z"
+closed_at: "2026-10-26T10:15:44.329Z"
+completed_at: "2026-10-25T19:41:47.000Z"
 author: codex-agent
 acceptance_criteria: SDK criterion parsing and direct evidence lookup replace both audited implementations; Differential proof documents intentional differences; Integrity regression and npm plus Bun gates pass
 parent: pm-review-epic
+resolution: "Delivered by https://github.com/unbraind/pm-review/pull/44 (merge 74073af95d72, head fdb1546e3ae0)"
+expected_result: SDK criterion parsing and direct evidence lookup replace both audited implementations; Differential proof documents intentional differences; Integrity regression and npm plus Bun gates pass
+actual_result: "Merged at 2026-10-25T19:41:47Z; no readable required checks, so every completed head check run had to succeed, be neutral or be skipped; successful checks: CodeQL, CodeRabbit, codeql, test (22), test (26)"
 comments[8]{created_at,author,text}:
   "2026-10-25T18:39:54.930Z",codex-agent,"Search found no existing SDK-adoption item. Related SDK work: pm-review-sdk-gap and pm-review-sdk-import-history-gap; coverage ownership: pm-review-criterion-coverage-map. Plan: adopt splitAcceptanceCriteria, direct full get with native not-found classification, preserve corpus completeness, verify cache-primed history corruption and publish differential/revert receipts."
   "2026-10-25T18:45:18.638Z",codex-agent,Both audit findings replaced. splitAcceptanceCriteria now also supplies closeout and scope boundaries to avoid conflicting AC selectors. SDK preserves newlines within semicolon-delimited criteria; multiline coverage revisions use review-criteria/v2 and old bindings refuse criteria_changed. Direct full get preserves exact canonical IDs and classifies only native NOT_FOUND; certified corpus reads remain for all judgments. Neither replaced path formerly verified history chains; verified historical scope reconstruction remains unchanged and its cache-primed corruption regression passes.
@@ -33,4 +38,5 @@ docs[3]{path,scope}:
   docs/closeout.md,project
   docs/criterion-coverage.md,project
   docs/sdk-adoption-1025.md,project
+close_reason: "{\"pr\":44,\"url\":\"https://github.com/unbraind/pm-review/pull/44\",\"merge_commit_sha\":\"74073af95d72f352b48547841d406c57f0307a4d\",\"head_sha\":\"fdb1546e3ae07cb72324cd3352ac673bfe9fa388\",\"merged_at\":\"2026-10-25T19:41:47Z\",\"checks\":[\"CodeQL\",\"CodeRabbit\",\"codeql\",\"test (22)\",\"test (26)\"]}"
 body: ""
