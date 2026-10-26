@@ -53,7 +53,7 @@ function consumerEnv(cwd: string, pmRoot: string, home = cwd): NodeJS.ProcessEnv
     const prefix = runtime === 'npm' ? ['--no-install', 'pm'] : ['--bun', '--no-install', 'pm'];
     command(cwd, runner, [...prefix, 'init', 'consumer', '--defaults', '--agent-guidance', 'skip', '--json'], pmRoot);
     command(cwd, runner, [...prefix, 'install', tarball, '--project', '--json'], pmRoot);
-    for (const action of ['ingest', 'import', 'verdict', 'round', 'precedents', 'reconcile', 'respond', 'status', 'closeout', 'coverage', 'cover', 'lineage', 'scope', 'carry-forward']) assert.match(command(cwd, runner, [...prefix, 'review', action, '--help'], pmRoot), /review/);
+    for (const action of ['ingest', 'import', 'verdict', 'round', 'precedents', 'reconcile', 'respond', 'status', 'closeout', 'coverage', 'cover', 'lineage', 'scope', 'carry-forward', 'requests']) assert.match(command(cwd, runner, [...prefix, 'review', action, '--help'], pmRoot), /review/);
     assert.match(command(cwd, runner, [...prefix, 'review', 'reconcile', '--help'], pmRoot), /--dry-run/);
     const verdictHelp = command(cwd, runner, [...prefix, 'review', 'verdict', '--help'], pmRoot);
     assert.doesNotMatch(verdictHelp, /<value>\s+<value>/);
@@ -74,6 +74,7 @@ function consumerEnv(cwd: string, pmRoot: string, home = cwd): NodeJS.ProcessEnv
     assert.equal(coverage.unreviewed, 1);
     assert.match(command(cwd, runner, [...prefix, 'review', 'coverage', coverageTarget.id], pmRoot), /unreviewed/);
     await verifyCarryForward(cwd, runner, prefix, pmRoot, coverageTarget.id);
+    await verifyEvidenceRequests(cwd, runner, prefix, pmRoot, coverageTarget.id);
     const evidence = JSON.parse(command(cwd, runner, [...prefix, 'create', 'ReviewFinding', 'Packed substantive review', '--description', 'Validate the input before writing.', '--field', 'review_bot=synthetic-reviewer', '--field', 'review_node_id=packed-node', '--field', 'review_repo=example/package', '--field', 'review_pr=2', '--field', 'review_url=https://github.com/example/package/pull/2#discussion_r1', '--field', `review_head=${'a'.repeat(40)}`, '--field', 'review_kind=thread', '--json'], pmRoot)) as { id: string };
     const lineage = JSON.parse(command(cwd, runner, [...prefix, 'review', 'lineage', evidence.id, '--json'], pmRoot)) as { canonical: string; observations: unknown[] };
     assert.equal(lineage.canonical, evidence.id);
@@ -186,4 +187,34 @@ async function verifyCarryForward(cwd: string, runner: string, prefix: string[],
   const invalid = spawnSync(runner, [...prefix, 'review', 'carry-forward', id, '--file', 'absent.json', '--json'], { cwd, env: consumerEnv(cwd, pmRoot), encoding: 'utf8' });
   assert.equal(invalid.status, 1);
   assert.equal((JSON.parse(invalid.stdout) as { refusal: { code: string } }).refusal.code, 'scope_unavailable');
+}
+
+/** Check shipped SDK and actual npm/Bun CLI rendering, arrivals, revisions and refusal exits. */
+async function verifyEvidenceRequests(cwd: string, runner: string, prefix: string[], pmRoot: string, id: string): Promise<void> {
+  const packet = { schema: 'review-requests/v1', select: [{ item: id, obligation: 'AC1', missing: 'test' }], arrivals: [] as { request: string; item: string; version: number; field: string; index: number }[], budget: { requests: 4, characters: 8192 } };
+  const file = join(cwd, 'requests.json');
+  const invocation = [...prefix, 'review', 'requests', '--file', 'requests.json'];
+  await writeFile(file, JSON.stringify(packet, null, 2).replaceAll('\n', '\r\n'));
+  const pending = JSON.parse(command(cwd, runner, [...invocation, '--json'], pmRoot)) as { requests: { key: string }[]; pending: number };
+  assert.equal(pending.pending, 1);
+  assert.equal(pending.requests.length, 1);
+  assert.match(command(cwd, runner, invocation, pmRoot), /pending: 1/);
+  const artifact = JSON.parse(command(cwd, runner, [...prefix, 'create', 'Task', 'Focused packed test artifact', '--description', 'One focused test of the validation boundary.', '--test', 'command=node --test test/focused.test.ts', '--json'], pmRoot)) as { id: string };
+  packet.arrivals.push({ request: pending.requests[0].key, item: artifact.id, version: 1, field: 'tests', index: 0 });
+  await writeFile(file, JSON.stringify(packet));
+  const satisfied = JSON.parse(command(cwd, runner, [...invocation, '--json'], pmRoot)) as { pending: number; satisfied: unknown[]; approval: string };
+  assert.equal(satisfied.pending, 0);
+  assert.equal(satisfied.satisfied.length, 1);
+  assert.equal(satisfied.approval, 'unverified');
+  const sdkProbe = "import { PmClient } from '@unbrained/pm-cli/sdk';\nimport { reviewEvidenceRequests } from 'pm-review';\nimport { readFileSync } from 'node:fs';\nconst client = new PmClient({ cwd: process.cwd(), pmRoot: process.env.PM_PATH, author: 'install-test' });\nconsole.log(JSON.stringify(await reviewEvidenceRequests(client, JSON.parse(readFileSync('requests.json', 'utf8')))));\n";
+  await writeFile(join(cwd, 'requests-sdk.ts'), sdkProbe);
+  const native = command(cwd, runner === 'bunx' ? 'bun' : 'node', ['requests-sdk.ts'], pmRoot);
+  assert.deepEqual(JSON.parse(native), satisfied);
+  command(cwd, runner, [...prefix, 'update', id, '--description', 'A successor obligation revision', '--json'], pmRoot);
+  const replay = JSON.parse(command(cwd, runner, [...invocation, '--json'], pmRoot)) as { pending: number; rejected: { reason: string }[] };
+  assert.equal(replay.pending, 1);
+  assert.equal(replay.rejected[0].reason, 'request_not_current');
+  const refused = spawnSync(runner, [...prefix, 'review', 'requests', '--file', 'absent.json', '--json'], { cwd, env: consumerEnv(cwd, pmRoot), encoding: 'utf8' });
+  assert.equal(refused.status, 1);
+  assert.equal((JSON.parse(refused.stdout) as { refusal: { code: string } }).refusal.code, 'file_unavailable');
 }

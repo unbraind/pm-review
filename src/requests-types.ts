@@ -1,3 +1,5 @@
+import type { CoverageCode } from './coverage-types.ts';
+
 /** One explicitly selected current review obligation and the smallest artifact needed. */
 export interface EvidenceSelection { item: string; obligation: string; missing: 'source' | 'test' }
 /** Explicit arrival points at one native link and the evidence item's audited revision. */
@@ -30,5 +32,3 @@ export interface EvidenceRequestQueue {
 }
 /** Queue and command share exactly the same result contract. */
 export type EvidenceRequestResult = EvidenceRequestQueue | EvidenceRequestRefusal;
-import type { CoverageCode } from './coverage-types.ts';
-

@@ -20,6 +20,7 @@ test('seeded model: 500 random packet/arrival sequences preserve every native fi
   const evidence = 'sample-native-evidence';
   const original = richScopeDocument((await readLocatedItem(source)).document, finding);
   original.metadata.files![0].path = 'src/input.ts';
+  original.metadata.acceptance_criteria = 'Keep the focused source artifact; Preserve native evidence metadata';
   original.metadata.id = evidence;
   await inFixtureWorkspace(cwd, async () => commitImportedItem({ pmRoot, id: evidence, itemPath: getItemPath(pmRoot, 'Task', evidence), document: canonicalDocument(original), settings, author: 'model-agent', message: 'Seed all native evidence fields', conflictWarningPrefix: 'requests-model' }));
   const fields = Object.keys((await client.get(evidence, { full: true })).item);
@@ -41,7 +42,7 @@ test('seeded model: 500 random packet/arrival sequences preserve every native fi
         replays++;
       } else if (choice === 3) await client.update(evidence, { dep: [`id=${finding},kind=related,author=model-agent,created_at=2026-10-01T10:00:00.000Z,source_kind=related_to`], tags: `model-${next() % 9}` });
       else if (choice === 4) await client.comments(evidence, { add: `foreign-provider/v1 ${next()}\r\n  Native annotation` });
-      // Choice five replays an older packet with no native mutation at all.
+      // Choice five leaves native state unchanged; the sequence ends by replaying a retained packet.
       operations++;
     }
     const model = packets[sequence % 10 === 0 ? packets.length - 1 : next() % packets.length];

@@ -45,11 +45,15 @@ seeding uses a fresh native imported document and subsequent SDK mutations.
 
 Peer tests instrument every before/after SDK operation boundary in both finding
 and criterion paths, including explicit arrivals. Each transition is performed by
-a second real SDK client on the same non-git tracker. Target revisions, evidence
+a second real SDK client on the same non-git tracker: 198 boundary/baseline cases
+and 192 injected peer transitions. Target revisions, evidence
 revisions and status definitions are changed independently. Additional regression
 cases invalidate a coverage source between obligation observations and mutate the
 caller's packet after validation. The feature owns no shared mutable state.
 
-Full release-gate counts and exact CI run links are recorded in the PR and tracker
+Packed acceptance also checks the shipped SDK and real npm/npx and native Bun/bunx
+commands: JSON/TOON queues, explicit arrivals, stale request keys and typed refusal exits.
+
+Full release-gate counts and exact CI run links are recorded in the linked PR
 after CI completes; thresholds remain unchanged at 100% for every coverage dimension
 and zero duplication. Local checks are targeted to respect shared-host CPU load.

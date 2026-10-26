@@ -4,27 +4,30 @@ description: "Compile bounded acquisition queues for selected unresolved finding
 type: Feature
 status: in_progress
 priority: 2
-tags: []
+tags[1]: "gh:unbraind/pm-review#46"
 created_at: "2026-10-26T00:38:35.933Z"
-updated_at: "2026-10-26T01:03:04.807Z"
-assignee: codex-agent
-claim_principal: codex-agent
+updated_at: "2026-10-26T01:19:14.850Z"
 author: codex-agent
 acceptance_criteria: Every request names one current obligation and missing evidence type; Satisfied requests disappear only after bound evidence arrives; A 30-finding fixture emits a budgeted queue with exact omissions
 parent: pm-review-epic
-comments[4]{created_at,author,text}:
+comments[7]{created_at,author,text}:
   "2026-10-26T00:39:02.666Z",codex-agent,"Overlap check: host CLI 2026.10.25 has no review-specific acquisition queue. Existing reviewCoverage supplies current criterion gaps, reviewCloseout verifies independent completion evidence, and pm-context context-next-evidence handles general minimum-cost acquisition planning. This feature compiles selected review obligations into one-artifact source/test requests with explicit revision-bound arrivals, using native SDK item reads and status roles. No provider transcript fetching or new import/sync mutation path is needed."
   "2026-10-26T00:46:43.486Z",codex-agent,"Implemented a read-only review requests SDK/CLI boundary with one strict bounded packet schema, durable target-version keys, explicit one-native-link arrivals, current SDK evidence revalidation, registry-role lifecycle decisions, exact budget omissions and typed remedies. Targeted fixture measured 30 findings: 7 requests plus 23 exact omission keys in 6378 JSON characters; character cap emits 6 plus 24 omissions in 5974 characters. Seeded replay and every-step peer interleaving checks are in progress. No shared mutable request journal, leases or persisted budgets were introduced."
   "2026-10-26T01:00:42.509Z",codex-agent,"Behavioral revert proof: restored only registerReviewCommands from main while retaining the implementation and SDK exports. node --test --test-name-pattern=\"registered CLI\" test/requests.test.ts failed exit 1 because review requests was not registered; restored the function afterward. Public tracker validation: 57 items, 48 selected obligations, 5 pending, 3 emitted, 2 exact omissions, 43 terminal-role skips, 3606 JSON characters/bytes, CRLF file parity, 120 durable inputs unchanged. Linked pm test run passed its 2 boundary assertions; tracker test-result recording is disabled, so this comment records the result without changing policy."
   "2026-10-26T01:03:04.806Z",codex-agent,"Additional boundary verification: corrupt foreign tracker documents now skip unavailable items or report coverage_unavailable rather than allowing a corpus-read exception to escape. Compact history retains original durable version addressing. Peer coverage-source drift and post-validation caller mutation each pass their dedicated regressions. Typecheck, test typecheck, lint, zero-duplication, build and docstring checks passed locally; full release gates are reserved for CI as requested."
-files[11]{path,scope}:
+  "2026-10-26T01:15:51.736Z",codex-agent,"PR 46 is ready for review. Initial CI on 5752583 measured 100/100/100/100 coverage and completed all 500 request-model comparisons, then caught a fixture completeness assertion: the source fixture had 74 native fields because acceptance_criteria was absent. Added the missing native criterion contract rather than lowering the assertion or any gate. Also clarified that every-step concurrency coverage comprises 198 boundary/baseline cases with 192 injected peer transitions. Rerunning full npm/Bun CI; no native import/sync writers or tracker-history repairs were added."
+  "2026-10-26T01:17:44.088Z",codex-agent,"The corrected native seed probe reads 75 fields through the SDK and satisfies exactly one revision-bound request. Extended packed acceptance to execute requests through real npm/npx and native Bun/bunx consumers, compare the shipped SDK result, accept a bound arrival, reject its old key after target mutation, and verify typed nonzero file refusals. Full 500-sequence and release evidence will come from the refreshed CI run to avoid duplicating heavy gates on the saturated host."
+  "2026-10-26T01:19:12.813Z",codex-agent,"Implementation and local validation are ready for orchestrator review in https://github.com/unbraind/pm-review/pull/46. Pinned SDK history limitations remain tracked separately; no item is closed and no release/merge is authorized. Releasing the claim after the implementation handoff. The PR maintains the final exact-head npm/Bun gate run URL and counts while CI is monitored; all local tests/checks, real-data measurements, revert proof and expected refusals are documented here and in linked files."
+files[13]{path,scope}:
   index.ts,project
   src/commands.ts,project
   src/requests-state.ts,project
   src/requests-types.ts,project
   src/requests-validation.ts,project
   src/requests.ts,project
+  test/install.acceptance.ts,project
   test/requests-boundary.test.ts,project
+  test/requests-fixture.ts,project
   test/requests-interleaving.test.ts,project
   test/requests-model.test.ts,project
   test/requests-public-tracker.ts,project

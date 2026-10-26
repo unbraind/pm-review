@@ -33,7 +33,7 @@ test('every SDK step boundary in finding and criterion queue paths tolerates com
   const { client, cwd, pmRoot, finding, evidence, packet } = await requestsFixture(t);
   const peer = new PmClient({ cwd, pmRoot, author: 'peer-agent', noExtensions: true });
   let expectedFindingStatus = (await peer.get(finding, { full: true })).item.status;
-  let cases = 0;
+  let cases = 0; let transitions = 0;
   for (const selected of packet.select) {
     const selection = { ...packet, select: [selected] };
     const first = queue(await reviewEvidenceRequests(client, selection));
@@ -64,6 +64,7 @@ test('every SDK step boundary in finding and criterion queue paths tolerates com
       } else assert.equal(result.refusal.code, 'state_changed');
       if (transitioned && subject !== 'registry') assert.equal((await peer.get(subject === 'target' ? selected.item : evidence, { full: true })).item.description, description);
       if (transitioned && subject === 'registry') assert.ok((await peer.schemaList()).statuses.custom.some(row => row.id === addedStatus));
+      if (transitioned) transitions++;
       cases++;
     }
     t.diagnostic(`${selected.obligation}: ${boundaries + 1} boundaries per competing transition`);
@@ -71,7 +72,7 @@ test('every SDK step boundary in finding and criterion queue paths tolerates com
   assert.ok(cases > 100);
   // No mutation path exists: the queue never claims, leases, decrements shared budgets or deletes records.
   assert.equal((await client.get(finding, { full: true })).item.status, expectedFindingStatus);
-  t.diagnostic(`${cases} real interleavings; one non-git tracker; target, evidence and status registry transitions preserved`);
+  t.diagnostic(`${cases} boundary/baseline cases; ${transitions} injected peer transitions; one non-git tracker; target, evidence and status registry transitions preserved`);
 });
 
 test('random custom registry identifiers use active, blocked, done and canceled roles regardless of spelling', async t => {
