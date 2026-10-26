@@ -238,6 +238,9 @@ See [evidence binding, limitations and examples](docs/closeout.md).
 
 ## Without git
 
+Targeted evidence request queues and their revision-bound arrivals work in plain
+trackers without Git, credentials, provider calls or test execution.
+
 Review imports, decisions, precedents and GitHub review commands do not require a
 local Git checkout. Closeout runs linked tests in plain trackers and compares
 linked artifacts against `closeout-before:<base64>` notes. It reports missing
@@ -409,3 +412,13 @@ criteria remain never reviewed. Retained attention always returns
 `approval: unverified`; it cannot satisfy fresh exact-artifact review gates.
 
 [Selection example, typed SDK, refusals and concurrency semantics](docs/review-carry-forward.md).
+
+## Targeted evidence requests
+
+`pm review requests --file examples/review-requests.json [--json]` requests one
+missing source excerpt or focused test artifact per selected unresolved finding
+or criterion gap. The typed `reviewEvidenceRequests(client, packet)` SDK returns
+the same bounded queue, explicit revision-bound arrival receipts, typed refusals
+with remedies, and exact budget omissions. Arrival records acquisition and leaves
+approval unverified. See the [packet example](examples/review-requests.json) and
+[request and arrival contract](docs/evidence-requests.md).

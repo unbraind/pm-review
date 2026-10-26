@@ -273,7 +273,7 @@ test('pinned schemaAddField forwards declared types and persists review metadata
   const { client, pmRoot } = await tracker(t);
   const activation = await activateExtensionForTest(extension, { name: 'pm-review', capabilities: ['commands', 'schema'] });
   assert.deepEqual(activation.failed, []);
-  assert.equal(activation.commands.handlers.length, 15);
+  assert.equal(activation.commands.handlers.length, 16);
   const result = await runRegisteredCommandForTest(activation.commands, { command: 'review precedents', args: ['validation'], pmRoot, sdk: createExtensionCommandSdk(pmRoot, client, 'test-agent') });
   assert.equal(result.handled, true);
   assert.deepEqual(result.result, { query: 'validation', count: 0, items: [] });
