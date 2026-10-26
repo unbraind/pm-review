@@ -6,14 +6,15 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-25T23:21:55.347Z"
-updated_at: "2026-10-25T23:52:19.923Z"
+updated_at: "2026-10-26T01:02:38.208Z"
 assignee: codex-agent
 claim_principal: codex-agent
 author: codex-agent
-comments[3]{created_at,author,text}:
+comments[4]{created_at,author,text}:
   "2026-10-25T23:22:00.857Z",codex-agent,"Normalize daily scheduling and PM_RELEASE_APPROVED job gates while preserving release decisions, generated changelogs and release notes. Verify OIDC publishing without a stored npm token, manifest metadata, packed allowlists and private-data scans. No open homepage/author PR was found during orientation. No publishing, trust setup, approval variable changes or merges are authorized."
   "2026-10-25T23:50:09.516Z",codex-agent,"CI previously executed the complete npm gate as individually listed steps. Consolidated those steps into npm run release:check so the required npm and Bun entrypoints are both exercised directly on the PR. Retained the explicit identity check and Bun graph-install check; no source thresholds or release checks were removed. Restoring the previous CI workflow makes the new entrypoint regression fail; restored check passes 1/1."
   "2026-10-25T23:52:19.919Z",codex-agent,"Pack verification: npm pack --dry-run --json and the actual npm pack --ignore-scripts artifact agree on 113 allowlisted files (dist: 108; root files: 5). Every packed member was scanned for absolute home paths, npm/GitHub/cloud tokens, private keys, hosted-data locations, private addresses and historical owner email addresses: PASS with zero matches. Regression proof: five independent workflow mutations (approval, provenance, token environment, daily schedule and OR bypass) plus the original manifest each fail the new contract check; restored contract passes 4/4. The linked test also passes through pm test --run --progress. Next gates: npm run release:check and bun run release:check with isolated HOME and Git configuration."
+  "2026-10-26T01:02:38.207Z",codex-agent,"Opening the release-readiness PR after package allowlist/privacy verification and focused regression proofs so complete npm and Bun CI can run in parallel with local full-gate verification. Pending checks are explicitly not treated as passing evidence. No timeout, threshold, dependency pin or test case is being relaxed."
 files[5]{path,scope}:
   .github/workflows/ci.yml,project
   .github/workflows/release.yml,project
