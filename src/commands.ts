@@ -1,7 +1,8 @@
 import { reviewScopeFile } from './scope-file.ts';
 import { reviewEvidenceRequestsFile } from './requests.ts';
+import { serializeEvidenceRequests } from './output-budget.ts';
 import { importReviewArtifact } from './envelope-artifact.ts';
-import { createPmCliExpectedError, isPmCliExpectedError, PmClient, printResult, readBooleanOption, readStringOption, suppressHostOutput } from '@unbrained/pm-cli/sdk';
+import { createPmCliExpectedError, isPmCliExpectedError, PmClient, printResult, readBooleanOption, readStringOption, suppressHostOutput, writeStdout } from '@unbrained/pm-cli/sdk';
 import { defineCommand } from '@unbrained/pm-cli/sdk/authoring';
 import type { CommandHandlerContext, ExtensionApi, FlagDefinition } from '@unbrained/pm-cli/sdk/authoring';
 import { findingLineage } from './lineage.ts';
@@ -48,8 +49,10 @@ export async function runReviewCommand(ctx: CommandHandlerContext, provided?: Gi
 async function dispatchReviewCommand(ctx: CommandHandlerContext, provided?: GitHubTransport): Promise<unknown> {
   const client = ctx.sdk?.client ?? new PmClient({ cwd: ctx.source_workspace_root ?? ctx.repo_root, pmRoot: ctx.pm_root, author: ctx.global.author });
   if (ctx.command === 'review requests') {
-    const result = await reviewEvidenceRequestsFile(client, readStringOption(ctx.options, 'file') ?? '');
-    return result.ok ? result : { ...result, exit_code: 1 };
+    const format = ctx.global.json ? 'json' : ctx.global.outputFormat ?? ctx.global.defaultOutputFormat ?? 'toon';
+    const result = await reviewEvidenceRequestsFile(client, readStringOption(ctx.options, 'file') ?? '', format);
+    if (!ctx.global.quiet) writeStdout(serializeEvidenceRequests(result, format));
+    return { ...suppressHostOutput(result), ...(result.ok ? {} : { exit_code: 1 }) };
   }
   if (ctx.command === 'review scope' || ctx.command === 'review carry-forward') {
     const result = await reviewScopeFile(client, ctx.args[0] ?? '', readStringOption(ctx.options, 'file') ?? '', ctx.command === 'review scope');

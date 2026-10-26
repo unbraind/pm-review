@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import { createExtensionCommandSdk, getHistoryPath } from '@unbrained/pm-cli/sdk';
 import { activateExtensionForTest, runRegisteredCommandForTest } from '@unbrained/pm-cli/sdk/testing';
 import extension, { reviewEvidenceRequests, reviewEvidenceRequestsFile } from '../index.ts';
-import { requestSnapshot, sizeRequestQueue, arrivalReason } from '../src/requests-state.ts';
+import { requestSnapshot, arrivalReason } from '../src/requests-state.ts';
 import { requestInput, requestNumbers } from '../src/requests-validation.ts';
 import { coverCriterion } from '../src/coverage.ts';
 import { runReviewCommand } from '../src/commands.ts';
@@ -110,13 +110,12 @@ test('strict schema rejects sparse arrays, extra keys and extreme values before 
   for (const extreme of [NaN, Infinity, -Infinity, -1, 1.5, Number.MAX_VALUE, Number.MAX_SAFE_INTEGER + 1, '1', null, undefined]) {
     invalid.push({ ...packet, budget: { ...packet.budget, requests: extreme } }, { ...packet, budget: { ...packet.budget, characters: extreme } }, { ...packet, arrivals: [{ ...arrival, version: extreme }] }, { ...packet, arrivals: [{ ...arrival, index: extreme }] });
   }
-  invalid.push({ ...packet, arrivals: [{ ...arrival, version: 0 }] }, { ...packet, budget: { requests: 65, characters: 256 } }, { ...packet, budget: { requests: 0, characters: 255 } }, { ...packet, budget: { requests: 0, characters: 65537 } });
+  invalid.push({ ...packet, arrivals: [{ ...arrival, version: 0 }] }, { ...packet, budget: { requests: -1, characters: 0 } });
   for (const value of invalid) requestsDenied(await reviewEvidenceRequests(client, value), 'input_invalid');
   assert.ok(requestInput({ ...packet, arrivals: [arrival] }));
   assert.ok(requestInput({ ...packet, select: [], arrivals: [], budget: { requests: 0, characters: 256 } }));
   assert.equal(requestNumbers({ nested: [Infinity] }), false);
   assert.equal(requestNumbers({ nested: [null, 'word', 0, Number.MAX_SAFE_INTEGER] }), true);
-  assert.equal(sizeRequestQueue({ characters: 0 }), 17);
 });
 
 test('registered CLI and SDK accept CRLF packets without git and return typed file and packet refusals', async t => {
@@ -130,10 +129,10 @@ test('registered CLI and SDK accept CRLF packets without git and return typed fi
   process.env.PATH = bin; process.env.GIT_CEILING_DIRECTORIES = dirname(cwd);
   try {
     const expected = queue(await reviewEvidenceRequests(client, packet));
-    const context = { command: 'review requests', args: [], options: { file }, global: {}, pm_root: pmRoot, repo_root: cwd, sdk: createExtensionCommandSdk(pmRoot, client, 'test-agent') };
-    assert.deepEqual(await runReviewCommand(context), expected);
+    const context = { command: 'review requests', args: [], options: { file }, global: { json: true, quiet: true }, pm_root: pmRoot, repo_root: cwd, sdk: createExtensionCommandSdk(pmRoot, client, 'test-agent') };
+    assert.deepEqual((await runReviewCommand(context) as { result: unknown }).result, expected);
     const registered = await runRegisteredCommandForTest(activation.commands, context);
-    assert.deepEqual(registered.result, expected);
+    assert.deepEqual((registered.result as { result: unknown }).result, expected);
     assert.deepEqual(await reviewEvidenceRequestsFile(client, file), expected);
     const refused = await runReviewCommand({ ...context, options: {} }) as { exit_code: number };
     assert.equal(refused.exit_code, 1);

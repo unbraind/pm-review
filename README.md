@@ -419,6 +419,7 @@ criteria remain never reviewed. Retained attention always returns
 missing source excerpt or focused test artifact per selected unresolved finding
 or criterion gap. The typed `reviewEvidenceRequests(client, packet)` SDK returns
 the same bounded queue, explicit revision-bound arrival receipts, typed refusals
-with remedies, and exact budget omissions. Arrival records acquisition and leaves
+with remedies, exact UTF-8 JSON/TOON budgets, minimum-budget refusals, and exact
+omissions. Arrival records acquisition and leaves
 approval unverified. See the [packet example](examples/review-requests.json) and
 [request and arrival contract](docs/evidence-requests.md).

@@ -3,7 +3,7 @@ import type { EvidenceRequestCode, EvidenceRequestInput, EvidenceRequestRefusal 
 
 /** One strict schema is applied once before any SDK reads; unknown keys are refused. */
 export function requestInput(value: unknown): EvidenceRequestInput | undefined {
-  if (!keys(value, ['schema', 'select', 'arrivals', 'budget']) || value.schema !== 'review-requests/v1' || !dense(value.select, 64) || !dense(value.arrivals, 64) || !keys(value.budget, ['requests', 'characters']) || !integer(value.budget.requests, 0, 64) || !integer(value.budget.characters, 256, 65536)) return undefined;
+  if (!keys(value, ['schema', 'select', 'arrivals', 'budget']) || value.schema !== 'review-requests/v1' || !dense(value.select, 64) || !dense(value.arrivals, 64) || !keys(value.budget, ['requests', 'characters']) || !integer(value.budget.requests, 0, Number.MAX_SAFE_INTEGER) || !integer(value.budget.characters, 0, Number.MAX_SAFE_INTEGER)) return undefined;
   const selections = new Set<string>();
   for (const row of value.select) {
     if (!keys(row, ['item', 'obligation', 'missing']) || !identifier(row.item) || typeof row.obligation !== 'string' || !/^(?:finding|AC[1-9]\d{0,5})$/.test(row.obligation) || (row.missing !== 'source' && row.missing !== 'test')) return undefined;
@@ -45,7 +45,7 @@ export function requestNumbers(value: unknown): boolean {
 /** Refusals deliberately omit backend exceptions and local source paths. */
 export function requestRefusal(code: EvidenceRequestCode): EvidenceRequestRefusal {
   const remedies: Record<EvidenceRequestCode, string> = {
-    input_invalid: 'Use review-requests/v1 with at most 64 unique selections and arrivals, dense arrays, exact documented keys, safe integer revisions, and budgets of 0-64 requests and 256-65536 JSON characters.',
+    input_invalid: 'Use review-requests/v1 with at most 64 unique selections and arrivals, dense arrays, exact documented keys, safe integer revisions, and nonnegative safe integer request and UTF-8 byte budgets.',
     file_unavailable: 'Supply one regular UTF-8 JSON packet file of at most 1 MiB.',
     state_changed: 'A selected item, evidence revision or status registry changed during observation; read current state and retry.',
     budget_too_small: 'Increase the character budget to fit the exact omission, satisfaction and skip receipts, or select fewer obligations.',

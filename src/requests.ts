@@ -3,10 +3,11 @@ import { reviewCoverage } from './coverage.ts';
 import type { CoverageResult } from './coverage-types.ts';
 import { fileBytes } from './envelope-artifact.ts';
 import { scopeDigest } from './scope-state.ts';
-import { arrivalReason, requestSnapshot, requestStatuses, sizeRequestQueue } from './requests-state.ts';
+import { arrivalReason, requestSnapshot, requestStatuses } from './requests-state.ts';
+import { finalizeReviewOutput } from './output-budget.ts';
 import type { RequestSnapshot } from './requests-state.ts';
-import { requestInput, requestNumbers, requestRefusal } from './requests-validation.ts';
-import type { EvidenceRequest, EvidenceRequestQueue, EvidenceRequestResult, EvidenceSelection, EvidenceSelectionSkip } from './requests-types.ts';
+import { requestInput, requestRefusal } from './requests-validation.ts';
+import type { EvidenceOutputFormat, EvidenceRequest, EvidenceRequestQueue, EvidenceRequestResult, EvidenceSelection, EvidenceSelectionSkip } from './requests-types.ts';
 
 /** Resolve one obligation through existing coverage semantics and native status roles. */
 async function obligation(client: PmClient, selection: EvidenceSelection, snapshot: RequestSnapshot | undefined, statuses: Map<string, string[]>): Promise<{ text: string } | { reason: EvidenceSelectionSkip }> {
@@ -31,9 +32,9 @@ async function obligation(client: PmClient, selection: EvidenceSelection, snapsh
 }
 
 /** Compile revision-bound acquisition requests without writes, provider calls, git or test execution. */
-export async function reviewEvidenceRequests(client: PmClient, input: unknown): Promise<EvidenceRequestResult> {
+export async function reviewEvidenceRequests(client: PmClient, input: unknown, format: EvidenceOutputFormat = 'json'): Promise<EvidenceRequestResult> {
   const packet = requestInput(input);
-  if (!packet) return requestRefusal('input_invalid');
+  if (!packet || (format !== 'json' && format !== 'toon')) return requestRefusal('input_invalid');
   const statuses = await requestStatuses(client);
   const ids = [...new Set([...packet.select.map(/** Share SDK observations across selections. */ row => row.item), ...packet.arrivals.map(/** Unmatched arrivals remain explicit refused records. */ row => row.item)])];
   const snapshots = new Map<string, RequestSnapshot | undefined>();
@@ -50,7 +51,8 @@ export async function reviewEvidenceRequests(client: PmClient, input: unknown): 
     const path = selection.obligation === 'finding' ? String(snapshot.item.review_path ?? '') : '';
     const line = selection.obligation === 'finding' ? Number(snapshot.item.review_line ?? 0) : 0;
     if (path.length > 256) { queue.skipped.push({ selection: index, reason: 'source_path_too_large' }); continue; }
-    const request: EvidenceRequest = { ...selection, key: scopeDigest(['review-requests/v1', selection, snapshot.version, scopeDigest(snapshot.item)]), version: snapshot.version, text: result.text.slice(0, 240), text_omitted: Math.max(0, result.text.length - 240), path, line, ask: selection.missing === 'source' ? 'Provide one source excerpt for this obligation in an evidence item description with one native files link.' : 'Provide one focused test artifact for this obligation in an evidence item description with one native tests link.' };
+    const excerpt = Array.from(result.text).slice(0, 240).join('');
+    const request: EvidenceRequest = { ...selection, key: scopeDigest(['review-requests/v1', selection, snapshot.version, scopeDigest(snapshot.item)]), version: snapshot.version, text: excerpt, text_omitted: Buffer.byteLength(result.text) - Buffer.byteLength(excerpt), path, line, ask: selection.missing === 'source' ? 'Provide one source excerpt for this obligation in an evidence item description with one native files link.' : 'Provide one focused test artifact for this obligation in an evidence item description with one native tests link.' };
     const arrivalIndex = packet.arrivals.findIndex(/** Only an explicit exact request key can discharge this obligation. */ row => row.request === request.key);
     if (arrivalIndex >= 0) {
       matched.add(arrivalIndex);
@@ -66,31 +68,16 @@ export async function reviewEvidenceRequests(client: PmClient, input: unknown): 
   for (const id of [...ids].reverse()) if (scopeDigest(await requestSnapshot(client, id) ?? null) !== scopeDigest(snapshots.get(id) ?? null)) return requestRefusal('state_changed');
   for (const [index, selection] of packet.select.entries()) if (scopeDigest(await obligation(client, selection, snapshots.get(selection.item), statuses)) !== scopeDigest(obligations[index])) return requestRefusal('state_changed');
   if (scopeDigest([...await requestStatuses(client)]) !== scopeDigest([...statuses])) return requestRefusal('state_changed');
-  queue.pending = pending.length;
-  queue.omitted = pending.map(/** Exact keys survive every output budget, including zero requests. */ row => ({ key: row.key, reason: 'request_limit' }));
-  if (sizeRequestQueue(queue) > packet.budget.characters) return requestRefusal('budget_too_small');
-  for (const request of pending) {
-    if (queue.requests.length >= packet.budget.requests) break;
-    const omitted = queue.omitted.shift()!;
-    queue.requests.push(request);
-    if (sizeRequestQueue(queue) > packet.budget.characters) {
-      queue.requests.pop();
-      queue.omitted.unshift({ ...omitted, reason: 'character_limit' });
-      for (const row of queue.omitted) row.reason = 'character_limit';
-      break;
-    }
-  }
-  sizeRequestQueue(queue);
-  return requestNumbers(queue) ? queue : requestRefusal('output_invalid');
+  return finalizeReviewOutput(queue, pending, packet.budget, format);
 }
 
 /** Use the shared bounded artifact loader and the same strict packet schema as SDK callers. */
-export async function reviewEvidenceRequestsFile(client: PmClient, file: string): Promise<EvidenceRequestResult> {
+export async function reviewEvidenceRequestsFile(client: PmClient, file: string, format: EvidenceOutputFormat = 'json'): Promise<EvidenceRequestResult> {
   let input: unknown;
   try {
     const bytes = await fileBytes(file);
     if (!bytes) return requestRefusal('file_unavailable');
     input = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
   } catch { return requestRefusal('file_unavailable'); }
-  return reviewEvidenceRequests(client, input);
+  return reviewEvidenceRequests(client, input, format);
 }

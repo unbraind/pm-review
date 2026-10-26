@@ -7,7 +7,8 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { test } from 'node:test';
-import { EXIT_CODE } from '@unbrained/pm-cli/sdk';
+import { EXIT_CODE, decodeToon } from '@unbrained/pm-cli/sdk';
+import type { EvidenceRequestResult } from '../src/requests-types.ts';
 
 /** Run a consumer command with isolated HOME and tracker coordinates, preserving stderr for failures. */
 function command(cwd: string, name: string, args: string[], pmRoot: string, home = cwd): string {
@@ -206,10 +207,13 @@ async function verifyEvidenceRequests(cwd: string, runner: string, prefix: strin
   assert.equal(satisfied.pending, 0);
   assert.equal(satisfied.satisfied.length, 1);
   assert.equal(satisfied.approval, 'unverified');
-  const sdkProbe = "import { PmClient } from '@unbrained/pm-cli/sdk';\nimport { reviewEvidenceRequests } from 'pm-review';\nimport { readFileSync } from 'node:fs';\nconst client = new PmClient({ cwd: process.cwd(), pmRoot: process.env.PM_PATH, author: 'install-test' });\nconsole.log(JSON.stringify(await reviewEvidenceRequests(client, JSON.parse(readFileSync('requests.json', 'utf8')))));\n";
+  const sdkProbe = "import { PmClient } from '@unbrained/pm-cli/sdk';\nimport { reviewEvidenceRequests, serializeEvidenceRequests } from 'pm-review';\nimport { readFileSync } from 'node:fs';\nconst client = new PmClient({ cwd: process.cwd(), pmRoot: process.env.PM_PATH, author: 'install-test' });\nprocess.stdout.write(serializeEvidenceRequests(await reviewEvidenceRequests(client, JSON.parse(readFileSync('requests.json', 'utf8')))));\n";
   await writeFile(join(cwd, 'requests-sdk.ts'), sdkProbe);
   const native = command(cwd, runner === 'bunx' ? 'bun' : 'node', ['requests-sdk.ts'], pmRoot);
   assert.deepEqual(JSON.parse(native), satisfied);
+  assert.equal(native, JSON.stringify(satisfied));
+  await verifyPackedBudgets(cwd, runner, prefix, pmRoot, { ...packet, arrivals: [] });
+  await writeFile(file, JSON.stringify(packet));
   command(cwd, runner, [...prefix, 'update', id, '--description', 'A successor obligation revision', '--json'], pmRoot);
   const replay = JSON.parse(command(cwd, runner, [...invocation, '--json'], pmRoot)) as { pending: number; rejected: { reason: string }[] };
   assert.equal(replay.pending, 1);
@@ -217,4 +221,30 @@ async function verifyEvidenceRequests(cwd: string, runner: string, prefix: strin
   const refused = spawnSync(runner, [...prefix, 'review', 'requests', '--file', 'absent.json', '--json'], { cwd, env: consumerEnv(cwd, pmRoot), encoding: 'utf8' });
   assert.equal(refused.status, 1);
   assert.equal((JSON.parse(refused.stdout) as { refusal: { code: string } }).refusal.code, 'file_unavailable');
+}
+
+/** Measure actual child-process bytes so host reformatting or trailing framing cannot escape the final budget. */
+async function verifyPackedBudgets(cwd: string, runner: string, prefix: string[], pmRoot: string, packet: object): Promise<void> {
+  const file = join(cwd, 'requests.json');
+  for (const json of [false, true]) {
+    /** Execute the real installed host for one budget and decode its actual emitted wire format. */
+    async function invoke(characters: number) {
+      await writeFile(file, JSON.stringify({ ...packet, budget: { requests: 1, characters } }));
+      const child = spawnSync(runner, [...prefix, 'review', 'requests', '--file', 'requests.json', ...(json ? ['--json'] : [])], { cwd, env: consumerEnv(cwd, pmRoot), encoding: 'utf8' });
+      assert.equal(child.error, undefined);
+      const result = (json ? JSON.parse(child.stdout) : decodeToon(child.stdout)) as EvidenceRequestResult;
+      assert.equal(child.status, result.ok ? 0 : 1, child.stderr);
+      return { result, bytes: Buffer.byteLength(child.stdout) };
+    }
+    const below = (await invoke(0)).result;
+    if (below.ok || !below.minimum) assert.fail('Expected typed minimum-budget refusal');
+    const minimum = below.minimum.characters;
+    const all = (await invoke(Number.MAX_SAFE_INTEGER)).result;
+    if (!all.ok) assert.fail('Expected full packed result');
+    for (const ceiling of new Set([0, 297, minimum - 1, minimum, minimum + 1, all.characters - 1, all.characters, all.characters + 1, Number.MAX_SAFE_INTEGER])) {
+      const { result, bytes } = await invoke(ceiling);
+      if (result.ok) { assert.equal(result.characters, bytes); assert.ok(bytes <= ceiling); }
+      else { assert.equal(result.refusal.code, 'budget_too_small'); assert.equal(result.minimum?.characters, minimum); assert.ok(ceiling < minimum); }
+    }
+  }
 }

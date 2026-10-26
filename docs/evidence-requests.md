@@ -15,7 +15,9 @@ const input: EvidenceRequestInput = {
   arrivals: [],
   budget: { requests: 8, characters: 8192 },
 };
-const result = await reviewEvidenceRequests(client, input);
+const result = await reviewEvidenceRequests(client, input, 'json');
+// Use 'toon' for TOON accounting; serializeEvidenceRequests(result, format)
+// returns the exact wire representation the selected budget measures.
 ```
 
 Each selection names one unresolved `ReviewFinding` (`obligation: "finding"`) or
@@ -27,8 +29,8 @@ item types, unknown criteria and unavailable audited items have explicit skip re
 Empty selections produce an empty queue. This is review-specific acquisition;
 pm-context's next-evidence planner still owns general acquisition optimization.
 
-Requests include the obligation text (first 240 UTF-16 code units, with the exact
-omitted count), current SDK history version, evidence kind, source path/line when
+Requests include the obligation text (first 240 Unicode code points, with the exact
+omitted source UTF-8 byte count), current SDK history version, evidence kind, source path/line when
 the finding supplies them, and an instruction requesting **one artifact**. A source
 path longer than 256 code units produces a skip reason. No full review body appears
 in the output. The SHA-256 request key binds the selection, target history version
@@ -78,19 +80,29 @@ The one strict boundary accepts exactly the example packet's keys. Both arrays a
 dense, at most 64 entries, and unique by selection triple/request key. IDs are
 1–200 ASCII letters/digits/underscores/hyphens beginning with a letter or digit;
 criterion numbers are 1–999999. Versions are positive safe integers; arrival indices
-are 0–4095. `requests` is an integer from 0 to 64; `characters` is an integer from
-256 to 65536. Unknown keys, fractional/non-finite numbers and sparse arrays are
+are 0–4095. `requests` and `characters` are nonnegative safe integers, including zero
+and large ceilings. Unknown keys, fractional/non-finite numbers and sparse arrays are
 refused before SDK access. File input is regular UTF-8 JSON, at most 1 MiB.
 
 The queue is a deterministic prefix in selection order, with exact omitted keys and
-`request_limit` or `character_limit` reasons. `characters` measures the complete
-compact `JSON.stringify(result)` in UTF-16 code units, including all omission,
-satisfaction and skip receipts and the count itself. It is not a token or TOON byte
-limit; host rendering and indentation add overhead. A budget unable to fit the
-receipts yields `budget_too_small`, never silently drops receipts. All emitted
-numbers must be nonnegative safe integers; invalid native numeric metadata yields
-`output_invalid`. Restore full requests by raising the budget and rerunning the
-same selection, which revalidates current state.
+`request_limit` or `character_limit` reasons. The legacy `characters` field and
+budget key measure **actual UTF-8 wire bytes in the selected format**, including
+the size field itself, all escaping, counts, and omission metadata. JSON is compact;
+TOON uses the SDK encoder. Neither encoding adds a trailing newline. CLI output is
+emitted unchanged using SDK host-output suppression. SDK callers select the format
+with the optional third argument (default `json`) and use
+`serializeEvidenceRequests(result)` to retrieve the cached, measured wire bytes.
+Explicitly requesting another encoding or serializing a cloned result yields the
+SDK refusal `output_encoding_mismatch`; rerun acquisition in the desired encoding.
+
+One finalizer builds each complete candidate, serializes it, measures it, and
+shrinks until both limits hold. Successful results are deeply frozen. If even
+the smallest legal prefix envelope cannot fit, `budget_too_small` returns
+`minimum: { characters }` for that request ceiling and encoding.
+Retrying at the minimum fits; one byte below refuses. Every reported row count
+is derived from returned collections. All emitted numbers must be nonnegative
+safe integers; invalid native numeric metadata yields `output_invalid`.
+See the [budget audit and call-site inventory](output-budget-audit.md).
 
 The SDK verifies history and compares full native current/historical projections.
 Two observation passes recheck all referenced items, evidence revisions, criterion

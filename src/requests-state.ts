@@ -36,10 +36,3 @@ export function arrivalReason(request: EvidenceRequest, arrival: EvidenceArrival
   if (request.missing === 'test' && !('command' in link && typeof link.command === 'string' && link.command.trim() || link.path)) return 'artifact_missing';
   return undefined;
 }
-
-/** Stabilize the self-accounting character count without excluding any receipt metadata. */
-export function sizeRequestQueue<T extends { characters: number }>(queue: T): number {
-  let size = JSON.stringify(queue).length;
-  while (size !== queue.characters) { queue.characters = size; size = JSON.stringify(queue).length; }
-  return size;
-}

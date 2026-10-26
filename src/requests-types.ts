@@ -1,5 +1,7 @@
 import type { CoverageCode } from './coverage-types.ts';
 
+/** Exact wire encoding used for both SDK byte accounting and CLI emission. */
+export type EvidenceOutputFormat = 'json' | 'toon';
 /** One explicitly selected current review obligation and the smallest artifact needed. */
 export interface EvidenceSelection { item: string; obligation: string; missing: 'source' | 'test' }
 /** Explicit arrival points at one native link and the evidence item's audited revision. */
@@ -20,7 +22,7 @@ export type EvidenceSelectionSkip = CoverageCode | 'item_unavailable' | 'coverag
 /** Arrival refusal never silently deletes its associated pending request. */
 export type EvidenceArrivalRejection = 'evidence_unavailable' | 'evidence_changed' | 'evidence_type_mismatch' | 'artifact_missing' | 'source_path_mismatch' | 'request_not_current';
 /** Expected failures carry a concrete recovery step. */
-export interface EvidenceRequestRefusal { ok: false; refusal: { code: EvidenceRequestCode; remedy: string } }
+export interface EvidenceRequestRefusal { ok: false; refusal: { code: EvidenceRequestCode; remedy: string }; minimum?: { characters: number } }
 /** Every selection is accounted for; omission keys name the exact unreturned requests. */
 export interface EvidenceRequestQueue {
   ok: true; schema: 'review-requests/v1'; approval: 'unverified'; consistency: 'observed';
