@@ -105,6 +105,23 @@ function consumerEnv(cwd: string, pmRoot: string, home = cwd): NodeJS.ProcessEnv
   }
  });
 
+/** Reproduce a retirement at the copy filter boundary through the installed CLI. */
+test('packed closeout excludes live global runtime state during workspace preparation', async t => {
+  const root = resolve(import.meta.dirname, '..');
+  const scratch = await mkdtemp(join(tmpdir(), 'pm-review-closeout-install-'));
+  t.after(() => rm(scratch, { recursive: true, force: true, maxRetries: 5 }));
+  const packed = command(root, 'npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', scratch], join(root, '.agents/pm'), scratch);
+  const manifest = JSON.parse(packed.slice(packed.lastIndexOf('\n[') + 1)) as { filename: string }[];
+  const sdk = JSON.parse(await importManifest(root)) as { devDependencies: Record<string, string> };
+  const cwd = join(scratch, 'consumer');
+  await writeConsumer(cwd);
+  const pmRoot = join(cwd, '.agents/pm');
+  command(cwd, 'npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', join(scratch, manifest[0].filename), `@unbrained/pm-cli@${sdk.devDependencies['@unbrained/pm-cli']}`], pmRoot);
+  command(cwd, 'npx', ['--no-install', 'pm', 'init', 'copy-consumer', '--defaults', '--agent-guidance', 'skip', '--json'], pmRoot);
+  command(cwd, 'npx', ['--no-install', 'pm', 'install', join(scratch, manifest[0].filename), '--project', '--json'], pmRoot);
+  await verifyCloseout(cwd, 'npx', ['--no-install', 'pm'], pmRoot);
+});
+
 /** Exercise installed package results through real host rendering and process exits. */
 function verifyHostExitContract(cwd: string, runner: string, prefix: string[], pmRoot: string): void {
   const fixture = resolve(import.meta.dirname, 'host-fixture.ts');
@@ -161,6 +178,7 @@ async function verifyCloseout(cwd: string, runner: string, prefix: string[], pmR
   const note = `closeout-before:${Buffer.from('Recorded evidence').toString('base64')}`;
   command(cwd, runner, [...prefix, 'files', item.id, '--add', `path=proof.md,note=${note}`, '--json'], pmRoot);
   command(cwd, runner, [...prefix, 'test', item.id, '--add-json', JSON.stringify({ command: `${process.execPath} --test --test-reporter=tap closeout.test.ts`, path: 'closeout.test.ts' }), '--json'], pmRoot);
+  await verifyRetiringRuntime(cwd, runner, prefix, pmRoot, item.id);
   const report = JSON.parse(command(cwd, runner, [...prefix, 'review', 'closeout', item.id, '--json'], pmRoot)) as { ok: boolean; criteria: { verdict: string }[] };
   assert.equal(report.ok, true);
   assert.equal(report.criteria[0].verdict, 'proven');
@@ -170,6 +188,36 @@ async function verifyCloseout(cwd: string, runner: string, prefix: string[], pmR
   assert.equal(refused.error, undefined);
   assert.equal(refused.status, 1, refused.stderr);
   assert.equal((JSON.parse(refused.stdout) as { criteria: { verdict: string }[] }).criteria[0].verdict, 'unproven');
+}
+
+/** Retire one owned global runtime file at a deterministic real filesystem boundary. */
+async function verifyRetiringRuntime(cwd: string, runner: string, prefix: string[], pmRoot: string, id: string): Promise<void> {
+  const runtime = join(cwd, '.pm-cli/runtime/telemetry');
+  await mkdir(runtime, { recursive: true });
+  const transient = join(runtime, 'closeout-fixture-retiring.tmp');
+  await writeFile(transient, 'Owned transient state');
+  const preload = join(cwd, 'copy-race-preload.mjs');
+  await writeFile(preload, `import fs from 'node:fs'; import { syncBuiltinESMExports } from 'node:module';
+const original = fs.cpSync;
+/** Inject the competing retirement after enumeration and before the copy reads the entry. */
+fs.cpSync = (source, target, options) => original(source, target, { ...options, filter(path, destination) {
+  const include = options.filter(path, destination);
+  if (path === ${JSON.stringify(transient)}) { fs.unlinkSync(path); console.error('retired global runtime entry: .pm-cli/runtime/telemetry/closeout-fixture-retiring.tmp'); }
+  return include;
+} });
+syncBuiltinESMExports();
+`);
+  const env = consumerEnv(cwd, pmRoot);
+  const executable = runner === 'bunx' ? 'bun' : runner;
+  const args = runner === 'bunx' ? ['--preload', preload, join(cwd, 'node_modules/.bin/pm')] : prefix;
+  if (runner !== 'bunx') env.NODE_OPTIONS = `${env.NODE_OPTIONS ?? ''} --import=${pathToFileURL(preload).href}`;
+  const result = spawnSync(executable, [...args, 'review', 'closeout', id, '--json'], { cwd, env, encoding: 'utf8', timeout: 120_000 });
+  assert.equal(result.error, undefined);
+  assert.equal(result.status, 0, `${result.stderr}\n${result.stdout}`);
+  assert.equal((JSON.parse(result.stdout) as { ok: boolean }).ok, true);
+  assert.equal(await readFile(transient, 'utf8'), 'Owned transient state');
+  await rm(preload);
+  await rm(transient);
 }
 
 /** Verify installed capture/JSON transport/TOON comparison and typed process refusals on both runtimes. */

@@ -3,7 +3,8 @@ import { cpSync, existsSync, lstatSync, mkdtempSync, mkdirSync, readdirSync, rea
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { basename, dirname, join, relative, resolve, sep } from 'node:path';
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { resolveGlobalPmRoot } from '@unbrained/pm-cli/sdk';
 import type { PmClient } from '@unbrained/pm-cli/sdk';
 import type { CloseoutChange, CloseoutOptions } from './closeout-types.ts';
 import { artifactPath } from './closeout-state.ts';
@@ -81,7 +82,11 @@ function trackerCopyEntry(path: string, root: string, trackerRoot: string): bool
 }
 
 /** Report preparation categories without echoing private paths or raw command output. */
-export function preparationFailure(failure: unknown): string {
+export function preparationFailure(failure: unknown, root?: string): string {
+  if (root && failure instanceof Error && 'code' in failure && failure.code === 'ENOENT' && 'path' in failure && typeof failure.path === 'string') {
+    const file = relative(root, failure.path);
+    if (file !== '..' && !file.startsWith(`..${sep}`) && !isAbsolute(file)) return `ENTRY_DISAPPEARED:${file || '.'}; retry after workspace writes finish`;
+  }
   if (failure instanceof Error && 'code' in failure && typeof failure.code === 'string' && /^[A-Z0-9_]+$/.test(failure.code)) return failure.code;
   return failure instanceof SyntaxError ? 'SyntaxError' : failure instanceof TypeError ? 'TypeError' : 'Error';
 }
@@ -92,18 +97,22 @@ export async function executeCloseout(client: PmClient, id: string, options: Clo
   const workspace = join(sandbox, 'workspace');
   let result: CloseoutExecution;
   let phase = 'workspace-root';
+  let preparationRoot = options.cwd;
   try {
     const sourceRoot = realpathSync(options.cwd);
+    preparationRoot = sourceRoot;
     if (existsSync(join(sourceRoot, '.git'))) execFileSync('git', ['clone', '--no-hardlinks', '--no-checkout', '--quiet', '--', sourceRoot, workspace], { timeout: 30_000, stdio: ['ignore', 'pipe', 'pipe'] });
     const trackerSource = realpathSync(options.pmRoot);
+    const globalRoot = resolveGlobalPmRoot(sourceRoot);
     phase = 'workspace-copy';
     cpSync(sourceRoot, workspace, { recursive: true, filter: /** Exclude caches and refuse links that could write through to original artifacts. */ path => {
-      if (path !== sourceRoot && basename(path) === '.git') return false;
+      if (path !== sourceRoot && (basename(path) === '.git' || resolve(path) === globalRoot)) return false;
       if (['node_modules', 'coverage', '.bun', '.npm', '.cache'].includes(relative(sourceRoot, path))) return false;
       return trackerCopyEntry(path, sourceRoot, trackerSource);
     } });
     const tracker = join(workspace, '.closeout-pm');
     phase = 'tracker-copy';
+    preparationRoot = trackerSource;
     cpSync(trackerSource, tracker, { recursive: true, filter: /** PM-managed dependency links share the same explicit exception as workspace node_modules. */ path => {
       return trackerCopyEntry(path, trackerSource, trackerSource);
     } });
@@ -140,7 +149,7 @@ export async function executeCloseout(client: PmClient, id: string, options: Clo
     }
     result = execution;
   } catch (failure) {
-    result = { runs: [], error: `Disposable workspace or native coverage could not be prepared (${phase}/${preparationFailure(failure)}${failure instanceof CopyPolicyError ? `:${failure.file}` : ''})` };
+    result = { runs: [], error: `Disposable workspace or native coverage could not be prepared (${phase}/${preparationFailure(failure, preparationRoot)}${failure instanceof CopyPolicyError ? `:${failure.file}` : ''})` };
   } finally {
     rmSync(sandbox, { recursive: true, force: true });
   }
