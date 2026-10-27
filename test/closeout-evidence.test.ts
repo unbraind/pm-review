@@ -1,6 +1,7 @@
 import { preparationFailure } from '../src/closeout-run.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { join, resolve } from 'node:path';
 import { criterionEvidence, checkInvocation, recordExecution, recordRevert, itemEvidence } from '../src/closeout.ts';
 import type { CloseoutReport } from '../src/closeout-types.ts';
 
@@ -86,4 +87,12 @@ test('preparation diagnostics retain failure categories without arbitrary error 
   assert.equal(preparationFailure(Object.assign(new Error(), { code: 3 })), 'Error');
   assert.equal(preparationFailure(Object.assign(new Error(), { code: 'not-a-code' })), 'Error');
   assert.equal(preparationFailure(Object.assign(new Error(), { code: 'ENOENT' })), 'ENOENT');
+  const root = resolve('fixture');
+  const missing = (path: unknown) => Object.assign(new Error('private diagnostic'), { code: 'ENOENT', path });
+  assert.equal(preparationFailure(missing(join(root, 'source.ts')), root), 'ENTRY_DISAPPEARED:source.ts; retry after workspace writes finish');
+  assert.equal(preparationFailure(missing(root), root), 'ENTRY_DISAPPEARED:.; retry after workspace writes finish');
+  for (const path of [resolve(root, '..'), resolve(root, '../other/file'), 3]) assert.equal(preparationFailure(missing(path), root), 'ENOENT');
+  assert.equal(preparationFailure(Object.assign(new Error(), { code: 'ENOENT' }), root), 'ENOENT');
+  assert.equal(preparationFailure(new Error(), root), 'Error');
+  assert.equal(preparationFailure(null, root), 'Error');
 });

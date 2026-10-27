@@ -1,0 +1,55 @@
+id: pm-review-targeted-evidence-requests
+title: Request the smallest missing review evidence for each obligation
+description: "Compile bounded acquisition queues for selected unresolved findings and criterion gaps, retaining requests until revision-bound native source or test evidence arrives."
+type: Feature
+status: in_progress
+priority: 2
+tags[1]: "gh:unbraind/pm-review#46"
+created_at: "2026-10-26T00:38:35.933Z"
+updated_at: "2026-10-27T00:40:57.955Z"
+assignee: codex-agent
+claim_principal: codex-agent
+author: codex-agent
+acceptance_criteria: Every request names one current obligation and missing evidence type; Satisfied requests disappear only after bound evidence arrives; A 30-finding fixture emits a budgeted queue with exact omissions
+parent: pm-review-epic
+comments[12]{created_at,author,text}:
+  "2026-10-26T00:39:02.666Z",codex-agent,"Overlap check: host CLI 2026.10.25 has no review-specific acquisition queue. Existing reviewCoverage supplies current criterion gaps, reviewCloseout verifies independent completion evidence, and pm-context context-next-evidence handles general minimum-cost acquisition planning. This feature compiles selected review obligations into one-artifact source/test requests with explicit revision-bound arrivals, using native SDK item reads and status roles. No provider transcript fetching or new import/sync mutation path is needed."
+  "2026-10-26T00:46:43.486Z",codex-agent,"Implemented a read-only review requests SDK/CLI boundary with one strict bounded packet schema, durable target-version keys, explicit one-native-link arrivals, current SDK evidence revalidation, registry-role lifecycle decisions, exact budget omissions and typed remedies. Targeted fixture measured 30 findings: 7 requests plus 23 exact omission keys in 6378 JSON characters; character cap emits 6 plus 24 omissions in 5974 characters. Seeded replay and every-step peer interleaving checks are in progress. No shared mutable request journal, leases or persisted budgets were introduced."
+  "2026-10-26T01:00:42.509Z",codex-agent,"Behavioral revert proof: restored only registerReviewCommands from main while retaining the implementation and SDK exports. node --test --test-name-pattern=\"registered CLI\" test/requests.test.ts failed exit 1 because review requests was not registered; restored the function afterward. Public tracker validation: 57 items, 48 selected obligations, 5 pending, 3 emitted, 2 exact omissions, 43 terminal-role skips, 3606 JSON characters/bytes, CRLF file parity, 120 durable inputs unchanged. Linked pm test run passed its 2 boundary assertions; tracker test-result recording is disabled, so this comment records the result without changing policy."
+  "2026-10-26T01:03:04.806Z",codex-agent,"Additional boundary verification: corrupt foreign tracker documents now skip unavailable items or report coverage_unavailable rather than allowing a corpus-read exception to escape. Compact history retains original durable version addressing. Peer coverage-source drift and post-validation caller mutation each pass their dedicated regressions. Typecheck, test typecheck, lint, zero-duplication, build and docstring checks passed locally; full release gates are reserved for CI as requested."
+  "2026-10-26T01:15:51.736Z",codex-agent,"PR 46 is ready for review. Initial CI on 5752583 measured 100/100/100/100 coverage and completed all 500 request-model comparisons, then caught a fixture completeness assertion: the source fixture had 74 native fields because acceptance_criteria was absent. Added the missing native criterion contract rather than lowering the assertion or any gate. Also clarified that every-step concurrency coverage comprises 198 boundary/baseline cases with 192 injected peer transitions. Rerunning full npm/Bun CI; no native import/sync writers or tracker-history repairs were added."
+  "2026-10-26T01:17:44.088Z",codex-agent,"The corrected native seed probe reads 75 fields through the SDK and satisfies exactly one revision-bound request. Extended packed acceptance to execute requests through real npm/npx and native Bun/bunx consumers, compare the shipped SDK result, accept a bound arrival, reject its old key after target mutation, and verify typed nonzero file refusals. Full 500-sequence and release evidence will come from the refreshed CI run to avoid duplicating heavy gates on the saturated host."
+  "2026-10-26T01:19:12.813Z",codex-agent,"Implementation and local validation are ready for orchestrator review in https://github.com/unbraind/pm-review/pull/46. Pinned SDK history limitations remain tracked separately; no item is closed and no release/merge is authorized. Releasing the claim after the implementation handoff. The PR maintains the final exact-head npm/Bun gate run URL and counts while CI is monitored; all local tests/checks, real-data measurements, revert proof and expected refusals are documented here and in linked files."
+  "2026-10-26T09:59:21.075Z",codex-agent,"Review block confirmed: changing request_limit to character_limit after the initial fit check can enlarge the final envelope. Audit: the request queue is the only caller-budgeted transport output; it is reached by direct SDK, JSON packet file, and CLI adapters. Compact round summaries have no declared output ceiling. Title/excerpt and envelope limits constrain stored/input fields; closeout stdout and wall-clock limits are process/resource guards. Plan: one finalizer owns candidate construction, SDK JSON/TOON serialization, exact UTF-8 wire size, row counts, final bounds and minimum-budget refusals; CLI emits the finalized wire output unchanged. Add fixed 297-byte regression, randomized format/boundary properties and a final-measurement revert proof."
+  "2026-10-26T10:15:14.834Z",codex-agent,"Final-output class fix implemented in finalizeReviewOutput. All candidate transformations, exact per-format UTF-8 serialization, self-size fixed point and collection recounts precede the only fit test. SDK/file/CLI routes share it; CLI writes the measured bytes directly with host-output suppression. Seeded output properties: 500 models, 9663 JSON/TOON boundary budgets; real non-git SDK/file/CLI: 54 comparisons. Behavioral revert: removing the final fixed-point remeasurement makes both output-budget tests fail (exit 1), including an oversized successful result for the fixed 297-byte case and an incorrect reported minimum (907 versus measured 909). Restoring it passes both tests. No thresholds lowered."
+  "2026-10-26T10:30:24.805Z",codex-agent,"Final targeted checks: 12/12 tests passed, with output-budget.ts at 100/100/100/100. Typecheck, test typecheck, lint, duplication (0%), build and docstrings passed. Repeated the behavioral revert against the final cached-wire implementation: removing only the last serialization/remeasurement makes both budget properties fail, including the fixed 297-byte case; restored implementation passes. Successful payloads and their cached wire bytes are immutable; encoding changes or cloned budget receipts are refused with SDK output_encoding_mismatch and a remedy. Minimum reports only the byte ceiling for the same request limit/format, avoiding a misleading mixed-dimension recommendation. Packed npm/Bun acceptance now checks exact child stdout at all one-request prefix boundaries for both formats, plus the shipped serializer. Releasing the implementation claim; refreshed exact-head CI evidence will be maintained in PR 46. No merge, release or thread reply."
+  "2026-10-27T00:25:59.603Z",codex-agent,"Continuing PR 46 after the orchestrator main merge. Rechecking packed Node 22 closeout preparation failure workspace-copy/ENOENT; will reproduce using the packed consumer, fix the preparation cause, prove a behavioral revert, and wait for both runtime CI gates. Existing request budget and state-model evidence is preserved."
+  "2026-10-27T00:40:55.952Z",codex-agent,Packed closeout continuation is tracked by the existing pm-review-bun-closeout-copy issue. SDK global-tracker discovery now keeps live global runtime state out of disposable project snapshots; deterministic packed Node 22 and source-only revert checks cover the intermittent failure. Request budgets and acquisition behavior are unchanged. Full npm and Bun release gates and both Node CI jobs will supply final evidence.
+files[17]{path,scope}:
+  index.ts,project
+  src/closeout-run.ts,project
+  src/commands.ts,project
+  src/output-budget.ts,project
+  src/requests-state.ts,project
+  src/requests-types.ts,project
+  src/requests-validation.ts,project
+  src/requests.ts,project
+  test/install.acceptance.ts,project
+  test/output-budget.test.ts,project
+  test/requests-boundary.test.ts,project
+  test/requests-budget.test.ts,project
+  test/requests-fixture.ts,project
+  test/requests-interleaving.test.ts,project
+  test/requests-model.test.ts,project
+  test/requests-public-tracker.ts,project
+  test/requests.test.ts,project
+tests[2]{command,scope,pm_context_mode,workspace_context_mode,provenance{author,created_at,source_kind,source_ref},shared_host_safe}:
+  node --test test/requests-boundary.test.ts,project,schema,source,codex-agent,"2026-10-26T00:59:20.009Z",local_mutation,feat/targeted-review-evidence-requests,true
+  node --test test/output-budget.test.ts,project,schema,source,codex-agent,"2026-10-26T10:15:25.988Z",local_mutation,feat/targeted-review-evidence-requests,true
+docs[5]{path,scope}:
+  docs/evidence-requests-validation.md,project
+  docs/evidence-requests.md,project
+  docs/output-budget-audit.md,project
+  examples/review-requests.json,project
+  README.md,project
+body: ""

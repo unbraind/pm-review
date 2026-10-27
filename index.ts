@@ -1,3 +1,10 @@
+/** Export read-only, revision-bound evidence acquisition queues and their file adapter. */
+export { reviewEvidenceRequests, reviewEvidenceRequestsFile } from './src/requests.ts';
+/** Export the exact JSON/TOON wire serializer used for budget accounting and CLI output. */
+export { serializeEvidenceRequests } from './src/output-budget.ts';
+/** Export the strict packet, queue, one-artifact arrivals and typed remedies. */
+export type { EvidenceSelection, EvidenceArrival, EvidenceRequestInput, EvidenceRequest, EvidenceRequestQueue, EvidenceRequestCode, EvidenceRequestRefusal, EvidenceRequestResult, EvidenceSelectionSkip, EvidenceArrivalRejection, EvidenceOutputFormat } from './src/requests-types.ts';
+
 /** Export revision-scoped attention capture and read-only carry-forward. */
 export { captureReviewScope, carryForwardReview } from './src/scope.ts';
 /** Export portable scope receipts, reports and typed remedies. */

@@ -1,0 +1,9 @@
+{
+  "schema": "review-requests/v1",
+  "select": [
+    { "item": "sample-finding", "obligation": "finding", "missing": "source" },
+    { "item": "sample-task", "obligation": "AC1", "missing": "test" }
+  ],
+  "arrivals": [],
+  "budget": { "requests": 8, "characters": 8192 }
+}
