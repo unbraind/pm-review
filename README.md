@@ -439,8 +439,12 @@ criteria remain never reviewed. Retained attention always returns
 
 [Selection example, typed SDK, refusals and concurrency semantics](docs/review-carry-forward.md).
 
-Release jobs with write permissions are restricted to `unbraind/pm-review` at job
-level, so a fork cannot run publication with its own approval variable.
+Every workflow job granted write permissions, including CodeQL, Dependabot and
+reusable workflow calls, requires the exact repository `unbraind/pm-review`.
+The approval variable controls GitHub releases; it does not impose a local npm
+publishing hold. Maintainers run the prepublish checks and authenticate with npm
+for local publication. The first local publish uses `--provenance=false`; daily
+GitHub OIDC releases keep provenance enabled.
 
 ## Targeted evidence requests
 

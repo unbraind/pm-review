@@ -45,7 +45,6 @@
     "verify:release-publish-attestation": "node scripts/verify-release-publish-attestation.ts",
     "identity:check": "node scripts/identity-gate.ts"
   },
-  "dependencies": {},
   "peerDependencies": {
     "@unbrained/pm-cli": ">=2026.10.13"
   },
@@ -59,7 +58,8 @@
     "jscpd": "5.4.1",
     "pm-changelog": "2026.10.20",
     "pm-ops": "2026.10.20",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "yaml": "2.9.1"
   },
   "keywords": [
     "pm-cli",
