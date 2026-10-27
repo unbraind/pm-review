@@ -6,18 +6,18 @@ status: in_progress
 priority: 2
 tags[1]: "gh:unbraind/pm-review#46"
 created_at: "2026-10-23T17:48:22.873Z"
-updated_at: "2026-10-27T00:40:54.314Z"
-assignee: codex-agent
-claim_principal: codex-agent
+updated_at: "2026-10-27T01:26:28.565Z"
 author: codex-agent
 parent: pm-review-epic
 repro_steps: "Inspect https://github.com/unbraind/pm-review/actions/runs/39996625199/job/120561709283 and compare the successful Node 26 packed executions at the same code commit 82f0c24. Run packed npm/Bun acceptance repeatedly in isolated consumers to determine which copy entry disappears."
 expected_result: Native Bun closeout prepares a stable disposable workspace or a precise actionable refusal.
 actual_result: "CI run 39996625199, attempt 1: test (22) packed acceptance failed at closeout preparation with execution_missing and workspace-copy/ENOENT; test (26), including Bun release gates, passed."
-comments[3]{created_at,author,text}:
+comments[5]{created_at,author,text}:
   "2026-10-27T00:26:35.596Z",codex-agent,"Reusing this existing intermittent copy issue for the orchestrator-reported Node 22 packed closeout failure in CI run 40342564725, job 121640877263. Focused packed Node 22 reproduction is running; investigating the exact missing copy entry before changing policy or acceptance assertions."
   "2026-10-27T00:39:13.848Z",codex-agent,"The initial Node 22 packed suite and 30 ordinary focused retries passed, confirming the intermittent nature. A deterministic packed-consumer schedule now reproduces workspace-copy/ENOENT by retiring the owned fixture .pm-cli/runtime/telemetry/closeout-fixture-retiring.tmp after copy enumeration and before reading it. HOME equals the consumer workspace, so SDK global telemetry is accidentally treated as project source. Fix excludes the SDK-resolved global tracker before traversal; unrelated .pm-cli project source remains included. Other disappearing workspace entries receive a bounded relative ENTRY_DISAPPEARED diagnostic and retry remedy. No telemetry settings change."
   "2026-10-27T00:40:54.314Z",codex-agent,"Revert proof: removed only the SDK global-root exclusion from executeCloseout and ran node --test --test-concurrency=1 --test-name-pattern='SDK global tracker discovery' test/closeout-round.test.ts. It failed exit 1 with workspace-copy/ARTIFACT_SYMLINK for the live global runtime fixture; restored source passes. Node 22 focused packed command node --test --test-concurrency=1 --test-name-pattern='packed closeout excludes' --test-reporter=spec test/install.acceptance.ts now passes 1/1; the same injected retirement on the old packed code failed with the review's workspace-copy/ENOENT. Targeted diagnostic and round suites passed 12/12. Typecheck, test typecheck, lint, docstrings and zero-duplication gate pass at unchanged thresholds."
+  "2026-10-27T00:48:23.682Z",codex-agent,"Fix commit c3212ae is pushed. Full-gate evidence is CI run 40428105737 (https://github.com/unbraind/pm-review/actions/runs/40428105737), currently waiting for Node 22 and 26 runners, with Bun release:check in the Node 26 job. A local full-gate attempt was stopped with all owned descendants to honor the original shared-host resource constraint; it is not passing evidence. Local strict health separately reports extension_host_pm_cli_version_skew:2026.10.20:2026.10.26:pm-github from the installed extension; dependency pins are unchanged. Targeted checks remain green. Claims will be released after CI results are recorded."
+  "2026-10-27T01:26:20.643Z",codex-agent,"CI passed at code commit c3212ae9216a8f65472416332718f5a15abfa91d: https://github.com/unbraind/pm-review/actions/runs/40428105737 . Node 22 and Node 26 npm gates each passed 252/252 tests and 2/2 packed acceptance tests; Node 26 bun run release:check also passed 252/252 and 2/2. Each coverage gate measured 43 source files at 100/100/100/100 with unchanged thresholds. Both packed runtimes exercise the global-runtime retirement regression. The local 12/12 targeted and 1/1 focused packed checks, typecheck, lint, docstring, duplication, and behavioral revert results are recorded above. Releasing the claim; item stays in progress for orchestrator verification. The final receipt-only commit will be pushed and CI on that head verified, with its final run URL maintained in PR 46 to avoid recursive tracker-only receipts. No merge or release."
 files[4]{path,scope}:
   src/closeout-run.ts,project
   test/closeout-evidence.test.ts,project
