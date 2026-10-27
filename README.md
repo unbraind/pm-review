@@ -435,3 +435,6 @@ criteria remain never reviewed. Retained attention always returns
 `approval: unverified`; it cannot satisfy fresh exact-artifact review gates.
 
 [Selection example, typed SDK, refusals and concurrency semantics](docs/review-carry-forward.md).
+
+Release jobs with write permissions are restricted to `unbraind/pm-review` at job
+level, so a fork cannot run publication with its own approval variable.
