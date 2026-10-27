@@ -4,6 +4,32 @@ Bot review threads become durable pm context. Each thread, bot review body and b
 
 Project management = context management.
 
+## Install and release approval
+
+The first npm release is pending the maintainer's interactive bootstrap. After
+that first publish, the maintainer configures npm trusted publishing for
+`release.yml` and sets the repository variable `PM_RELEASE_APPROVED` to `true`.
+The daily workflow and manual dispatch both require this variable and `main`.
+Publishing uses OIDC with provenance; no stored npm token is needed.
+
+Once published, install the package and compatible pm host, then activate the
+extension in an initialized pm project:
+
+```sh
+npm install pm-review @unbrained/pm-cli
+npx --no-install pm package install ./node_modules/pm-review
+
+bun add pm-review @unbrained/pm-cli
+bunx --bun --no-install pm package install ./node_modules/pm-review
+
+pm package install npm:pm-review
+pm review --help
+```
+
+The package exports its SDK through `main` and `types` and registers commands
+with pm. It has no standalone `bin`: use `npx pm` or `bunx --bun pm` through
+the installed host. npm/Bun dependency installation alone does not activate it.
+
 ## Install
 
 This new package is unreleased. The registry examples below apply after maintainer-approved publication. For local evaluation, build and pack the package, then install the resulting tarball into a scratch project.
@@ -412,6 +438,13 @@ criteria remain never reviewed. Retained attention always returns
 `approval: unverified`; it cannot satisfy fresh exact-artifact review gates.
 
 [Selection example, typed SDK, refusals and concurrency semantics](docs/review-carry-forward.md).
+
+Every workflow job granted write permissions, including CodeQL, Dependabot and
+reusable workflow calls, requires the exact repository `unbraind/pm-review`.
+The approval variable controls GitHub releases; it does not impose a local npm
+publishing hold. Maintainers run the prepublish checks and authenticate with npm
+for local publication. The first local publish uses `--provenance=false`; daily
+GitHub OIDC releases keep provenance enabled.
 
 ## Targeted evidence requests
 

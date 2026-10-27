@@ -53,6 +53,7 @@
 
 ### Other
 
+- Release readiness behind PM_RELEASE_APPROVED ([pm-review-release-gate](https://github.com/unbraind/pm-review/blob/main/.agents/pm/chores/pm-review-release-gate.toon))
 - Use the pm SDK for review criterion parsing and evidence lookup ([pm-review-sdk-adoption-1025](https://github.com/unbraind/pm-review/blob/main/.agents/pm/tasks/pm-review-sdk-adoption-1025.toon))
 - Reconcile stale in-progress tracker records (2026-10-23) ([pm-review-reconcile-1023](https://github.com/unbraind/pm-review/blob/main/.agents/pm/chores/pm-review-reconcile-1023.toon))
 - Adopt native custom-type folders in changelog generation ([pm-review-native-folders](https://github.com/unbraind/pm-review/blob/main/.agents/pm/tasks/pm-review-native-folders.toon))

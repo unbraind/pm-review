@@ -9,7 +9,7 @@
   "bugs": {
     "url": "https://github.com/unbraind/pm-review/issues"
   },
-  "homepage": "https://github.com/unbraind/pm-review#readme",
+  "homepage": "https://pm-cli.unbrained.dev/packages/pm-review",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -45,7 +45,6 @@
     "verify:release-publish-attestation": "node scripts/verify-release-publish-attestation.ts",
     "identity:check": "node scripts/identity-gate.ts"
   },
-  "dependencies": {},
   "peerDependencies": {
     "@unbrained/pm-cli": ">=2026.10.13"
   },
@@ -59,7 +58,8 @@
     "jscpd": "5.4.1",
     "pm-changelog": "2026.10.20",
     "pm-ops": "2026.10.20",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "yaml": "2.9.1"
   },
   "keywords": [
     "pm-cli",
@@ -72,7 +72,10 @@
   "engines": {
     "node": ">=22.18.0"
   },
-  "author": "@unbraind",
+  "author": {
+    "name": "unbrained",
+    "url": "https://unbrained.dev/about"
+  },
   "pm": {
     "aliases": [
       "review"
@@ -106,7 +109,8 @@
     ]
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "coverageGate": {
     "sources": [
