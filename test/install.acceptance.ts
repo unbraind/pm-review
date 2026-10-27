@@ -7,7 +7,8 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { test } from 'node:test';
-import { EXIT_CODE } from '@unbrained/pm-cli/sdk';
+import { EXIT_CODE, decodeToon } from '@unbrained/pm-cli/sdk';
+import type { EvidenceRequestResult } from '../src/requests-types.ts';
 
 /** Run a consumer command with isolated HOME and tracker coordinates, preserving stderr for failures. */
 function command(cwd: string, name: string, args: string[], pmRoot: string, home = cwd): string {
@@ -53,7 +54,7 @@ function consumerEnv(cwd: string, pmRoot: string, home = cwd): NodeJS.ProcessEnv
     const prefix = runtime === 'npm' ? ['--no-install', 'pm'] : ['--bun', '--no-install', 'pm'];
     command(cwd, runner, [...prefix, 'init', 'consumer', '--defaults', '--agent-guidance', 'skip', '--json'], pmRoot);
     command(cwd, runner, [...prefix, 'install', tarball, '--project', '--json'], pmRoot);
-    for (const action of ['ingest', 'import', 'verdict', 'round', 'precedents', 'reconcile', 'respond', 'status', 'closeout', 'coverage', 'cover', 'lineage', 'scope', 'carry-forward']) assert.match(command(cwd, runner, [...prefix, 'review', action, '--help'], pmRoot), /review/);
+    for (const action of ['ingest', 'import', 'verdict', 'round', 'precedents', 'reconcile', 'respond', 'status', 'closeout', 'coverage', 'cover', 'lineage', 'scope', 'carry-forward', 'requests']) assert.match(command(cwd, runner, [...prefix, 'review', action, '--help'], pmRoot), /review/);
     assert.match(command(cwd, runner, [...prefix, 'review', 'reconcile', '--help'], pmRoot), /--dry-run/);
     const verdictHelp = command(cwd, runner, [...prefix, 'review', 'verdict', '--help'], pmRoot);
     assert.doesNotMatch(verdictHelp, /<value>\s+<value>/);
@@ -74,6 +75,7 @@ function consumerEnv(cwd: string, pmRoot: string, home = cwd): NodeJS.ProcessEnv
     assert.equal(coverage.unreviewed, 1);
     assert.match(command(cwd, runner, [...prefix, 'review', 'coverage', coverageTarget.id], pmRoot), /unreviewed/);
     await verifyCarryForward(cwd, runner, prefix, pmRoot, coverageTarget.id);
+    await verifyEvidenceRequests(cwd, runner, prefix, pmRoot, coverageTarget.id);
     const evidence = JSON.parse(command(cwd, runner, [...prefix, 'create', 'ReviewFinding', 'Packed substantive review', '--description', 'Validate the input before writing.', '--field', 'review_bot=synthetic-reviewer', '--field', 'review_node_id=packed-node', '--field', 'review_repo=example/package', '--field', 'review_pr=2', '--field', 'review_url=https://github.com/example/package/pull/2#discussion_r1', '--field', `review_head=${'a'.repeat(40)}`, '--field', 'review_kind=thread', '--json'], pmRoot)) as { id: string };
     const lineage = JSON.parse(command(cwd, runner, [...prefix, 'review', 'lineage', evidence.id, '--json'], pmRoot)) as { canonical: string; observations: unknown[] };
     assert.equal(lineage.canonical, evidence.id);
@@ -102,6 +104,23 @@ function consumerEnv(cwd: string, pmRoot: string, home = cwd): NodeJS.ProcessEnv
     assert.ok((await readdir(cwd)).includes('node_modules'));
   }
  });
+
+/** Reproduce a retirement at the copy filter boundary through the installed CLI. */
+test('packed closeout excludes live global runtime state during workspace preparation', async t => {
+  const root = resolve(import.meta.dirname, '..');
+  const scratch = await mkdtemp(join(tmpdir(), 'pm-review-closeout-install-'));
+  t.after(() => rm(scratch, { recursive: true, force: true, maxRetries: 5 }));
+  const packed = command(root, 'npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', scratch], join(root, '.agents/pm'), scratch);
+  const manifest = JSON.parse(packed.slice(packed.lastIndexOf('\n[') + 1)) as { filename: string }[];
+  const sdk = JSON.parse(await importManifest(root)) as { devDependencies: Record<string, string> };
+  const cwd = join(scratch, 'consumer');
+  await writeConsumer(cwd);
+  const pmRoot = join(cwd, '.agents/pm');
+  command(cwd, 'npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', join(scratch, manifest[0].filename), `@unbrained/pm-cli@${sdk.devDependencies['@unbrained/pm-cli']}`], pmRoot);
+  command(cwd, 'npx', ['--no-install', 'pm', 'init', 'copy-consumer', '--defaults', '--agent-guidance', 'skip', '--json'], pmRoot);
+  command(cwd, 'npx', ['--no-install', 'pm', 'install', join(scratch, manifest[0].filename), '--project', '--json'], pmRoot);
+  await verifyCloseout(cwd, 'npx', ['--no-install', 'pm'], pmRoot);
+});
 
 /** Exercise installed package results through real host rendering and process exits. */
 function verifyHostExitContract(cwd: string, runner: string, prefix: string[], pmRoot: string): void {
@@ -159,6 +178,7 @@ async function verifyCloseout(cwd: string, runner: string, prefix: string[], pmR
   const note = `closeout-before:${Buffer.from('Recorded evidence').toString('base64')}`;
   command(cwd, runner, [...prefix, 'files', item.id, '--add', `path=proof.md,note=${note}`, '--json'], pmRoot);
   command(cwd, runner, [...prefix, 'test', item.id, '--add-json', JSON.stringify({ command: `${process.execPath} --test --test-reporter=tap closeout.test.ts`, path: 'closeout.test.ts' }), '--json'], pmRoot);
+  await verifyRetiringRuntime(cwd, runner, prefix, pmRoot, item.id);
   const report = JSON.parse(command(cwd, runner, [...prefix, 'review', 'closeout', item.id, '--json'], pmRoot)) as { ok: boolean; criteria: { verdict: string }[] };
   assert.equal(report.ok, true);
   assert.equal(report.criteria[0].verdict, 'proven');
@@ -168,6 +188,36 @@ async function verifyCloseout(cwd: string, runner: string, prefix: string[], pmR
   assert.equal(refused.error, undefined);
   assert.equal(refused.status, 1, refused.stderr);
   assert.equal((JSON.parse(refused.stdout) as { criteria: { verdict: string }[] }).criteria[0].verdict, 'unproven');
+}
+
+/** Retire one owned global runtime file at a deterministic real filesystem boundary. */
+async function verifyRetiringRuntime(cwd: string, runner: string, prefix: string[], pmRoot: string, id: string): Promise<void> {
+  const runtime = join(cwd, '.pm-cli/runtime/telemetry');
+  await mkdir(runtime, { recursive: true });
+  const transient = join(runtime, 'closeout-fixture-retiring.tmp');
+  await writeFile(transient, 'Owned transient state');
+  const preload = join(cwd, 'copy-race-preload.mjs');
+  await writeFile(preload, `import fs from 'node:fs'; import { syncBuiltinESMExports } from 'node:module';
+const original = fs.cpSync;
+/** Inject the competing retirement after enumeration and before the copy reads the entry. */
+fs.cpSync = (source, target, options) => original(source, target, { ...options, filter(path, destination) {
+  const include = options.filter(path, destination);
+  if (path === ${JSON.stringify(transient)}) { fs.unlinkSync(path); console.error('retired global runtime entry: .pm-cli/runtime/telemetry/closeout-fixture-retiring.tmp'); }
+  return include;
+} });
+syncBuiltinESMExports();
+`);
+  const env = consumerEnv(cwd, pmRoot);
+  const executable = runner === 'bunx' ? 'bun' : runner;
+  const args = runner === 'bunx' ? ['--preload', preload, join(cwd, 'node_modules/.bin/pm')] : prefix;
+  if (runner !== 'bunx') env.NODE_OPTIONS = `${env.NODE_OPTIONS ?? ''} --import=${pathToFileURL(preload).href}`;
+  const result = spawnSync(executable, [...args, 'review', 'closeout', id, '--json'], { cwd, env, encoding: 'utf8', timeout: 120_000 });
+  assert.equal(result.error, undefined);
+  assert.equal(result.status, 0, `${result.stderr}\n${result.stdout}`);
+  assert.equal((JSON.parse(result.stdout) as { ok: boolean }).ok, true);
+  assert.equal(await readFile(transient, 'utf8'), 'Owned transient state');
+  await rm(preload);
+  await rm(transient);
 }
 
 /** Verify installed capture/JSON transport/TOON comparison and typed process refusals on both runtimes. */
@@ -186,4 +236,63 @@ async function verifyCarryForward(cwd: string, runner: string, prefix: string[],
   const invalid = spawnSync(runner, [...prefix, 'review', 'carry-forward', id, '--file', 'absent.json', '--json'], { cwd, env: consumerEnv(cwd, pmRoot), encoding: 'utf8' });
   assert.equal(invalid.status, 1);
   assert.equal((JSON.parse(invalid.stdout) as { refusal: { code: string } }).refusal.code, 'scope_unavailable');
+}
+
+/** Check shipped SDK and actual npm/Bun CLI rendering, arrivals, revisions and refusal exits. */
+async function verifyEvidenceRequests(cwd: string, runner: string, prefix: string[], pmRoot: string, id: string): Promise<void> {
+  const packet = { schema: 'review-requests/v1', select: [{ item: id, obligation: 'AC1', missing: 'test' }], arrivals: [] as { request: string; item: string; version: number; field: string; index: number }[], budget: { requests: 4, characters: 8192 } };
+  const file = join(cwd, 'requests.json');
+  const invocation = [...prefix, 'review', 'requests', '--file', 'requests.json'];
+  await writeFile(file, JSON.stringify(packet, null, 2).replaceAll('\n', '\r\n'));
+  const pending = JSON.parse(command(cwd, runner, [...invocation, '--json'], pmRoot)) as { requests: { key: string }[]; pending: number };
+  assert.equal(pending.pending, 1);
+  assert.equal(pending.requests.length, 1);
+  assert.match(command(cwd, runner, invocation, pmRoot), /pending: 1/);
+  const artifact = JSON.parse(command(cwd, runner, [...prefix, 'create', 'Task', 'Focused packed test artifact', '--description', 'One focused test of the validation boundary.', '--test', 'command=node --test test/focused.test.ts', '--json'], pmRoot)) as { id: string };
+  packet.arrivals.push({ request: pending.requests[0].key, item: artifact.id, version: 1, field: 'tests', index: 0 });
+  await writeFile(file, JSON.stringify(packet));
+  const satisfied = JSON.parse(command(cwd, runner, [...invocation, '--json'], pmRoot)) as { pending: number; satisfied: unknown[]; approval: string };
+  assert.equal(satisfied.pending, 0);
+  assert.equal(satisfied.satisfied.length, 1);
+  assert.equal(satisfied.approval, 'unverified');
+  const sdkProbe = "import { PmClient } from '@unbrained/pm-cli/sdk';\nimport { reviewEvidenceRequests, serializeEvidenceRequests } from 'pm-review';\nimport { readFileSync } from 'node:fs';\nconst client = new PmClient({ cwd: process.cwd(), pmRoot: process.env.PM_PATH, author: 'install-test' });\nprocess.stdout.write(serializeEvidenceRequests(await reviewEvidenceRequests(client, JSON.parse(readFileSync('requests.json', 'utf8')))));\n";
+  await writeFile(join(cwd, 'requests-sdk.ts'), sdkProbe);
+  const native = command(cwd, runner === 'bunx' ? 'bun' : 'node', ['requests-sdk.ts'], pmRoot);
+  assert.deepEqual(JSON.parse(native), satisfied);
+  assert.equal(native, JSON.stringify(satisfied));
+  await verifyPackedBudgets(cwd, runner, prefix, pmRoot, { ...packet, arrivals: [] });
+  await writeFile(file, JSON.stringify(packet));
+  command(cwd, runner, [...prefix, 'update', id, '--description', 'A successor obligation revision', '--json'], pmRoot);
+  const replay = JSON.parse(command(cwd, runner, [...invocation, '--json'], pmRoot)) as { pending: number; rejected: { reason: string }[] };
+  assert.equal(replay.pending, 1);
+  assert.equal(replay.rejected[0].reason, 'request_not_current');
+  const refused = spawnSync(runner, [...prefix, 'review', 'requests', '--file', 'absent.json', '--json'], { cwd, env: consumerEnv(cwd, pmRoot), encoding: 'utf8' });
+  assert.equal(refused.status, 1);
+  assert.equal((JSON.parse(refused.stdout) as { refusal: { code: string } }).refusal.code, 'file_unavailable');
+}
+
+/** Measure actual child-process bytes so host reformatting or trailing framing cannot escape the final budget. */
+async function verifyPackedBudgets(cwd: string, runner: string, prefix: string[], pmRoot: string, packet: object): Promise<void> {
+  const file = join(cwd, 'requests.json');
+  for (const json of [false, true]) {
+    /** Execute the real installed host for one budget and decode its actual emitted wire format. */
+    async function invoke(characters: number) {
+      await writeFile(file, JSON.stringify({ ...packet, budget: { requests: 1, characters } }));
+      const child = spawnSync(runner, [...prefix, 'review', 'requests', '--file', 'requests.json', ...(json ? ['--json'] : [])], { cwd, env: consumerEnv(cwd, pmRoot), encoding: 'utf8' });
+      assert.equal(child.error, undefined);
+      const result = (json ? JSON.parse(child.stdout) : decodeToon(child.stdout)) as EvidenceRequestResult;
+      assert.equal(child.status, result.ok ? 0 : 1, child.stderr);
+      return { result, bytes: Buffer.byteLength(child.stdout) };
+    }
+    const below = (await invoke(0)).result;
+    if (below.ok || !below.minimum) assert.fail('Expected typed minimum-budget refusal');
+    const minimum = below.minimum.characters;
+    const all = (await invoke(Number.MAX_SAFE_INTEGER)).result;
+    if (!all.ok) assert.fail('Expected full packed result');
+    for (const ceiling of new Set([0, 297, minimum - 1, minimum, minimum + 1, all.characters - 1, all.characters, all.characters + 1, Number.MAX_SAFE_INTEGER])) {
+      const { result, bytes } = await invoke(ceiling);
+      if (result.ok) { assert.equal(result.characters, bytes); assert.ok(bytes <= ceiling); }
+      else { assert.equal(result.refusal.code, 'budget_too_small'); assert.equal(result.minimum?.characters, minimum); assert.ok(ceiling < minimum); }
+    }
+  }
 }

@@ -55,6 +55,14 @@ remain the explicit shared-link exception. Package-manager and tooling caches
 (`.bun`, `.npm`, `.cache`, `coverage`) are excluded at the workspace root;
 nested directories with those names and nested dependency directories are copied
 under the same artifact-symlink policy. Git metadata is excluded at every depth.
+The SDK-resolved global tracker is also excluded when it lies inside the source
+workspace (for example when a packed consumer uses its workspace as HOME).
+Its live runtime files and locks are not project artifacts and can disappear
+while a command drains them. An unrelated project directory named `.pm-cli`
+remains source unless the SDK identifies it as the global tracker.
+If another workspace entry disappears during preparation, `execution_missing`
+names the phase and relative entry with `ENTRY_DISAPPEARED` and asks the caller
+to retry after workspace writes finish; private absolute paths are omitted.
 
 Findings include weakened coverage floors/lint severity, changed test policies,
 new focused/skipped/pending tests, removed test cases/artifacts, missing runs,

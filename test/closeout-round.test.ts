@@ -72,6 +72,28 @@ test('nested dependencies', () => { for (const directory of ${JSON.stringify(dir
   assert.ok(execution.functions?.some(row => row.file === '..internal/value.cjs' && row.count > 0));
 });
 
+test('SDK global tracker discovery excludes live state and preserves ordinary dot directories', async t => {
+  const { cwd, client, pmRoot } = await tracker(t);
+  const globalRoot = join(cwd, 'nested', 'agent-global');
+  mkdirSync(join(globalRoot, 'runtime'), { recursive: true });
+  // Volatile state is excluded before link inspection; ordinary source directories remain copied.
+  symlinkSync('retired.tmp', join(globalRoot, 'runtime', 'retiring-link'));
+  mkdirSync(join(cwd, '.pm-cli'));
+  writeFileSync(join(cwd, '.pm-cli', 'source.txt'), 'Ordinary project source');
+  writeFileSync(join(cwd, 'case.test.ts'), "import { test } from 'node:test'; import assert from 'node:assert/strict'; import { existsSync, readFileSync } from 'node:fs'; test('isolated snapshot', () => { assert.equal(existsSync('nested/agent-global'), false); assert.equal(readFileSync('.pm-cli/source.txt', 'utf8'), 'Ordinary project source'); });\n");
+  const { item } = await client.create({ type: 'Task', title: 'Isolated snapshot' });
+  await inFixtureWorkspace(cwd, () => client.run('test', { id: item.id, options: { add: [`command=${process.execPath} --test --test-reporter=tap case.test.ts,path=case.test.ts`] } }));
+  const previous = process.env.PM_GLOBAL_PATH;
+  process.env.PM_GLOBAL_PATH = globalRoot;
+  try {
+    const execution = await executeCloseout(client, item.id, { cwd, pmRoot });
+    assert.deepEqual({ error: execution.error, status: execution.runs[0]?.status }, { error: '', status: 'passed' });
+  } finally {
+    if (previous === undefined) delete process.env.PM_GLOBAL_PATH;
+    else process.env.PM_GLOBAL_PATH = previous;
+  }
+});
+
 test('round regression: forged named output without a runner receipt cannot prove closeout', async t => {
   const { cwd, client, pmRoot } = await tracker(t);
   writeFileSync(join(cwd, 'guide.md'), 'current');

@@ -9,6 +9,7 @@
 - Compute exact-head review round completion ([pm-review-round](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-round.toon))
 - Scaffold fleet gates and certify packed consumers ([pm-review-quality](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-quality.toon))
 - Import every bot thread, review and issue comment idempotently ([pm-review-import](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-import.toon))
+- Request the smallest missing review evidence for each obligation ([pm-review-targeted-evidence-requests](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-targeted-evidence-requests.toon))
 - Carry review attention across unaffected artifact revisions ([pm-review-review-carry-forward](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-review-carry-forward.toon))
 - Import provider-neutral review evidence envelopes ([pm-review-evidence-envelopes](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-evidence-envelopes.toon))
 - Keep one disposition across provider finding observations ([pm-review-finding-lineage](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-finding-lineage.toon))
@@ -25,6 +26,7 @@
 
 - Find durable fix and refusal precedents ([pm-review-precedents](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-precedents.toon))
 - Pin the host so history verifies and keep CodeRabbit under the file cap ([pm-review-host-pin](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-host-pin.toon))
+- Investigate intermittent native Bun closeout copy failure ([pm-review-bun-closeout-copy](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-bun-closeout-copy.toon))
 - Withdrawn lineage observations block response and status for live findings ([pm-review-withdrawn-lineage](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-withdrawn-lineage.toon))
 - Exact-head completion accepts unavailable-review notices and rejects substantive rate-limit reviews ([pm-review-github-d686d81c4a08-14](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-github-d686d81c4a08-14.toon))
 - Round success returns unsupported explicit zero exit code ([pm-review-round-exit-contract](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-round-exit-contract.toon))
