@@ -2,6 +2,17 @@ import { createPmCliExpectedError, encodeToon, isRuntimeRecord } from '@unbraine
 import { requestNumbers, requestRefusal } from './requests-validation.ts';
 import type { EvidenceOutputFormat, EvidenceRequest, EvidenceRequestInput, EvidenceRequestQueue, EvidenceRequestResult } from './requests-types.ts';
 
+/** Bound presentation memory to 240 code points without limiting persisted evidence eligibility. */
+export function reviewTextExcerpt(text: string): { text: string; omitted: number } {
+  const points: string[] = [];
+  for (const point of text) {
+    if (points.length === 240) break;
+    points.push(point);
+  }
+  const excerpt = points.join('');
+  return { text: excerpt, omitted: Buffer.byteLength(text) - Buffer.byteLength(excerpt) };
+}
+
 /** Immutable wire receipts are private to their result object, not a shared request budget or journal. */
 const finalized = new WeakMap<EvidenceRequestResult, { format: EvidenceOutputFormat; output: string }>();
 

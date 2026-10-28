@@ -51,8 +51,11 @@ does not write a parallel resolution record or infer that a core decision exists
 One lineage supports at most 32 observations. Reasons are excerpted to 240
 Unicode code points with omitted UTF-8 byte counts. Source identities are retained
 in full: item ids up to 512 characters, nodes 2048, providers/reviewers 256,
-URLs 4096 and commits 2048. Native reasons up to 100,000 characters are accepted
-before excerpting. Oversized identities are
+URLs 4096 and commits 2048. Persisted nonblank reasoning remains eligible at any
+length supported by the native tracker; display limits never turn an explicit
+judgment into absent opposition. Excerpting visits at most 241 code points and
+reports exact omitted UTF-8 bytes without constructing a full code-point array.
+Oversized identities are
 unavailable evidence. Both compact JSON and SDK TOON output are checked against a
 65,536-byte cap. Every emitted number is a nonnegative safe integer: durable
 versions are verified by the SDK snapshot reader, and counts/omissions are checked

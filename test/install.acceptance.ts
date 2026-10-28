@@ -4,7 +4,7 @@ import { envelope } from './envelope-fixture.ts';
 import { spawnSync } from 'node:child_process';
 import { mkdtemp, mkdir, readFile, rm, writeFile, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { test } from 'node:test';
 import type { TestContext } from 'node:test';
@@ -22,7 +22,7 @@ function command(cwd: string, name: string, args: string[], pmRoot: string, home
 
 /** Bind source provenance to the consumer while isolating package-manager and Git configuration. */
 function consumerEnv(cwd: string, pmRoot: string, home = cwd): NodeJS.ProcessEnv {
-  const env: NodeJS.ProcessEnv = { ...process.env, HOME: home, PM_PATH: pmRoot, PM_SOURCE_WORKSPACE_ROOT: cwd, PM_AUTHOR: 'install-test', GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', NPM_CONFIG_USERCONFIG: '/dev/null', npm_config_userconfig: '/dev/null' };
+  const env: NodeJS.ProcessEnv = { ...process.env, HOME: home, PM_PATH: pmRoot, PM_SOURCE_WORKSPACE_ROOT: cwd, PM_AUTHOR: 'install-test', GIT_CEILING_DIRECTORIES: dirname(cwd), GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', NPM_CONFIG_USERCONFIG: '/dev/null', npm_config_userconfig: '/dev/null' };
   for (const key of Object.keys(env)) if (key.toLowerCase() === 'npm_config_allow_scripts' || /token|secret|password|credential|^NPM_MEDIA_SERVER$/i.test(key)) delete env[key];
   return env;
 }
@@ -125,13 +125,21 @@ function verifyConflicts(cwd: string, runner: string, prefix: string[], pmRoot: 
     ids.push(created.id);
   }
   command(cwd, runner, [...prefix, 'comments', ids[0], '--add', 'review-lineage/v1 ' + JSON.stringify({ with: ids[1], revision: 'a'.repeat(64), reason: 'Previously persisted explicit identity confirmation' }), '--json'], pmRoot);
-  for (const json of [false, true]) {
-    const output = command(cwd, runner, [...prefix, 'review', 'conflicts', ids[0], '--revision', 'packed-artifact', ...(json ? ['--json'] : [])], pmRoot);
-    const result = (json ? JSON.parse(output) : decodeToon(output)) as { state: string; resolution: string; judgments: { item: string }[] };
-    assert.equal(result.state, 'conflict');
-    assert.equal(result.resolution, 'unverified');
-    assert.deepEqual(result.judgments.map(row => row.item).sort(), [...ids].sort());
-    assert.ok(Buffer.byteLength(output) < 6000);
+  for (const size of [0, 100001]) {
+    if (size) command(cwd, runner, [...prefix, 'review', 'verdict', ids[1], 'refuse', '--repo', 'example/package', '--pr', '2', '--reason', 'r'.repeat(size), '--json'], pmRoot);
+    for (const json of [false, true]) {
+      const output = command(cwd, runner, [...prefix, 'review', 'conflicts', ids[0], '--revision', 'packed-artifact', ...(json ? ['--json'] : [])], pmRoot);
+      const result = (json ? JSON.parse(output) : decodeToon(output)) as { state: string; resolution: string; judgments: { item: string; reason: string; reason_omitted: number }[] };
+      assert.equal(result.state, 'conflict');
+      assert.equal(result.resolution, 'unverified');
+      assert.deepEqual(result.judgments.map(row => row.item).sort(), [...ids].sort());
+      assert.ok(Buffer.byteLength(output) < 6000);
+      if (size) {
+        const refusal = result.judgments.find(row => row.item === ids[1])!;
+        assert.equal(refusal.reason, 'r'.repeat(240));
+        assert.equal(refusal.reason_omitted, size - 240);
+      }
+    }
   }
 }
 

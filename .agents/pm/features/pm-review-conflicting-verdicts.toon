@@ -6,11 +6,11 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-28T21:20:48.734Z"
-updated_at: "2026-10-28T22:11:03.255Z"
+updated_at: "2026-10-28T23:24:07.203Z"
 author: codex-agent
 acceptance_criteria: "Two opposed explicit judgments at one confirmed lineage and exact artifact scope yield both original source identities; Provider counts and recency never resolve votes; Withdrawn or unavailable reviews cannot settle the conflict; Typed SDK and CLI return bounded JSON/TOON packets and typed remedies; Seeded 500-sequence SDK read-back, native fields, relationships, replay, custom-status, no-git, interleaving, public-data and packed-install evidence pass; CI npm and Bun release gates pass at unchanged thresholds"
 parent: pm-review-epic
-comments[7]{created_at,author,text}:
+comments[10]{created_at,author,text}:
   "2026-10-28T21:22:55.675Z",codex-agent,"Design: reuse lineageGroups, complete native SDK reads, requestSnapshot verified history addressing and scopeDigest; command uses host-injected PmClient. Exact scope is GitHub repo/PR/revision or envelope origin/subject/revision. Only explicit fix versus refuse are opposed; pending, stale, duplicate and informational do not imply rejection. Read-only packets preserve all raw current judgments, including withdrawn sources, and mark missing core decision, resolution evidence and availability. No tracker mutations, leases, journal, import/export/sync or ambient create defaults are added. Tests will exercise SDK read-back, seeded 500-sequence replay/relationship changes, custom statuses, extreme metadata, every read boundary, packed installers and public non-git input fingerprints."
   "2026-10-28T21:36:40.686Z",codex-agent,"Public read-only export validation at origin/main 06cd671: 63 items, 22 ReviewFindings and 22 lineage/scopes; 17 packets with 15 explicit judgments and 2 non-explicit skips; 5 typed input_invalid refusals for historical observations without a source revision. No natural opposition in this public corpus. Maximum JSON 1518 bytes, TOON 1411 bytes; 17 CRLF query replays matched; all 132 native input files unchanged. Sources were exported outside git with native files read-only. Synthetic opposing-source regressions supply positive acceptance evidence. Typecheck, lint, docstring and zero-duplication gates passed; randomized, interleaving and packed-global checks continue."
   "2026-10-28T21:43:07.584Z",codex-agent,"Concurrency evidence: the focused interleaving regression passed all 31 SDK step boundaries for seven real peer transitions (217 cases) on one plain non-git tracker: verdict, exact A-B-A restoration, source scope, lineage, retyping, anchor scope and anchor retyping. Every peer transition is preserved. Custom status roles and random ambient focus also passed; no writer, lease, claim, outbox or journal is added. Linked pm test ran npm run typecheck && npm run lint and passed (1/1)."
@@ -18,21 +18,28 @@ comments[7]{created_at,author,text}:
   "2026-10-28T21:54:56.684Z",codex-agent,"Ready-for-review PR: https://github.com/unbraind/pm-review/pull/61. Implementation commit 8fc73b6 contains code, docs, model/interleaving tests and append-only tracker evidence. Planned tracker writes finish with this handoff; exact final-head npm/Bun release-gate run URLs and counts are reported on the PR and its checks at https://github.com/unbraind/pm-review/pull/61/checks. CI release gates use unchanged thresholds. This package only emits observed conflict evidence and never grants approval or persists a resolution. Item remains in progress for orchestrator verification and closure; releasing only the codex-agent claim."
   "2026-10-28T22:08:57.376Z",codex-agent,"Final-head CI run 40775900349 found one integration fixture mismatch: extension activation still expected 16 commands, while the new conflicts command correctly registers the seventeenth. Node 26 completed 306 tests with 305 pass and that one failure; all executable conflict code measured 100 percent in every coverage dimension. The new erased type-contract module also needs the same explicit runtime loading used by existing pure-type modules so full-source coverage accounts for it. Updating the command registry contract assertion and loading the type-contract module, without changing thresholds or runtime feature behavior; then targeted checks and fresh exact-head CI."
   "2026-10-28T22:11:01.480Z",codex-agent,"CI fixture repair verified locally: node --test --test-concurrency=2 --test-name-pattern='extension activation exposes|compact JSON/TOON' test/core.test.ts test/conflicts.test.ts passed 2/2. Explicitly loading the pure type module matched existing package practice and the targeted full-source type-module coverage check passed 100/100/100/100 (1 test). Test typecheck, lint and zero duplication passed. Runtime feature code is unchanged; thresholds are unchanged. Releasing the codex-agent claim and pushing these complete tracker writes before fresh exact-head CI. Final run receipts remain on PR 61."
-files[12]{path,scope}:
+  "2026-10-28T23:04:11.570Z",codex-agent,"Re-review resumed. Worktree is clean at 347efc5; origin/main is not ahead, so no merge is needed. Blocking class: failure to represent or bound persisted evidence must never be interpreted as absence of an explicit judgment or as no opposition. Auditing every disposition/attention projection and both SDK/CLI encodings, with adversarial length-boundary and packed non-git coverage, before changing the shared classifier. Existing finished validation is retained; only relevant regressions and refreshed gates will be run."
+  "2026-10-28T23:14:08.743Z",codex-agent,"Class audit complete: persisted reasoning size is presentation data, never evidence that an explicit judgment is absent. Removed the 100000-character semantic cutoff; any native nonblank string remains eligible. Shared 240-code-point excerpting now serves conflicts and evidence requests without full-string array allocation. Audited verdict/precedent/response/round paths (no reason-size cutoff); lineage and coverage bounds validate their own producer contracts and surface invalid records; scope bounds validate new input, and request size omissions are explicit. No other instance of this negative-evidence classification was found. Supplied re-review contains one blocking finding; REST inline/review endpoints contain no additional findings (issue comments contain only review-budget/status/summary messages). New focused tests passed 3/3, including 500 seeded excerpt variants and SDK/CLI JSON/TOON lengths 239,240,241,99999,100000,100001,200001. Existing scenarios remain; packed consumers and the 500-sequence native model now include oversized persisted reasons."
+  "2026-10-28T23:23:30.827Z",codex-agent,"Revert proof passed: in a disposable source copy, restored only the previous reviewConflicts function. The named persisted-size regression failed at exactly reason length 100001: actual no_opposition_observed, expected conflict. The actual worktree stayed fixed; subsequent pm test --run --progress passed both linked checks (2/2), including all 3 new adversarial tests. Pure excerpt property rerun passed 500 variants after the bounded-allocation implementation. Packed npm-global and Bun-global test passed 1/1 with original short and oversized native-reason cases; full packed acceptance additionally writes the long reason through the ordinary review verdict producer for npx/bunx and both global hosts. Typecheck, test typecheck, lint, docstrings and zero duplication pass; all existing tests and thresholds remain. The fresh full npm/Bun gates will run in CI with at most two test workers, preserving the original shared-host resource rule."
+files[15]{path,scope}:
   index.ts,project
   src/commands.ts,project
   src/conflict-state.ts,project
   src/conflict-types.ts,project
   src/conflicts.ts,project
+  src/output-budget.ts,project
+  src/requests.ts,project
   test/conflict-fixture.ts,project
   test/conflict-interleaving.test.ts,project
   test/conflict-model.test.ts,project
   test/conflict-public-tracker.ts,project
+  test/conflict-reason-boundaries.test.ts,project
   test/conflicts.test.ts,project
   test/core.test.ts,project
   test/install.acceptance.ts,project
-tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   npm run typecheck && npm run lint,project,codex-agent,"2026-10-28T21:38:43.479Z",local_mutation,feat/conflicting-verdict-witnesses
+  node --test --test-concurrency=2 test/conflict-reason-boundaries.test.ts,project,codex-agent,"2026-10-28T23:14:27.740Z",local_mutation,feat/conflicting-verdict-witnesses
 docs[4]{path,scope}:
   docs/conflicting-verdicts-validation.md,project
   docs/conflicting-verdicts.md,project

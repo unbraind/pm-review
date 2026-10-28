@@ -5,6 +5,7 @@ import { requestSnapshot } from './requests-state.ts';
 import type { RequestSnapshot } from './requests-state.ts';
 import { requestNumbers } from './requests-validation.ts';
 import { scopeDigest } from './scope-state.ts';
+import { reviewTextExcerpt } from './output-budget.ts';
 import { bounded, conflictInput, conflictRefusal, conflictScope, serializeConflictWitness } from './conflict-state.ts';
 import type { ConflictPacket, ConflictResult } from './conflict-types.ts';
 
@@ -51,12 +52,11 @@ export async function reviewConflicts(client: PmClient, input: unknown): Promise
     let reason: ConflictPacket['skipped'][number]['reason'] | undefined;
     if (!snapshot || !nativeScope) reason = 'source_unavailable';
     else if (scopeDigest(nativeScope) !== scopeDigest(scope)) reason = 'scope_mismatch';
-    else if (!['fix', 'refuse'].includes(String(native.review_verdict)) || native.review_verdict_source === 'import' || !bounded(native.review_reason, 100000) || !native.review_reason.trim()) reason = 'not_explicit';
+    else if (!['fix', 'refuse'].includes(String(native.review_verdict)) || native.review_verdict_source === 'import' || typeof native.review_reason !== 'string' || !native.review_reason.trim()) reason = 'not_explicit';
     else if (!bounded(native.id, 512) || !bounded(native.review_node_id, 2048) || !bounded(native.review_bot, 256) || !bounded(native.review_provider ?? scope.kind, 256) || !bounded(native.review_url, 4096) || typeof native.review_commit !== 'string' && native.review_commit !== undefined || String(native.review_commit ?? '').length > 2048) reason = 'source_unavailable';
     if (reason) { packet.skipped.push({ item: row.id, reason }); continue; }
-    const text = String(native.review_reason);
-    const excerpt = Array.from(text).slice(0, 240).join('');
-    packet.judgments.push({ item: row.id, version: snapshot!.version, node: String(native.review_node_id), provider: String(native.review_provider ?? scope.kind), reviewer: String(native.review_bot), url: String(native.review_url), verdict: native.review_verdict as 'fix' | 'refuse', reason: excerpt, reason_omitted: Buffer.byteLength(text) - Buffer.byteLength(excerpt), commit: String(native.review_commit ?? ''), availability: native.review_withdrawn === true ? 'withdrawn' : 'observed' });
+    const excerpt = reviewTextExcerpt(String(native.review_reason));
+    packet.judgments.push({ item: row.id, version: snapshot!.version, node: String(native.review_node_id), provider: String(native.review_provider ?? scope.kind), reviewer: String(native.review_bot), url: String(native.review_url), verdict: native.review_verdict as 'fix' | 'refuse', reason: excerpt.text, reason_omitted: excerpt.omitted, commit: String(native.review_commit ?? ''), availability: native.review_withdrawn === true ? 'withdrawn' : 'observed' });
   }
   // No lock or shared journal is created: verify every audited revision and component again, including A-B-A edits.
   for (const [id, before] of snapshots) if (scopeDigest(await requestSnapshot(client, id) ?? null) !== scopeDigest(before ?? null)) return conflictRefusal('state_changed');

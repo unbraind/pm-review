@@ -43,6 +43,7 @@ test('seeded model: 500 random native operation sequences and old-query replays 
   let state = seed;
   const next = () => { state ^= state << 13; state ^= state >>> 17; state ^= state << 5; return state >>> 0; };
   let operations = 0; let oldReplays = 0; let conflicts = 0;
+  let oversized = 0;
   let model = await nativeModel(t);
   const fields = Object.keys(model.original[0]);
   for (let sequence = 0; sequence < 500; sequence++) {
@@ -61,6 +62,13 @@ test('seeded model: 500 random native operation sequences and old-query replays 
       operations++;
     }
     const query = queries[next() % queries.length];
+    if (sequence % 100 === 0) {
+      for (const [index, id] of ids.entries()) {
+        await client.update(id, fieldOptions({ review_verdict: index === 0 ? 'fix' : 'refuse', review_reason: 'r'.repeat(100001), review_head: query.revision, review_url: String(original[index].review_url) }));
+        operations++;
+      }
+      oversized++;
+    }
     // JSON whitespace and CRLF are transport syntax, not a second normalization of native fields.
     const wire = JSON.stringify(query, null, next() % 2 ? 2 : 0).replaceAll('\n', next() % 2 ? '\r\n' : '\n');
     const current = await Promise.all(ids.map(id => client.get(id, { full: true }).then(row => row.item)));
@@ -93,5 +101,6 @@ test('seeded model: 500 random native operation sequences and old-query replays 
   assert.ok(fields.length >= 75);
   assert.ok(oldReplays > 50);
   assert.ok(conflicts > 0);
-  t.diagnostic(`seed=${seed}; sequences=500; operations=${operations}; native fields=${fields.length}; older native value replays=${oldReplays}; conflicts=${conflicts}; JSON/TOON and CRLF query replays preserve SDK state, relationships and audited histories`);
+  assert.equal(oversized, 5);
+  t.diagnostic(`seed=${seed}; sequences=500; operations=${operations}; native fields=${fields.length}; older native value replays=${oldReplays}; conflicts=${conflicts}; oversized reason sequences=${oversized}; JSON/TOON and CRLF query replays preserve SDK state, relationships and audited histories`);
 });

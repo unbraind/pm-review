@@ -68,3 +68,43 @@ health passed. CI uses fresh hosts and runs the full npm and Bun release gates
 at unchanged thresholds. Exact-head run URLs and gate counts are recorded on
 the PR after verification; no full local release suite was started on the shared
 host.
+
+## Re-review: presentation bounds cannot erase explicit evidence
+
+The blocking re-review found that a persisted 100,001-character refusal reason
+was classified as `not_explicit`, producing `no_opposition_observed`. The general
+rule is that a presentation budget cannot change the existence of a native
+explicit judgment. The classifier now accepts every native nonblank string
+reason, and a shared formatter retains at most 240 code points with an exact
+omitted UTF-8 byte count. It never builds an array for the complete source text.
+
+Package-wide audit:
+
+- Conflict SDK and CLI use the same classifier for JSON and TOON. Oversized
+  identity fields remain visible `source_unavailable` skips, producing missing
+  evidence rather than absence of opposition.
+- Evidence requests used the other full-string excerpt allocation. They now
+  share the formatter; long source summaries remain pending obligations.
+- Verdict production, precedents, response planning and round evaluation do not
+  discard judgments by reason size. Coverage/lineage record limits validate the
+  corresponding producer contracts and expose invalid-record diagnostics.
+  Scope limits apply to new selections; request output omissions name their
+  omitted requests. None uses the conflicting reason-size cutoff.
+- The supplied re-review had one blocking finding. REST inline-review and review
+  records contained no additional findings; issue comments were budget/status
+  messages and generated summaries, not code findings.
+
+New adversarial coverage includes 500 seeded excerpt variants; native persisted
+reason lengths 239, 240, 241, 99,999, 100,000, 100,001 and 200,001; long Unicode
+reasons and request summaries; SDK and CLI JSON/TOON round trips; and unchanged
+SDK read-back/history. The existing 500-sequence native model now inserts five
+oversized fix/refuse pairs. Packed project-local npx/bunx and npm/Bun global
+consumers keep their original short-reason cases and additionally create a long
+reason through `review verdict` and verify the resulting conflict in both formats.
+
+Revert proof: restoring only the previous `reviewConflicts` function in a
+disposable copy made the named persisted-size regression fail at exactly 100,001
+characters: observed `no_opposition_observed`, required `conflict`. The fixed
+implementation passed all three focused tests before that experiment; the
+post-revert linked checks and refreshed full gates are recorded on the PM item
+and PR. The actual package worktree was never reverted.

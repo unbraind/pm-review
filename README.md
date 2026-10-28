@@ -453,6 +453,8 @@ explicit `fix` and `refuse` judgments on a confirmed finding lineage at one exac
 artifact scope. Both original source identities and missing resolution evidence
 are retained. Provider counts, newer verdicts, workflow status and withdrawal
 cannot resolve the conflict; core Plan decisions remain authoritative.
+Persisted reasoning stays eligible regardless of its length; only its displayed
+excerpt is bounded, with exact omitted UTF-8 byte counts.
 
 The read-only `reviewConflicts(client, { schema: 'review-conflicts/v1', item,
 revision })` SDK returns compact JSON/TOON packets, typed refusals with remedies,

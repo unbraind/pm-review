@@ -4,7 +4,7 @@ import type { CoverageResult } from './coverage-types.ts';
 import { fileBytes } from './envelope-artifact.ts';
 import { scopeDigest } from './scope-state.ts';
 import { arrivalReason, requestSnapshot, requestStatuses } from './requests-state.ts';
-import { finalizeReviewOutput } from './output-budget.ts';
+import { finalizeReviewOutput, reviewTextExcerpt } from './output-budget.ts';
 import type { RequestSnapshot } from './requests-state.ts';
 import { requestInput, requestRefusal } from './requests-validation.ts';
 import type { EvidenceOutputFormat, EvidenceRequest, EvidenceRequestQueue, EvidenceRequestResult, EvidenceSelection, EvidenceSelectionSkip } from './requests-types.ts';
@@ -51,8 +51,8 @@ export async function reviewEvidenceRequests(client: PmClient, input: unknown, f
     const path = selection.obligation === 'finding' ? String(snapshot.item.review_path ?? '') : '';
     const line = selection.obligation === 'finding' ? Number(snapshot.item.review_line ?? 0) : 0;
     if (path.length > 256) { queue.skipped.push({ selection: index, reason: 'source_path_too_large' }); continue; }
-    const excerpt = Array.from(result.text).slice(0, 240).join('');
-    const request: EvidenceRequest = { ...selection, key: scopeDigest(['review-requests/v1', selection, snapshot.version, scopeDigest(snapshot.item)]), version: snapshot.version, text: excerpt, text_omitted: Buffer.byteLength(result.text) - Buffer.byteLength(excerpt), path, line, ask: selection.missing === 'source' ? 'Provide one source excerpt for this obligation in an evidence item description with one native files link.' : 'Provide one focused test artifact for this obligation in an evidence item description with one native tests link.' };
+    const excerpt = reviewTextExcerpt(result.text);
+    const request: EvidenceRequest = { ...selection, key: scopeDigest(['review-requests/v1', selection, snapshot.version, scopeDigest(snapshot.item)]), version: snapshot.version, text: excerpt.text, text_omitted: excerpt.omitted, path, line, ask: selection.missing === 'source' ? 'Provide one source excerpt for this obligation in an evidence item description with one native files link.' : 'Provide one focused test artifact for this obligation in an evidence item description with one native tests link.' };
     const arrivalIndex = packet.arrivals.findIndex(/** Only an explicit exact request key can discharge this obligation. */ row => row.request === request.key);
     if (arrivalIndex >= 0) {
       matched.add(arrivalIndex);
