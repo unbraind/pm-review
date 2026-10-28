@@ -11,6 +11,7 @@ import { reviewCloseout } from '../src/closeout.ts';
 import { artifactPath, artifactText, closeoutChanges, hasGit } from '../src/closeout-state.ts';
 import { detectGaming, namedTests } from '../src/closeout-detectors.ts';
 import { boundedHost, executeCloseout } from '../src/closeout-run.ts';
+import { processTerminated } from '../src/closeout-process.ts';
 import { runReviewCommand } from '../src/commands.ts';
 import { tracker, inFixtureWorkspace } from './helpers.ts';
 
@@ -254,12 +255,7 @@ test('deadline kills a detached linked-command descendant before discarding its 
   const pid = Number(readFileSync(join(cwd, 'child.pid'), 'utf8'));
   // SIGKILL delivery and process reaping are asynchronous; observe bounded eventual termination.
   for (let attempt = 0; attempt < 100; attempt++) {
-    try {
-      if (/\) Z /.test(readFileSync(`/proc/${pid}/stat`, 'utf8'))) return;
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return;
-      throw error;
-    }
+    if (processTerminated(pid)) return;
     await delay(20);
   }
   assert.fail('detached descendant remained live after SIGKILL');
