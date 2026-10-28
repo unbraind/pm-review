@@ -446,6 +446,21 @@ publishing hold. Maintainers run the prepublish checks and authenticate with npm
 for local publication. The first local publish uses `--provenance=false`; daily
 GitHub OIDC releases keep provenance enabled.
 
+## Conflicting verdict witnesses
+
+`pm review conflicts <item> --revision <exact-review_head> --json` returns opposed
+explicit `fix` and `refuse` judgments on a confirmed finding lineage at one exact
+artifact scope. Both original source identities and missing resolution evidence
+are retained. Provider counts, newer verdicts, workflow status and withdrawal
+cannot resolve the conflict; core Plan decisions remain authoritative.
+
+The read-only `reviewConflicts(client, { schema: 'review-conflicts/v1', item,
+revision })` SDK returns compact JSON/TOON packets, typed refusals with remedies,
+and explicit skip receipts. It works without git or provider access. A successful
+process exit reports an observation, including a conflict, with resolution always
+unverified. [Contracts and limits](docs/conflicting-verdicts.md) ·
+[Typed example](examples/conflicting-verdicts.ts).
+
 ## Targeted evidence requests
 
 `pm review requests --file examples/review-requests.json [--json]` requests one

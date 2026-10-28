@@ -1,4 +1,6 @@
 import { reviewScopeFile } from './scope-file.ts';
+import { reviewConflicts } from './conflicts.ts';
+import { serializeConflictWitness } from './conflict-state.ts';
 import { reviewEvidenceRequestsFile } from './requests.ts';
 import { serializeEvidenceRequests } from './output-budget.ts';
 import { importReviewArtifact } from './envelope-artifact.ts';
@@ -48,6 +50,12 @@ export async function runReviewCommand(ctx: CommandHandlerContext, provided?: Gi
 /** Run one dispatched package command; separated so the wrapper above stays the single error boundary. */
 async function dispatchReviewCommand(ctx: CommandHandlerContext, provided?: GitHubTransport): Promise<unknown> {
   const client = ctx.sdk?.client ?? new PmClient({ cwd: ctx.source_workspace_root ?? ctx.repo_root, pmRoot: ctx.pm_root, author: ctx.global.author });
+  if (ctx.command === 'review conflicts') {
+    const result = await reviewConflicts(client, { schema: 'review-conflicts/v1', item: ctx.args[0] ?? '', revision: ctx.options.revision ?? '' });
+    const format = ctx.global.json ? 'json' : ctx.global.outputFormat ?? ctx.global.defaultOutputFormat ?? 'toon';
+    if (!ctx.global.quiet) writeStdout(serializeConflictWitness(result, format));
+    return { ...suppressHostOutput(result), ...(result.ok ? {} : { exit_code: 1 }) };
+  }
   if (ctx.command === 'review requests') {
     const format = ctx.global.json ? 'json' : ctx.global.outputFormat ?? ctx.global.defaultOutputFormat ?? 'toon';
     const result = await reviewEvidenceRequestsFile(client, readStringOption(ctx.options, 'file') ?? '', format);
@@ -130,6 +138,7 @@ const RESPONSE_FLAGS: FlagDefinition[] = [
 /** Register help, typed positional arguments and command handlers through the host API. */
 export function registerReviewCommands(api: ExtensionApi): void {
   const commands = [
+    { name: 'conflicts', description: 'Expose opposed explicit judgments at one confirmed finding lineage and exact artifact scope; never resolve by votes', arguments: [{ name: 'item', required: true, description: 'ReviewFinding in the confirmed lineage' }], flags: [{ long: '--revision', type: 'string' as const, description: 'Exact native review_head artifact revision to compare' }], example: 'pm review conflicts finding-id --revision ARTIFACT_REVISION --json' },
     { name: 'requests', description: 'Request one missing source or test artifact per selected review obligation, with exact budget omissions', arguments: [], flags: [{ long: '--file', type: 'string' as const, description: 'Strict review-requests/v1 JSON selections, revision-bound arrivals and output budget' }], example: 'pm review requests --file requests.json --json' },
     ...['scope', 'carry-forward'].map(/** The host renders compact TOON by default and JSON on request. */ name => ({ name, description: name === 'scope' ? 'Capture explicitly reviewed native fields at verified historical revisions' : 'Compare review obligations across artifact revisions; attention never grants approval', arguments: [{ name: 'item', required: true, description: 'Target artifact tracker item' }], flags: [{ long: '--file', type: 'string' as const, description: 'Explicit scope selection JSON (scope) or captured receipt JSON (carry-forward)' }], example: `pm review ${name} sample-task --file ${name === 'scope' ? 'selection' : 'baseline'}.json --json` })),
     { name: 'ingest', description: 'Import a digest-pinned provider-neutral review artifact; completion remains unverified', arguments: [], flags: ['file', 'url', 'sha256'].map(/** Explicit selectors keep ingestion separate from live GitHub snapshots. */ name => ({ long: `--${name}`, type: 'string' as const, description: name === 'sha256' ? 'Independently verified SHA-256 of the artifact bytes' : `Explicit artifact ${name}; select exactly one file or URL` })), example: 'pm review ingest --file review.json --sha256 DIGEST --json' },

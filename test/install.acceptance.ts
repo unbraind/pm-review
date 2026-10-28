@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { test } from 'node:test';
+import type { TestContext } from 'node:test';
 import { EXIT_CODE, decodeToon } from '@unbrained/pm-cli/sdk';
 import type { EvidenceRequestResult } from '../src/requests-types.ts';
 
@@ -22,7 +23,7 @@ function command(cwd: string, name: string, args: string[], pmRoot: string, home
 /** Bind source provenance to the consumer while isolating package-manager and Git configuration. */
 function consumerEnv(cwd: string, pmRoot: string, home = cwd): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...process.env, HOME: home, PM_PATH: pmRoot, PM_SOURCE_WORKSPACE_ROOT: cwd, PM_AUTHOR: 'install-test', GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', NPM_CONFIG_USERCONFIG: '/dev/null', npm_config_userconfig: '/dev/null' };
-  for (const key of Object.keys(env)) if (key.toLowerCase() === 'npm_config_allow_scripts') delete env[key];
+  for (const key of Object.keys(env)) if (key.toLowerCase() === 'npm_config_allow_scripts' || /token|secret|password|credential|^NPM_MEDIA_SERVER$/i.test(key)) delete env[key];
   return env;
 }
 
@@ -32,29 +33,20 @@ function consumerEnv(cwd: string, pmRoot: string, home = cwd): NodeJS.ProcessEnv
   const previousSourceRoot = process.env.PM_SOURCE_WORKSPACE_ROOT;
   process.env.PM_SOURCE_WORKSPACE_ROOT = root;
   t.after(() => { if (previousSourceRoot === undefined) delete process.env.PM_SOURCE_WORKSPACE_ROOT; else process.env.PM_SOURCE_WORKSPACE_ROOT = previousSourceRoot; });
-  const scratch = await mkdtemp(join(tmpdir(), 'pm-review-install-'));
-  // Recursive removal can race Bun's install cache and throw ENOTEMPTY. Node retries that error only when asked.
-  t.after(async () => { await rm(scratch, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); });
-  // npm 10 still runs prepare during pack; its source workspace must use the source tracker.
-  const packOutput = command(root, 'npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', scratch], join(root, '.agents/pm'), scratch);
-  // npm 10 can prefix its final JSON array with prepare output.
-  const manifest = JSON.parse(packOutput.slice(packOutput.lastIndexOf('\n[') + 1)) as { filename: string; files: { path: string }[] }[];
-  const files = manifest[0].files.map(file => file.path);
+  const { scratch, tarball, sdkVersion, files } = await packedPackage(t, 'pm-review-install-');
   assert.ok(files.includes('dist/index.js'));
   for (const file of files) assert.ok(file.startsWith('dist/') || ['package.json', 'manifest.json', 'README.md', 'LICENSE', 'CHANGELOG.md'].includes(file), `unexpected packed file: ${file}`);
-  const tarball = join(scratch, manifest[0].filename);
-  const sdk = JSON.parse(await importManifest(root)) as { devDependencies: Record<string, string> };
   for (const runtime of ['npm', 'bun']) {
     const cwd = join(scratch, runtime);
     await writeConsumer(cwd);
     const pmRoot = join(cwd, '.agents/pm');
-    const args = runtime === 'npm' ? ['install', '--ignore-scripts', '--no-audit', '--no-fund', tarball, `@unbrained/pm-cli@${sdk.devDependencies['@unbrained/pm-cli']}`] : ['add', '--ignore-scripts', tarball, `@unbrained/pm-cli@${sdk.devDependencies['@unbrained/pm-cli']}`];
+    const args = runtime === 'npm' ? ['install', '--ignore-scripts', '--no-audit', '--no-fund', tarball, `@unbrained/pm-cli@${sdkVersion}`] : ['add', '--ignore-scripts', tarball, `@unbrained/pm-cli@${sdkVersion}`];
     command(cwd, runtime, args, pmRoot);
     const runner = runtime === 'npm' ? 'npx' : 'bunx';
     const prefix = runtime === 'npm' ? ['--no-install', 'pm'] : ['--bun', '--no-install', 'pm'];
     command(cwd, runner, [...prefix, 'init', 'consumer', '--defaults', '--agent-guidance', 'skip', '--json'], pmRoot);
     command(cwd, runner, [...prefix, 'install', tarball, '--project', '--json'], pmRoot);
-    for (const action of ['ingest', 'import', 'verdict', 'round', 'precedents', 'reconcile', 'respond', 'status', 'closeout', 'coverage', 'cover', 'lineage', 'scope', 'carry-forward', 'requests']) assert.match(command(cwd, runner, [...prefix, 'review', action, '--help'], pmRoot), /review/);
+    for (const action of ['ingest', 'import', 'verdict', 'round', 'precedents', 'reconcile', 'respond', 'status', 'closeout', 'coverage', 'cover', 'lineage', 'scope', 'carry-forward', 'requests', 'conflicts']) assert.match(command(cwd, runner, [...prefix, 'review', action, '--help'], pmRoot), /review/);
     assert.match(command(cwd, runner, [...prefix, 'review', 'reconcile', '--help'], pmRoot), /--dry-run/);
     const verdictHelp = command(cwd, runner, [...prefix, 'review', 'verdict', '--help'], pmRoot);
     assert.doesNotMatch(verdictHelp, /<value>\s+<value>/);
@@ -76,6 +68,7 @@ function consumerEnv(cwd: string, pmRoot: string, home = cwd): NodeJS.ProcessEnv
     assert.match(command(cwd, runner, [...prefix, 'review', 'coverage', coverageTarget.id], pmRoot), /unreviewed/);
     await verifyCarryForward(cwd, runner, prefix, pmRoot, coverageTarget.id);
     await verifyEvidenceRequests(cwd, runner, prefix, pmRoot, coverageTarget.id);
+    verifyConflicts(cwd, runner, prefix, pmRoot);
     const evidence = JSON.parse(command(cwd, runner, [...prefix, 'create', 'ReviewFinding', 'Packed substantive review', '--description', 'Validate the input before writing.', '--field', 'review_bot=synthetic-reviewer', '--field', 'review_node_id=packed-node', '--field', 'review_repo=example/package', '--field', 'review_pr=2', '--field', 'review_url=https://github.com/example/package/pull/2#discussion_r1', '--field', `review_head=${'a'.repeat(40)}`, '--field', 'review_kind=thread', '--json'], pmRoot)) as { id: string };
     const lineage = JSON.parse(command(cwd, runner, [...prefix, 'review', 'lineage', evidence.id, '--json'], pmRoot)) as { canonical: string; observations: unknown[] };
     assert.equal(lineage.canonical, evidence.id);
@@ -105,22 +98,65 @@ function consumerEnv(cwd: string, pmRoot: string, home = cwd): NodeJS.ProcessEnv
   }
  });
 
+test('packed conflict witness works through npm global and Bun global host executables', async t => {
+  const { scratch, tarball, sdkVersion } = await packedPackage(t, 'pm-review-global-install-');
+  for (const runtime of ['npm', 'bun']) {
+    const cwd = join(scratch, runtime);
+    await writeConsumer(cwd);
+    const pmRoot = join(cwd, '.agents/pm');
+    const prefix = join(cwd, 'global');
+    const env = { ...consumerEnv(cwd, pmRoot), BUN_INSTALL_GLOBAL_DIR: join(prefix, 'install/global'), BUN_INSTALL_BIN: join(prefix, 'bin') };
+    const args = runtime === 'npm' ? ['install', '--global', '--prefix', prefix, '--ignore-scripts', '--no-audit', '--no-fund', tarball, `@unbrained/pm-cli@${sdkVersion}`] : ['add', '--global', '--ignore-scripts', tarball, `@unbrained/pm-cli@${sdkVersion}`];
+    const installed = spawnSync(runtime, args, { cwd, env, encoding: 'utf8', timeout: 180_000 });
+    assert.equal(installed.status, 0, installed.stdout + installed.stderr);
+    const host = join(prefix, 'bin/pm');
+    command(cwd, host, ['init', 'consumer', '--defaults', '--agent-guidance', 'skip', '--json'], pmRoot);
+    command(cwd, host, ['install', tarball, '--project', '--json'], pmRoot);
+    verifyConflicts(cwd, host, [], pmRoot);
+  }
+});
+
+/** Execute real packed conflict packets through each supported host installation shape. */
+function verifyConflicts(cwd: string, runner: string, prefix: string[], pmRoot: string): void {
+  const ids: string[] = [];
+  for (const verdict of ['fix', 'refuse']) {
+    const fields = { review_bot: `synthetic-${verdict}`, review_node_id: `packed-conflict-${verdict}`, review_repo: 'example/package', review_pr: '2', review_url: `https://github.com/example/package/pull/2#${verdict}`, review_head: 'packed-artifact', review_verdict: verdict, review_verdict_source: 'local', review_reason: `Explicit ${verdict} reasoning at one artifact scope` };
+    const created = JSON.parse(command(cwd, runner, [...prefix, 'create', 'ReviewFinding', `Packed conflict ${verdict}`, '--parent', 'none', ...Object.entries(fields).flatMap(([key, value]) => ['--field', `${key}=${value}`]), '--json'], pmRoot)) as { id: string };
+    ids.push(created.id);
+  }
+  command(cwd, runner, [...prefix, 'comments', ids[0], '--add', 'review-lineage/v1 ' + JSON.stringify({ with: ids[1], revision: 'a'.repeat(64), reason: 'Previously persisted explicit identity confirmation' }), '--json'], pmRoot);
+  for (const json of [false, true]) {
+    const output = command(cwd, runner, [...prefix, 'review', 'conflicts', ids[0], '--revision', 'packed-artifact', ...(json ? ['--json'] : [])], pmRoot);
+    const result = (json ? JSON.parse(output) : decodeToon(output)) as { state: string; resolution: string; judgments: { item: string }[] };
+    assert.equal(result.state, 'conflict');
+    assert.equal(result.resolution, 'unverified');
+    assert.deepEqual(result.judgments.map(row => row.item).sort(), [...ids].sort());
+    assert.ok(Buffer.byteLength(output) < 6000);
+  }
+}
+
 /** Reproduce a retirement at the copy filter boundary through the installed CLI. */
 test('packed closeout excludes live global runtime state during workspace preparation', async t => {
-  const root = resolve(import.meta.dirname, '..');
-  const scratch = await mkdtemp(join(tmpdir(), 'pm-review-closeout-install-'));
-  t.after(() => rm(scratch, { recursive: true, force: true, maxRetries: 5 }));
-  const packed = command(root, 'npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', scratch], join(root, '.agents/pm'), scratch);
-  const manifest = JSON.parse(packed.slice(packed.lastIndexOf('\n[') + 1)) as { filename: string }[];
-  const sdk = JSON.parse(await importManifest(root)) as { devDependencies: Record<string, string> };
+  const { scratch, tarball, sdkVersion } = await packedPackage(t, 'pm-review-closeout-install-');
   const cwd = join(scratch, 'consumer');
   await writeConsumer(cwd);
   const pmRoot = join(cwd, '.agents/pm');
-  command(cwd, 'npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', join(scratch, manifest[0].filename), `@unbrained/pm-cli@${sdk.devDependencies['@unbrained/pm-cli']}`], pmRoot);
+  command(cwd, 'npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', tarball, `@unbrained/pm-cli@${sdkVersion}`], pmRoot);
   command(cwd, 'npx', ['--no-install', 'pm', 'init', 'copy-consumer', '--defaults', '--agent-guidance', 'skip', '--json'], pmRoot);
-  command(cwd, 'npx', ['--no-install', 'pm', 'install', join(scratch, manifest[0].filename), '--project', '--json'], pmRoot);
+  command(cwd, 'npx', ['--no-install', 'pm', 'install', tarball, '--project', '--json'], pmRoot);
   await verifyCloseout(cwd, 'npx', ['--no-install', 'pm'], pmRoot);
 });
+
+/** Capture exact built package bytes once per isolated installer scenario and preserve the allowlist inventory. */
+async function packedPackage(t: TestContext, name: string) {
+  const root = resolve(import.meta.dirname, '..');
+  const scratch = await mkdtemp(join(tmpdir(), name));
+  t.after(() => rm(scratch, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
+  const output = command(root, 'npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', scratch], join(root, '.agents/pm'), scratch);
+  const entries = JSON.parse(output.slice(output.lastIndexOf('\n[') + 1)) as { filename: string; files: { path: string }[] }[];
+  const sdk = JSON.parse(await importManifest(root)) as { devDependencies: Record<string, string> };
+  return { scratch, tarball: join(scratch, entries[0].filename), files: entries[0].files.map(file => file.path), sdkVersion: sdk.devDependencies['@unbrained/pm-cli'] };
+}
 
 /** Exercise installed package results through real host rendering and process exits. */
 function verifyHostExitContract(cwd: string, runner: string, prefix: string[], pmRoot: string): void {
