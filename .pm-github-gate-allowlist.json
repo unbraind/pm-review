@@ -1,0 +1,8 @@
+{
+  "71ad1dfa1de556decbd6d7314196552e349d66067b49ab6bf8d4865faa663441": {
+    "reason": "Reviewed public Linux procfs root /proc in issue 56's title and technical description; contains no account, machine, PID or local topology. Exact content hash only."
+  },
+  "9d69c4b8ab582c9d38d6afabf34fef9dfa3e0e41cd717aecb748c541dfe43508": {
+    "reason": "Reviewed public Linux procfs prefix /proc/ before the generic <pid> placeholder in issue 56's documentation. No concrete process identity or host data; exact content hash only."
+  }
+}

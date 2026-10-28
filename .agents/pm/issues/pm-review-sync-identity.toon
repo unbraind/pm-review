@@ -1,0 +1,31 @@
+id: pm-review-sync-identity
+title: Restore unique import identity for shared delivery PRs
+description: "Reconcile duplicate PR 46 importer identities without losing either delivered item, historic evidence or append-only history. Validate the complete corpus and an isolated gated import and repeat."
+type: Issue
+status: in_progress
+priority: 1
+tags[1]: "gh:unbraind/pm-review#57"
+created_at: "2026-10-28T19:28:58.295Z"
+updated_at: "2026-10-28T19:41:21.614Z"
+author: codex-agent
+acceptance_criteria: Shared delivery links remain on both original closed items with unchanged completion evidence and history prefixes; Every importer identity has one owner and the gated preview succeeds; Isolated atomic gated import and repeat preserve item and history bytes with no duplicate items
+resolution: "Replace duplicate PR importer keys with shared delivery tags, retain append-only evidence, and review exactly two generic public procfs hashes for the pinned privacy gate."
+actual_result: "Complete-corpus regression and gated preview pass. Published pinned importer applies 0 new/4 updates, then repeats 0 new/0 updates with 125 item/history files byte-identical; privacy has zero findings and strict health has zero warnings."
+comments[6]{created_at,author,text}:
+  "2026-10-28T19:29:04.516Z",codex-agent,"Read gated-sync job 122676744472 from run 40646598672: pm-github 2026.10.23 refuses one duplicate provenance identity before any import writes. Both pm-review-bun-closeout-copy and pm-review-targeted-evidence-requests claim PR 46. Plan remove PR delivery identities from both, preserve the PR URL as a non-identity delivery tag and existing closure evidence, and leave provider ownership to its imported record rather than choosing an arbitrary owner. No importer runtime defect established."
+  "2026-10-28T19:34:30.882Z",codex-agent,"Repaired both PR 46 delivery tags using pinned PM mutations; IDs, closed/completed dates, closure text and pre-existing history bytes remain intact. Complete-corpus regression passes and reverting only the two records to main in a disposable copy fails on the duplicate identity. The exact gated preview now passes: 4 fetched/planned, 4 matched by provenance, 0 new, 0 skipped. Preview does not perform the post-write privacy scan; isolated apply/repeat, health and byte comparison follow."
+  "2026-10-28T19:38:46.672Z",codex-agent,"Isolated pinned pm-github 2026.10.23 preview passes the repaired provenance corpus. Apply then exposes three privacy findings for public documentation strings /proc and /proc/ in issue 56 (two exact content hashes). Added reviewed content-hash-only repository exemptions for these generic Linux roots; concrete process paths, other values and all gates remain checked. This is separate from identity repair. Retrying isolated apply and repeat with the shipped importer; no imported tracker data is being published by this branch."
+  "2026-10-28T19:40:04.456Z",codex-agent,"Isolated published pm-github 2026.10.23 apply with the reviewed hash exemptions passes: 0 imported, 4 updated, 0 skipped; privacy PASS with 0 findings, 9 scanned files and 6 allowlisted occurrences. Identical repeat recovers the same transaction: 0 imported/updated, 4 recovered items. All 62 item documents and 63 history streams remain byte-identical (125 files); no duplicates. Strict health with required merge drivers passes, 0 warnings. Upstream procfs classification report: https://github.com/unbraind/pm-github/issues/193, tracked locally by pm-review-procfs-gate. No pm-github code changed and no imported data was published."
+  "2026-10-28T19:40:05.996Z",codex-agent,"Delivery repair preserves each original history as a byte-identical prefix with two appended events per item. Verified original ID, status, closed_at, completed_at, resolution, acceptance_criteria and close_reason unchanged. Linked complete-corpus regression passes 1/1. Publication will be this reviewed code/configuration PR; normal scheduled sync resumes after merge, which is reserved for the orchestrator."
+  "2026-10-28T19:41:14.541Z",codex-agent,"Verified the published scanner directly with node verify-procfs-exemptions.mjs in the isolated package fixture: bare procfs root PASS (1 exemption), trailing slash PASS (1), concrete PID stat path FAIL (1 finding, 0 exemptions), and mixed generic plus concrete path FAIL (1 finding, 1 exemption). The two hash exemptions cannot hide another value in the same field. No broader rule/pattern exemption was added."
+files[4]{path,scope}:
+  .agents/pm/features/pm-review-targeted-evidence-requests.toon,project
+  .agents/pm/issues/pm-review-bun-closeout-copy.toon,project
+  .pm-github-gate-allowlist.json,project
+  test/tracker-identity.test.ts,project
+tests[1]{command,path,scope,timeout_seconds,provenance{author,created_at,source_kind,source_ref}}:
+  node --test --test-concurrency=2 test/tracker-identity.test.ts,test/tracker-identity.test.ts,project,60,codex-agent,"2026-10-28T19:32:44.406Z",local_mutation,fix/main-red-esrch-and-sync-identity
+docs[2]{path,scope}:
+  CHANGELOG.md,project
+  docs/issue-sync.md,project
+body: ""

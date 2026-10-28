@@ -4,9 +4,9 @@ description: Packed acceptance on Node 22 reached the native Bun closeout smoke 
 type: Issue
 status: closed
 priority: 2
-tags[1]: "gh:unbraind/pm-review#46"
+tags[1]: "delivery:unbraind/pm-review#46"
 created_at: "2026-10-23T17:48:22.873Z"
-updated_at: "2026-10-27T10:11:55.086Z"
+updated_at: "2026-10-28T19:35:59.355Z"
 closed_at: "2026-10-27T10:11:53.555Z"
 completed_at: "2026-10-27T01:25:39.000Z"
 author: codex-agent
@@ -15,7 +15,7 @@ repro_steps: "Inspect https://github.com/unbraind/pm-review/actions/runs/3999662
 resolution: Exclude live SDK global state from disposable closeout workspaces and return precise actionable diagnostics for disappearing project entries.
 expected_result: Native Bun closeout prepares a stable disposable workspace or returns a bounded actionable refusal without copying live global tracker state.
 actual_result: "Current main passes the closeout-round and evidence suites. The deterministic source revert and packed Node 22 regression are retained in the merged code and recovered receipts, with both full npm/Bun packed consumer gates passing."
-comments[7]{created_at,author,text}:
+comments[8]{created_at,author,text}:
   "2026-10-27T00:26:35.596Z",codex-agent,"Reusing this existing intermittent copy issue for the orchestrator-reported Node 22 packed closeout failure in CI run 40342564725, job 121640877263. Focused packed Node 22 reproduction is running; investigating the exact missing copy entry before changing policy or acceptance assertions."
   "2026-10-27T00:39:13.848Z",codex-agent,"The initial Node 22 packed suite and 30 ordinary focused retries passed, confirming the intermittent nature. A deterministic packed-consumer schedule now reproduces workspace-copy/ENOENT by retiring the owned fixture .pm-cli/runtime/telemetry/closeout-fixture-retiring.tmp after copy enumeration and before reading it. HOME equals the consumer workspace, so SDK global telemetry is accidentally treated as project source. Fix excludes the SDK-resolved global tracker before traversal; unrelated .pm-cli project source remains included. Other disappearing workspace entries receive a bounded relative ENTRY_DISAPPEARED diagnostic and retry remedy. No telemetry settings change."
   "2026-10-27T00:40:54.314Z",codex-agent,"Revert proof: removed only the SDK global-root exclusion from executeCloseout and ran node --test --test-concurrency=1 --test-name-pattern='SDK global tracker discovery' test/closeout-round.test.ts. It failed exit 1 with workspace-copy/ARTIFACT_SYMLINK for the live global runtime fixture; restored source passes. Node 22 focused packed command node --test --test-concurrency=1 --test-name-pattern='packed closeout excludes' --test-reporter=spec test/install.acceptance.ts now passes 1/1; the same injected retirement on the old packed code failed with the review's workspace-copy/ENOENT. Targeted diagnostic and round suites passed 12/12. Typecheck, test typecheck, lint, docstrings and zero-duplication gate pass at unchanged thresholds."
@@ -23,6 +23,7 @@ comments[7]{created_at,author,text}:
   "2026-10-27T10:11:35.131Z",codex-agent,"Recovered evidence from c3212ae9216a8f65472416332718f5a15abfa91d using a new pinned-pm comment: the code in that commit is byte-identical to PR #46 merge d5f100df1bc6017d29cc670aa94dbc62eb35cb17. The deterministic packed consumer retires a global runtime entry between copy enumeration and read; SDK global-root exclusion prevents workspace-copy/ENOENT while ordinary project dot directories remain copied. Reverting only exclusion fails the SDK regression; restoring it passes the targeted 12/12 and Node 22 focused packed 1/1 checks recorded in the original item. No history file was copied or rewritten."
   "2026-10-27T10:11:37.744Z",codex-agent,"Recovered post-merge receipt 38490e982556ca924f219f0090ed067619d0cf4b through this new comment: compared with the PR #46 merge, only the two item documents and their two history streams differ. REST-verified CI run https://github.com/unbraind/pm-review/actions/runs/40428105737 succeeded at c3212ae9216a8f65472416332718f5a15abfa91d, and receipt-head run https://github.com/unbraind/pm-review/actions/runs/40433045338 succeeded at 38490e982556ca924f219f0090ed067619d0cf4b. The original receipt records Node 22 npm, Node 26 npm and Node 26 Bun gates each passing 252/252 tests and 2/2 packed tests with 100/100/100/100 coverage across 43 required source files. Current-main focused verification is recorded separately; imported-update history remains an open conservative refusal in pm-review-sdk-import-history-gap."
   "2026-10-27T10:11:52.239Z",codex-agent,"Verified current main with `node --test --test-concurrency=2 test/closeout-round.test.ts test/closeout-evidence.test.ts` via the pinned pm linked runner: PASS. Observed test counts: tests=12, pass=12, fail=0, cancelled=0, skipped=0, todo=0. Current main passes the closeout-round and evidence suites. The deterministic source revert and packed Node 22 regression are retained in the merged code and recovered receipts, with both full npm/Bun packed consumer gates passing."
+  "2026-10-28T19:35:59.355Z",codex-agent,"Shared delivery remains https://github.com/unbraind/pm-review/pull/46. Replaced only the duplicate importer identity tag with delivery:unbraind/pm-review#46; this record has no exclusive ownership of that PR. Original acceptance, resolution, completion dates and history prefix are preserved. Corpus repair tracked by pm-review-sync-identity (issue 57)."
 files[4]{path,scope}:
   src/closeout-run.ts,project
   test/closeout-evidence.test.ts,project

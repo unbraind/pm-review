@@ -4,9 +4,9 @@ description: "Compile bounded acquisition queues for selected unresolved finding
 type: Feature
 status: closed
 priority: 2
-tags[1]: "gh:unbraind/pm-review#46"
+tags[1]: "delivery:unbraind/pm-review#46"
 created_at: "2026-10-26T00:38:35.933Z"
-updated_at: "2026-10-27T10:11:24.657Z"
+updated_at: "2026-10-28T19:36:00.809Z"
 closed_at: "2026-10-27T10:11:23.249Z"
 completed_at: "2026-10-27T01:25:39.000Z"
 author: codex-agent
@@ -15,7 +15,7 @@ parent: pm-review-epic
 resolution: "Deliver revision-bound targeted source/test evidence requests with one current obligation per request, explicit arrival discharge and exact bounded omission receipts."
 expected_result: "One missing artifact is requested per current obligation, requests persist until matching revision-bound evidence arrives, and a 30-finding input produces exact budget omissions."
 actual_result: "Current-main request and wire-budget tests pass through pinned pm, covering every acceptance criterion. Recovered receipts independently verify final code and receipt-head CI; runtime code is identical to the PR #46 merge."
-comments[16]{created_at,author,text}:
+comments[17]{created_at,author,text}:
   "2026-10-26T00:39:02.666Z",codex-agent,"Overlap check: host CLI 2026.10.25 has no review-specific acquisition queue. Existing reviewCoverage supplies current criterion gaps, reviewCloseout verifies independent completion evidence, and pm-context context-next-evidence handles general minimum-cost acquisition planning. This feature compiles selected review obligations into one-artifact source/test requests with explicit revision-bound arrivals, using native SDK item reads and status roles. No provider transcript fetching or new import/sync mutation path is needed."
   "2026-10-26T00:46:43.486Z",codex-agent,"Implemented a read-only review requests SDK/CLI boundary with one strict bounded packet schema, durable target-version keys, explicit one-native-link arrivals, current SDK evidence revalidation, registry-role lifecycle decisions, exact budget omissions and typed remedies. Targeted fixture measured 30 findings: 7 requests plus 23 exact omission keys in 6378 JSON characters; character cap emits 6 plus 24 omissions in 5974 characters. Seeded replay and every-step peer interleaving checks are in progress. No shared mutable request journal, leases or persisted budgets were introduced."
   "2026-10-26T01:00:42.509Z",codex-agent,"Behavioral revert proof: restored only registerReviewCommands from main while retaining the implementation and SDK exports. node --test --test-name-pattern=\"registered CLI\" test/requests.test.ts failed exit 1 because review requests was not registered; restored the function afterward. Public tracker validation: 57 items, 48 selected obligations, 5 pending, 3 emitted, 2 exact omissions, 43 terminal-role skips, 3606 JSON characters/bytes, CRLF file parity, 120 durable inputs unchanged. Linked pm test run passed its 2 boundary assertions; tracker test-result recording is disabled, so this comment records the result without changing policy."
@@ -32,6 +32,7 @@ comments[16]{created_at,author,text}:
   "2026-10-27T10:10:03.626Z",codex-agent,"Recovered evidence from c3212ae9216a8f65472416332718f5a15abfa91d using a new pinned-pm comment: the code in that commit is byte-identical to PR #46 merge d5f100df1bc6017d29cc670aa94dbc62eb35cb17. The deterministic packed consumer retires a global runtime entry between copy enumeration and read; SDK global-root exclusion prevents workspace-copy/ENOENT while ordinary project dot directories remain copied. Reverting only exclusion fails the SDK regression; restoring it passes the targeted 12/12 and Node 22 focused packed 1/1 checks recorded in the original item. No history file was copied or rewritten."
   "2026-10-27T10:10:05.526Z",codex-agent,"Recovered post-merge receipt 38490e982556ca924f219f0090ed067619d0cf4b through this new comment: compared with the PR #46 merge, only the two item documents and their two history streams differ. REST-verified CI run https://github.com/unbraind/pm-review/actions/runs/40428105737 succeeded at c3212ae9216a8f65472416332718f5a15abfa91d, and receipt-head run https://github.com/unbraind/pm-review/actions/runs/40433045338 succeeded at 38490e982556ca924f219f0090ed067619d0cf4b. The original receipt records Node 22 npm, Node 26 npm and Node 26 Bun gates each passing 252/252 tests and 2/2 packed tests with 100/100/100/100 coverage across 43 required source files. Current-main focused verification is recorded separately; imported-update history remains an open conservative refusal in pm-review-sdk-import-history-gap."
   "2026-10-27T10:11:21.275Z",codex-agent,"Verified current main with `node --test --test-concurrency=2 test/requests.test.ts test/output-budget.test.ts` via the pinned pm linked runner: PASS. Observed test counts: tests=10, pass=10, fail=0, cancelled=0, skipped=0, todo=0. Current-main request and wire-budget tests pass through pinned pm, covering every acceptance criterion. Recovered receipts independently verify final code and receipt-head CI; runtime code is identical to the PR #46 merge."
+  "2026-10-28T19:36:00.809Z",codex-agent,"Shared delivery remains https://github.com/unbraind/pm-review/pull/46. Replaced only the duplicate importer identity tag with delivery:unbraind/pm-review#46; this record has no exclusive ownership of that PR. Original acceptance, resolution, completion dates and history prefix are preserved. Corpus repair tracked by pm-review-sync-identity (issue 57)."
 files[17]{path,scope}:
   index.ts,project
   src/closeout-run.ts,project

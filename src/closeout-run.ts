@@ -8,24 +8,15 @@ import { resolveGlobalPmRoot } from '@unbrained/pm-cli/sdk';
 import type { PmClient } from '@unbrained/pm-cli/sdk';
 import type { CloseoutChange, CloseoutOptions } from './closeout-types.ts';
 import { artifactPath } from './closeout-state.ts';
+import { killProcessTree } from './closeout-process.ts';
 
 /** Minimal host result preserves assertion, context, trust and timeout semantics. */
 export interface CloseoutRun { command?: string; path?: string; status: string; stdout?: string; stderr?: string; failure_category?: string; execution_receipt?: { code: string; stream: string } }
 /** A disposable run has either parsed host evidence or a bounded refusal. */
 export interface CloseoutExecution { runs: CloseoutRun[]; error: string; functions?: { file: string; start: number; end: number; count: number }[] }
 
-/** Kill the entire disposable host process group so timed-out tests cannot keep running. */
-function killGroup(pid: number): void {
-  try {
-    const children = readFileSync(`/proc/${pid}/task/${pid}/children`, 'utf8').trim();
-    for (const child of children.split(/\s+/).filter(Boolean)) killGroup(Number(child));
-  } catch { /* A completed process has no children metadata; group cleanup still applies. */ }
-  try { process.kill(-pid, 'SIGKILL'); }
-  catch { try { process.kill(pid, 'SIGKILL'); } catch { /* The process may already have exited. */ } }
-}
-
 /** Run a pinned host with bounded wall time and output, independent of linked timeout overrides. */
-export function boundedHost(args: string[], cwd: string, timeout: number): Promise<CloseoutExecution> {
+export function boundedHost(args: string[], cwd: string, timeout: number, terminate = killProcessTree): Promise<CloseoutExecution> {
   return new Promise(resolveResult => {
     const env = { ...process.env };
     delete env.NODE_TEST_CONTEXT;
@@ -36,14 +27,16 @@ export function boundedHost(args: string[], cwd: string, timeout: number): Promi
     const child = spawn(process.execPath, args, { cwd, env, detached: true, stdio: ['ignore', 'pipe', 'pipe'] });
     let stdout = '';
     let error = '';
-    const timer = setTimeout(/** Wall time covers setup, every linked command and all descendants. */ () => { error = 'Closeout test budget exceeded'; killGroup(child.pid!); }, timeout);
+    /** Cleanup failures cannot escape an event handler or manufacture successful evidence. */
+    const cleanup = (): void => { if (child.pid !== undefined && !terminate(child.pid)) error = 'Closeout process cleanup failed'; };
+    const timer = setTimeout(/** Wall time covers setup, every linked command and all descendants. */ () => { error = 'Closeout test budget exceeded'; cleanup(); }, timeout);
     child.stdout.setEncoding('utf8');
-    child.stdout.on('data', /** Keep output memory bounded even when a command floods stdout. */ (chunk: string) => { stdout += chunk; if (stdout.length > 2_000_000) { error = 'Closeout host output limit exceeded'; killGroup(child.pid!); } });
+    child.stdout.on('data', /** Keep output memory bounded even when a command floods stdout. */ (chunk: string) => { stdout += chunk; if (stdout.length > 2_000_000) { error = 'Closeout host output limit exceeded'; cleanup(); } });
     child.stderr.on('data', /** Consume stderr without retaining private raw logs. */ () => {});
     child.on('error', /** Spawn failures also produce an explicit absent-evidence receipt. */ () => { error = 'Pinned test host could not start'; });
     child.on('close', /** Host failures without parseable evidence never count as execution. */ () => {
       clearTimeout(timer);
-      killGroup(child.pid!);
+      cleanup();
       if (!error) {
         try {
           const parsed = JSON.parse(stdout) as { run_results?: CloseoutRun[] };

@@ -32,7 +32,13 @@ must assess that correspondence and retain meaningful behavioral tests.
 The default total linked-test budget is 60 seconds per execution, configurable
 with `--timeout 1..600`. The deadline includes test-host setup and all linked
 commands; it overrides even longer per-link timeouts. Output is bounded and
-process groups are killed on timeout. Trust refusals, missing commands,
+process groups are killed on timeout. On Linux, descendant enumeration and
+termination observation accept both `ENOENT` and `ESRCH` as process disappearance.
+A missing process group still requires attempting its PID, because a live child
+may not lead its own group. Zombies count as terminated; live descendants remain
+blocking. Unrelated enumeration or signal errors produce a bounded
+`Closeout process cleanup failed` refusal after remaining cleanup is attempted.
+Trust refusals, missing commands,
 assertion failures, skips and unsupported output remain blocking
 findings. Linked-test environment and assertions retain the host semantics.
 Commands still have the permissions of the invoking user: a disposable copy is
