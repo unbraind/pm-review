@@ -1,3 +1,4 @@
+import '../src/conflict-types.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { mkdir } from 'node:fs/promises';
