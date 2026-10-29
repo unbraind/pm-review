@@ -76,7 +76,7 @@ tracks strict shared schema validation and the second monotonic evidence probe.
 The comparison now exercises 17 read boundaries for each artifact and evidence
 (34 competing-transition cases), plus five capture boundaries. A separate ABA
 regression updates evidence and imports its earlier native document after the
-first history probe. SDK-read values are byte-for-byte structurally equal after
+first history probe. SDK-read values are structurally equal after
 the replay, history advances from one to three entries, and comparison refuses
 `state_changed`. The next read correctly reports one stale dependent obligation.
 
@@ -101,3 +101,24 @@ Packed acceptance now executes capture, JSON/TOON comparison and refusal exits
 through both npm global and Bun global hosts in addition to the existing
 project-local npx and native bunx paths. Neither SDK acquisition nor scope
 comparison resolves the host from argv, a symlink or an executable lookup.
+
+The final compatibility check preserves core-native field names longer than 200
+characters. A real SDK field with 201 characters captures, validates and replays
+without changing native state. The total JSON byte budget provides the bound;
+arbitrary shorter field/identity caps would reject valid released v1 scopes.
+Every captured receipt also passes the shared receipt schema before returning
+success. Restoring only the 200-character field cap in a disposable copy fails
+this regression 1/1; the fixed test then passes 1/1. Final targeted scope tests
+pass 12/12 with all four scope coverage dimensions at 100%. Repeating the
+read-only public snapshot measurement after this correction yields the same
+numbers in the table above.
+
+Full npm release gates on Node 22 and 26 passed at implementation `578a47c` in
+[CI 40836988622](https://github.com/unbraind/pm-review/actions/runs/40836988622).
+Node 22 measured 313 suite tests and three packed-install tests, with all four
+coverage dimensions at 100% across 48 source files. Its native model measured
+500 sequences, 2,988 operations, 1,988 comparisons and 75 native fields. The
+Bun full gate was still running at the queue's 30-minute wait cutoff. The final
+compatibility correction requires fresh exact-head CI; those earlier full-gate
+results do not certify the corrected head. Duplicate local model and packed
+runs stopped after the successful CI evidence are not counted as local passes.

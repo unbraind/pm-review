@@ -107,9 +107,8 @@ Selections allow at most 32 distinct obligations, 16 distinct fields per obligat
 and 16 distinct evidence items per obligation; reasons are 12–1000 characters and
 author literals are 1–200 characters. SDK calls use the same 1 MiB bound and strict
 schema as files. Arrays must be dense; unknown keys, duplicate selectors, unsafe
-versions and non-finite numbers refuse before SDK reads. Native field selectors
-are at most 200 characters, AC identifiers at most 16, and evidence identities at
-most 1,000. Produced v1 receipts retain the released serialization contract and
+versions and non-finite numbers refuse before SDK reads. Native field names and identities retain the released SDK domain within that
+overall byte bound; no shorter arbitrary identifier limit is imposed. Produced v1 receipts retain the released serialization contract and
 round-trip without native whitespace normalization. A receipt is transport data; no tracker import,
 export, sync, promotion, checkpoint, outbox, or package-owned state is created.
 

@@ -34,9 +34,9 @@ test('strict scope schema refuses sparse, extreme and extra input before any SDK
     ...[Array(1), ['description', ...Array(1)]].map(fields => ({ ...selection, obligations: [{ ...row, fields }] })),
     ...[Array(1), [{ id, version: 1 }, ...Array(1)]].map(evidence => ({ ...selection, obligations: [{ ...row, evidence }] })),
     { ...selection, obligations: [{ ...row, extra: true }] },
-    ...['', 'AC1x', 'AC' + '1'.repeat(15)].map(criterion => ({ ...selection, obligations: [{ ...row, criterion }] })),
-    { ...selection, obligations: [{ ...row, fields: ['a'.repeat(201)] }] },
-    ...[' ', 'a'.repeat(1001)].map(id => ({ ...selection, obligations: [{ ...row, evidence: [{ id, version: 1 }] }] })),
+    ...['', 'AC1x', 'AC' + '1'.repeat(1024 * 1024)].map(criterion => ({ ...selection, obligations: [{ ...row, criterion }] })),
+    { ...selection, obligations: [{ ...row, fields: ['a'.repeat(1024 * 1024 + 1)] }] },
+    ...[' ', 'a'.repeat(1024 * 1024 + 1)].map(id => ({ ...selection, obligations: [{ ...row, evidence: [{ id, version: 1 }] }] })),
     { ...selection, obligations: [{ ...row, evidence: [{ id, version: 1, extra: true }] }] },
   ];
   bad.push({ ...selection, obligations: Array.from({ length: 32 }, (_, index) => ({ ...row, criterion: `AC${index + 1}`, evidence: Array.from({ length: 16 }, (_, source) => ({ id: `${source}` + '\0'.repeat(995), version: 1 })) })) });
@@ -109,6 +109,24 @@ test('output boundary refuses non-finite, negative and unsafe numbers using the 
     scopeDenied(checkedScopeResult({ ...report, from: value }), 'scope_invalid');
     for (const key of Object.keys(report.counts)) scopeDenied(checkedScopeResult({ ...report, counts: { ...report.counts, [key]: value } }), 'scope_invalid');
   }
+  scopeDenied(checkedScopeResult({ ...scope, artifact: 'invalid' }), 'scope_invalid');
   assert.deepEqual(checkedScopeResult(scope), scope);
   assert.deepEqual(checkedScopeResult(report), report);
+});
+
+
+test('legacy native field names longer than 200 characters capture, validate and replay through the real SDK', async t => {
+  const { client, id, selection } = await scopeFixture(t);
+  const field = 'a'.repeat(201);
+  await client.schemaAddField(field, { type: 'string' });
+  await client.update(id, { [field]: '  Legacy native value\r\nretained exactly  ' });
+  const before = (await client.get(id, { full: true })).item;
+  assert.equal(Object.hasOwn(before, field), true);
+  const scope = await captureReviewScope(client, id, { ...selection, version: 2, obligations: [{ criterion: 'AC1', fields: [field], evidence: [], judgment: 'reviewed' }] });
+  assert.equal(scope.ok, true);
+  assert.ok(parseScopeInput(scope, true));
+  const result = await carryForwardReview(client, id, JSON.parse(JSON.stringify(scope)));
+  assert.equal(result.ok, true);
+  if (result.ok) assert.equal(result.counts.unchanged, 1);
+  assert.deepEqual((await client.get(id, { full: true })).item, before);
 });

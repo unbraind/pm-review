@@ -20,10 +20,10 @@ function text(min: number, max: number, pattern: RegExp): Rule {
 }
 
 const version: Rule = value => Number.isSafeInteger(value) && Number(value) > 0 && Number(value) < Number.MAX_SAFE_INTEGER;
-const id = text(1, 1000, /\S/);
+const id = text(1, 1024 * 1024, /\S/);
 const digest = text(64, 64, /^[a-f0-9]{64}$/);
-const field = text(1, 200, /^[a-z][a-z0-9_]*$/);
-const criterion = text(3, 16, /^AC[1-9]\d*$/);
+const field = text(1, 1024 * 1024, /^[a-z][a-z0-9_]*$/);
+const criterion = text(3, 1024 * 1024, /^AC[1-9]\d*$/);
 const judgment: Rule = value => value === 'reviewed' || value === 'gap';
 const common = { version, author: text(1, 200, /\S/), reason: text(12, 1000, /\S/) };
 const obligation = { criterion, judgment };

@@ -1,6 +1,6 @@
 import type { GetResult, PmClient } from '@unbrained/pm-cli/sdk';
 import type { CarryForwardReport, CarryForwardResult, ScopeResult, ReviewScope, ScopeSelection, ScopeRefusal } from './scope-types.ts';
-import { validScopeNumbers } from './scope-validation.ts';
+import { parseScopeInput, validScopeNumbers } from './scope-validation.ts';
 import { evidenceAdvanced, historicalItem, scopeCriteria, scopeDigest, scopeRefusal, scopeSelection, selectionFromScope } from './scope-state.ts';
 
 /** Capture explicitly declared review attention at verified historical versions, without modifying the tracker. */
@@ -82,5 +82,5 @@ export async function carryForwardReview(client: PmClient, id: string, baseline:
 
 /** Refuse invalid emitted numbers before exposing any successful scope result. */
 export function checkedScopeResult<T extends ReviewScope | CarryForwardReport>(value: T): T | ScopeRefusal {
-  return validScopeNumbers(value) ? value : scopeRefusal('scope_invalid');
+  return validScopeNumbers(value) && (!('schema' in value) || parseScopeInput(value, true) !== undefined) ? value : scopeRefusal('scope_invalid');
 }
