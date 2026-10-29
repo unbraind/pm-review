@@ -1,11 +1,17 @@
 import type { GetResult, PmClient } from '@unbrained/pm-cli/sdk';
-import type { CarryForwardReport, CarryForwardResult, ScopeResult, ReviewScope } from './scope-types.ts';
+import type { CarryForwardReport, CarryForwardResult, ScopeResult, ReviewScope, ScopeSelection, ScopeRefusal } from './scope-types.ts';
+import { validScopeNumbers } from './scope-validation.ts';
 import { evidenceAdvanced, historicalItem, scopeCriteria, scopeDigest, scopeRefusal, scopeSelection, selectionFromScope } from './scope-state.ts';
 
 /** Capture explicitly declared review attention at verified historical versions, without modifying the tracker. */
 export async function captureReviewScope(client: PmClient, id: string, input: unknown): Promise<ScopeResult> {
   const selection = scopeSelection(input);
   if (!selection) return scopeRefusal('scope_invalid');
+  return captureSelectedScope(client, id, selection);
+}
+
+/** Reconstruct already validated selectors without another input validation or a second normalization path. */
+async function captureSelectedScope(client: PmClient, id: string, selection: ScopeSelection): Promise<ScopeResult> {
   const item = await historicalItem(client, id, selection.version);
   if (!item) return scopeRefusal('history_unavailable');
   const criteria = scopeCriteria(item);
@@ -21,7 +27,7 @@ export async function captureReviewScope(client: PmClient, id: string, input: un
     }
     receipt.obligations.push({ criterion: row.criterion, digest: criteria.get(row.criterion)!, judgment: row.judgment, fields: row.fields.map(/** Hash exact SDK values including collections and native relationship attributes. */ name => ({ name, digest: scopeDigest(item[name]) })), evidence });
   }
-  return receipt;
+  return checkedScopeResult(receipt);
 }
 
 /** Read only explicitly referenced current items; foreign tracker records are outside this scope. */
@@ -38,7 +44,7 @@ async function observe(client: PmClient, ids: string[]): Promise<Map<string, Get
 export async function carryForwardReview(client: PmClient, id: string, baseline: unknown): Promise<CarryForwardResult> {
   const selection = selectionFromScope(baseline);
   if (!selection) return scopeRefusal('scope_invalid');
-  const original = await captureReviewScope(client, id, selection);
+  const original = await captureSelectedScope(client, id, selection);
   if (!original.ok) return original;
   if (scopeDigest(baseline) !== scopeDigest(original)) return scopeRefusal('baseline_changed');
   const scope = original;
@@ -48,6 +54,8 @@ export async function carryForwardReview(client: PmClient, id: string, baseline:
   for (const row of scope.obligations) for (const source of row.evidence) advanced.set(JSON.stringify(source), await evidenceAdvanced(client, source.id, source.version));
   const checked = await observe(client, [...ids].reverse());
   for (const key of ids) if (scopeDigest(current.get(key) ?? null) !== scopeDigest(checked.get(key) ?? null)) return scopeRefusal('state_changed');
+  // Recheck monotonic evidence history after the final byte reads: imports may restore old bytes.
+  for (const row of scope.obligations) for (const source of row.evidence) if (advanced.get(JSON.stringify(source)) !== await evidenceAdvanced(client, source.id, source.version)) return scopeRefusal('state_changed');
   const item = current.get(scope.id);
   if (!item) return scopeRefusal('scope_unavailable');
   const criteria = scopeCriteria(item);
@@ -69,5 +77,10 @@ export async function carryForwardReview(client: PmClient, id: string, baseline:
     report.obligations.push({ criterion: before.criterion, state: 'removed', reasons: ['criterion_removed'] });
     report.counts.removed++;
   }
-  return report;
+  return checkedScopeResult(report);
+}
+
+/** Refuse invalid emitted numbers before exposing any successful scope result. */
+export function checkedScopeResult<T extends ReviewScope | CarryForwardReport>(value: T): T | ScopeRefusal {
+  return validScopeNumbers(value) ? value : scopeRefusal('scope_invalid');
 }

@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "author": "review-agent",
+  "reason": "Explicit review of the validation and relationship boundaries",
+  "obligations": [
+    {
+      "criterion": "AC1",
+      "fields": ["description", "body"],
+      "evidence": [{ "id": "sample-evidence", "version": 1 }],
+      "judgment": "reviewed"
+    },
+    {
+      "criterion": "AC2",
+      "fields": ["dependencies"],
+      "evidence": [],
+      "judgment": "reviewed"
+    }
+  ]
+}

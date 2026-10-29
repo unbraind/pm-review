@@ -1,0 +1,39 @@
+id: pm-review-scope-boundary-revalidation
+title: Refuse malformed scope receipts and invalidate interleaved evidence replays
+description: Revision-scoped carry-forward is already delivered by PR 42. Revalidate the feature and harden its existing read-only boundary rather than adding another state store or duplicate command.
+type: Issue
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-29T07:23:15.486Z"
+updated_at: "2026-10-29T07:39:49.261Z"
+author: codex-agent
+acceptance_criteria: An unrelated artifact edit preserves only unaffected obligations; touched evidence invalidates its judgments; retained attention is never promoted into fresh exact-artifact approval; Sparse or extreme inputs receive bounded typed refusals before SDK reads; Detect an evidence successor introduced between observation passes even when older bytes are replayed; Document measured public read-only tracker results and exact-head npm and Bun CI gates
+parent: pm-review-epic
+comments[5]{created_at,author,text}:
+  "2026-10-29T07:23:28.381Z",codex-agent,"Overlap recheck: main c4915fe (PR 42) already supplies captureReviewScope, carryForwardReview, review scope/carry-forward, docs, 500-sequence model and interleaving tests. Core public SDK supplies verified historical get(at), native criteria splitting and host-injected PmClient; pm-evidence owns fragment citations/revisions and pm-context owns criterion packing. No second review store is needed. New scope: strict shared input validation, dense arrays/extremes, evidence replay interleaving, and refreshed public-data/gate evidence. Read-only comparison performs no SDK writes, transaction, lease, journal, import/export/sync or status-role decisions. commitWorkspaceTransaction does not isolate ordinary writers (upstream pm-cli issue 1620); observed reads remain non-atomic."
+  "2026-10-29T07:29:16.591Z",codex-agent,"Behavioral revert proofs in a disposable source copy: reverting only scope validators fails strict-schema regression 1/1 (extra-key input was accepted); reverting only carryForwardReview fails evidence ABA regression 1/1 (returned success after old native bytes were replayed). Fixed worktree sources were never modified by the reverts. Public main snapshot 46ed26c, read-only plain tracker: 64 items, 941 history versions, 31 changed artifacts/comparisons and CRLF replays; 29 unchanged obligations, 2 stale, 111 never reviewed, 0 removed; exactly 33 criterion_unknown refusals, 134 source files unchanged, largest report 1209 JSON bytes, zero approvals. Scope remains observed, with a final-read-to-action window; no shared writer state is introduced."
+  "2026-10-29T07:30:48.547Z",codex-agent,"Targeted scope modules pass 11/11 tests at measured 100% statements, branches, functions and lines. Interleaving covers 34 comparison transitions plus five capture boundaries on one non-git tracker, two real SDK clients. Schema fuzz: 600 extreme numeric trials and 30 producer/validator/CRLF round trips; emitted numeric boundaries refuse unsafe versions/counts. Pinned pm test run passed 3/3 fixed-implementation regressions after the disposable reverts. Typecheck, test typecheck, lint, zero-duplication and docstrings passed. Added an actual released v1 producer fixture captured from immutable public history for must-allow compatibility."
+  "2026-10-29T07:38:02.532Z",codex-agent,"Final boundary fuzz passes 3/3 tests, including 600 numeric inputs and 30 producer/validator/CRLF comparisons under seeded ambient session focus. The released v1 producer fixture is admitted. Local strict health has exactly one ignored pm-github extension host-version cache skew (pinned 2026.10.25 versus cached 2026.10.28); storage, integrity and append-only history checks pass. The unchanged main snapshot has successful fresh CI run 40795865672. Keep the SDK pin unchanged and use fresh PR CI for authoritative health and npm/Bun release gates. No SDK behavior gap or new upstream issue was introduced."
+  "2026-10-29T07:39:28.520Z",codex-agent,"Final packed npm global and Bun global acceptance passed 1/1 (both actual host executables): capture portable receipt, preserve attention after an unrelated artifact edit, stale touched versioned evidence, render JSON and TOON, and return typed process refusals. Project-local npx/bunx paths are retained in the CI install gate. Full 500-sequence native-state test is running locally and is also required in the final full CI gates; final-head CI is authoritative."
+files[8]{path,scope}:
+  src/scope-state.ts,project
+  src/scope-validation.ts,project
+  src/scope.ts,project
+  test/fixtures/review-scope-v1.json,project
+  test/install.acceptance.ts,project
+  test/scope-boundary.test.ts,project
+  test/scope-interleaving.test.ts,project
+  test/scope.test.ts,project
+tests[5]{command,scope,timeout_seconds,provenance{author,created_at,source_kind,source_ref}}:
+  "node --test --test-concurrency=1 --test-name-pattern=\"strict scope schema|byte-identical|output boundary\" test/scope-boundary.test.ts test/scope-interleaving.test.ts",project,120,codex-agent,"2026-10-29T07:29:32.697Z",local_mutation,feat/revision-scoped-review-carry-forward
+  node --test --test-concurrency=1 test/scope-model.test.ts,project,1800,codex-agent,"2026-10-29T07:31:49.363Z",local_mutation,feat/revision-scoped-review-carry-forward
+  node --test --test-concurrency=1 test/scope.test.ts test/scope-interleaving.test.ts test/scope-boundary.test.ts,project,240,codex-agent,"2026-10-29T07:31:53.508Z",local_mutation,feat/revision-scoped-review-carry-forward
+  "npm run typecheck && npm run build:test && npm run lint && npm run duplication && npm run docstring",project,180,codex-agent,"2026-10-29T07:31:58.430Z",local_mutation,feat/revision-scoped-review-carry-forward
+  "npm run test:install",project,900,codex-agent,"2026-10-29T07:32:03.749Z",local_mutation,feat/revision-scoped-review-carry-forward
+docs[4]{path,scope}:
+  docs/review-carry-forward-validation.md,project
+  docs/review-carry-forward.md,project
+  examples/review-scope.json,project
+  README.md,project
+body: ""

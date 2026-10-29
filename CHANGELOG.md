@@ -27,6 +27,7 @@
 
 - Find durable fix and refusal precedents ([pm-review-precedents](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-precedents.toon))
 - Pin the host so history verifies and keep CodeRabbit under the file cap ([pm-review-host-pin](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-host-pin.toon))
+- Refuse malformed scope receipts and invalidate interleaved evidence replays ([pm-review-scope-boundary-revalidation](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-scope-boundary-revalidation.toon))
 - Restore unique import identity for shared delivery PRs ([pm-review-sync-identity](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-sync-identity.toon))
 - Treat vanished deadline descendants as terminated ([pm-review-deadline-esrch](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-deadline-esrch.toon))
 - Investigate intermittent native Bun closeout copy failure ([pm-review-bun-closeout-copy](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-bun-closeout-copy.toon))

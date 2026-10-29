@@ -98,7 +98,7 @@ function consumerEnv(cwd: string, pmRoot: string, home = cwd): NodeJS.ProcessEnv
   }
  });
 
-test('packed conflict witness works through npm global and Bun global host executables', async t => {
+test('packed carry-forward and conflict witnesses work through npm global and Bun global host executables', async t => {
   const { scratch, tarball, sdkVersion } = await packedPackage(t, 'pm-review-global-install-');
   for (const runtime of ['npm', 'bun']) {
     const cwd = join(scratch, runtime);
@@ -113,6 +113,8 @@ test('packed conflict witness works through npm global and Bun global host execu
     command(cwd, host, ['init', 'consumer', '--defaults', '--agent-guidance', 'skip', '--json'], pmRoot);
     command(cwd, host, ['install', tarball, '--project', '--json'], pmRoot);
     verifyConflicts(cwd, host, [], pmRoot);
+    const target = JSON.parse(command(cwd, host, ['create', 'Task', 'Global scope artifact', '--ac', 'Review the selected native field', '--parent', 'none', '--assignee', 'none', '--reviewer', 'none', '--sprint', 'none', '--release', 'none', '--clear-deps', '--json'], pmRoot)) as { id: string };
+    await verifyCarryForward(cwd, host, [], pmRoot, target.id);
   }
 });
 
@@ -267,7 +269,8 @@ syncBuiltinESMExports();
 /** Verify installed capture/JSON transport/TOON comparison and typed process refusals on both runtimes. */
 async function verifyCarryForward(cwd: string, runner: string, prefix: string[], pmRoot: string, id: string): Promise<void> {
   const file = join(cwd, 'scope.json');
-  await writeFile(file, JSON.stringify({ version: 1, author: 'install-test', reason: 'Explicit packed validation review', obligations: [{ criterion: 'AC1', fields: ['description'], evidence: [], judgment: 'reviewed' }] }));
+  const evidence = JSON.parse(command(cwd, runner, [...prefix, 'create', 'Task', 'Packed scope evidence', '--parent', 'none', '--assignee', 'none', '--reviewer', 'none', '--sprint', 'none', '--release', 'none', '--clear-deps', '--json'], pmRoot)) as { id: string };
+  await writeFile(file, JSON.stringify({ version: 1, author: 'install-test', reason: 'Explicit packed validation review', obligations: [{ criterion: 'AC1', fields: ['description'], evidence: [{ id: evidence.id, version: 1 }], judgment: 'reviewed' }] }));
   const capture = command(cwd, runner, [...prefix, 'review', 'scope', id, '--file', 'scope.json', '--json'], pmRoot);
   await writeFile(file, capture);
   command(cwd, runner, [...prefix, 'update', id, '--priority', '1', '--json'], pmRoot);
@@ -277,6 +280,10 @@ async function verifyCarryForward(cwd: string, runner: string, prefix: string[],
   assert.equal(report.approval, 'unverified');
   assert.equal(report.artifact_changed, true);
   assert.match(command(cwd, runner, args, pmRoot), /unchanged: 1/);
+  command(cwd, runner, [...prefix, 'update', evidence.id, '--description', 'Touched packed review evidence', '--json'], pmRoot);
+  const stale = JSON.parse(command(cwd, runner, [...args, '--json'], pmRoot)) as { counts: { stale: number }; approval: string };
+  assert.equal(stale.counts.stale, 1);
+  assert.equal(stale.approval, 'unverified');
   const invalid = spawnSync(runner, [...prefix, 'review', 'carry-forward', id, '--file', 'absent.json', '--json'], { cwd, env: consumerEnv(cwd, pmRoot), encoding: 'utf8' });
   assert.equal(invalid.status, 1);
   assert.equal((JSON.parse(invalid.stdout) as { refusal: { code: string } }).refusal.code, 'scope_unavailable');

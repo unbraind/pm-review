@@ -2,10 +2,11 @@ import { createHash } from 'node:crypto';
 import { isRuntimeRecord, PmCliError, splitAcceptanceCriteria } from '@unbrained/pm-cli/sdk';
 import type { GetResult, PmClient } from '@unbrained/pm-cli/sdk';
 import type { ScopeCode, ScopeRefusal, ScopeSelection } from './scope-types.ts';
+import { parseScopeInput } from './scope-validation.ts';
 
 /** Fixed remedies omit backend paths and preserve a compact machine-readable contract. */
 const REMEDIES: Record<ScopeCode, string> = {
-  scope_invalid: 'Use review scope with a positive history version, author, reason, and at most 32 unique AC obligations; each needs 1-16 unique native fields and at most 16 versioned evidence items.',
+  scope_invalid: 'Use the documented scope schema with positive safe history versions, bounded strings, dense unique arrays and no extra keys; supply at most 32 obligations, 16 fields and 16 evidence items per obligation, within 1 MiB.',
   scope_unavailable: 'Supply one readable regular UTF-8 JSON scope file of at most 1 MiB.',
   history_unavailable: 'Select an existing item and verified durable history version; restore missing audited history or capture a new explicit scope.',
   criterion_unknown: 'Read the acceptance criteria at the selected version and choose its AC identifier.',
@@ -22,26 +23,16 @@ export function scopeDigest(value: unknown): string {
   return createHash('sha256').update(JSON.stringify(value, (_key, entry: unknown) => isRuntimeRecord(entry) ? Object.fromEntries(Object.keys(entry).sort().map(/** Reordered object keys do not change native values. */ key => [key, entry[key]])) : entry)).digest('hex');
 }
 
-/** Version selectors are durable numbers, never content-only identities or moving timestamps. */
-function versioned(value: unknown): value is { id: string; version: number } {
-  return isRuntimeRecord(value) && typeof value.id === 'string' && value.id.length > 0 && Number.isSafeInteger(value.version) && Number(value.version) > 0;
-}
-
-/** Validate untrusted SDK and CLI selections before performing any backend reads. */
+/** Validate declarations once with the shared producer and receipt schema. */
 export function scopeSelection(value: unknown): ScopeSelection | undefined {
-  if (!isRuntimeRecord(value) || !Number.isSafeInteger(value.version) || Number(value.version) < 1 || typeof value.author !== 'string' || !value.author.trim() || value.author.length > 200 || typeof value.reason !== 'string' || value.reason.trim().length < 12 || value.reason.length > 1000 || !Array.isArray(value.obligations) || value.obligations.length > 32) return undefined;
-  const criteria = new Set<string>();
-  for (const row of value.obligations) {
-    if (!isRuntimeRecord(row) || typeof row.criterion !== 'string' || !/^AC[1-9]\d*$/.test(row.criterion) || criteria.has(row.criterion) || (row.judgment !== 'reviewed' && row.judgment !== 'gap') || !Array.isArray(row.fields) || row.fields.length < 1 || row.fields.length > 16 || !row.fields.every(/** Own field names cannot invoke inherited properties. */ (name: unknown) => typeof name === 'string' && /^[a-z][a-z0-9_]*$/.test(name)) || new Set(row.fields).size !== row.fields.length || !Array.isArray(row.evidence) || row.evidence.length > 16 || !row.evidence.every(versioned) || new Set(row.evidence.map(/** One source item has one reviewed version per obligation. */ source => source.id)).size !== row.evidence.length) return undefined;
-    criteria.add(row.criterion);
-  }
-  return value as unknown as ScopeSelection;
+  return parseScopeInput(value, false);
 }
 
-/** Recover capture selectors from a receipt; the entire receipt is subsequently checked against SDK history. */
+/** Recover only validated selectors; receipt digests are subsequently checked against SDK history. */
 export function selectionFromScope(value: unknown): ScopeSelection | undefined {
-  if (!isRuntimeRecord(value) || value.schema !== 'review-scope/v1' || !Array.isArray(value.obligations)) return undefined;
-  return scopeSelection({ ...value, obligations: value.obligations.map(/** Invalid fields survive as invalid selections rather than throwing. */ row => isRuntimeRecord(row) && Array.isArray(row.fields) ? { ...row, fields: row.fields.map(/** Digest values are verified by recapture, never trusted on input. */ (field: unknown) => isRuntimeRecord(field) ? field.name : undefined) } : row) });
+  const scope = parseScopeInput(value, true);
+  if (!scope) return undefined;
+  return { version: scope.version, author: scope.author, reason: scope.reason, obligations: scope.obligations.map(row => ({ criterion: row.criterion, judgment: row.judgment, fields: row.fields.map(field => field.name), evidence: row.evidence.map(source => ({ id: source.id, version: source.version })) })) };
 }
 
 /** Ask core to verify historical reconstruction; unavailable or corrupt records are typed refusals. */

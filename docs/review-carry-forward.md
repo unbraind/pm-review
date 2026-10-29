@@ -12,7 +12,9 @@ external bytes. Use core version facts or pm-evidence citations to maintain that
 evidence in the tracker before declaring its scope. This feature does not resolve
 external files or substitute for citation verification.
 
-Create `selection.json` after explicitly reviewing the selected version:
+Copy [the selection example](../examples/review-scope.json) to `selection.json`
+and replace its identities and versions after explicitly reviewing the selected
+version:
 
 ```json
 {
@@ -43,8 +45,8 @@ pm review carry-forward sample-task --file baseline.json
 pm review carry-forward sample-task --file baseline.json --json
 ```
 
-Read the version with core's history command. Versions are positive durable history
-coordinates, not a content hash or an idempotency key. A receipt contains that
+Read the version with core's history command. Versions are positive safe integers below `Number.MAX_SAFE_INTEGER`, representing
+durable history coordinates rather than a content hash or an idempotency key. A receipt contains that
 version, author, reason, complete artifact digest, and per-obligation criterion,
 field, and complete evidence digests. Receipts contain no source bodies. Declaring
 `reviewed` is the caller's assessment; authorship is attribution, not a signature or
@@ -103,7 +105,12 @@ No source excerpts or full item documents are echoed. The host retains its norma
 output-budget controls. Inputs are regular UTF-8 JSON files limited to 1 MiB.
 Selections allow at most 32 distinct obligations, 16 distinct fields per obligation,
 and 16 distinct evidence items per obligation; reasons are 12–1000 characters and
-author literals are 1–200 characters. A receipt is transport data; no tracker import,
+author literals are 1–200 characters. SDK calls use the same 1 MiB bound and strict
+schema as files. Arrays must be dense; unknown keys, duplicate selectors, unsafe
+versions and non-finite numbers refuse before SDK reads. Native field selectors
+are at most 200 characters, AC identifiers at most 16, and evidence identities at
+most 1,000. Produced v1 receipts retain the released serialization contract and
+round-trip without native whitespace normalization. A receipt is transport data; no tracker import,
 export, sync, promotion, checkpoint, outbox, or package-owned state is created.
 
 Refusals have `ok: false` and `refusal: { code, remedy }`; the CLI also exits 1.
@@ -113,10 +120,18 @@ Malformed or foreign scope schemas are refused as one input; unselected tracker
 records and foreign comments are skipped because they are outside the explicit
 scope. No history is repaired or rewritten.
 
-Reads use two observation passes and refuse detectable changes with
+Reads use two observation passes and probe evidence history again after the
+second byte read, so an intervening import of older identical values still
+invalidates retention. They refuse detectable changes with
 `state_changed`. They neither acquire a writer lease nor modify peer state.
 `consistency: observed` means the report describes the values observed during
 those reads, not an atomic multi-item transaction or a reservation against a later
 edit. Re-read after concurrent work. Even unchanged obligations and an unchanged
 artifact return `approval: unverified`. Fresh exact-artifact approval, closeout,
 quantitative assurance and round completion remain independent gates.
+
+The final read still leaves a window before the caller acts: `consistency:
+observed` grants no writer isolation. The core `commitWorkspaceTransaction` API
+serializes other workspace transactions, not ordinary SDK/CLI writers. This
+feature does not call it or write any target; any later write must re-read its
+expected revision immediately before writing and document the remaining window.

@@ -1,7 +1,7 @@
 # Carry-forward validation
 
 Public source: [pm-review main snapshot
-24e04fc](https://github.com/unbraind/pm-review/commit/24e04fc).
+46ed26c](https://github.com/unbraind/pm-review/commit/46ed26c).
 The tracker was exported with `git archive` into a plain directory. Its complete
 source tree was made read-only before running `test/scope-public-tracker.ts` with
 a Git discovery ceiling. The script uses only SDK reads and explicit test
@@ -10,17 +10,17 @@ items. It hashes the original file names and bytes before and after all calls.
 
 | Measurement | Result |
 | --- | ---: |
-| Public items inspected | 54 |
-| Durable history versions inspected | 733 |
-| Artifacts compared from version 1 | 23 |
-| Artifacts changed since version 1 | 23 |
-| Unchanged reviewed obligations | 21 |
+| Public items inspected | 64 |
+| Durable history versions inspected | 941 |
+| Artifacts compared from version 1 | 31 |
+| Artifacts changed since version 1 | 31 |
+| Unchanged reviewed obligations | 29 |
 | Stale reviewed obligations | 2 |
-| Never-reviewed current obligations | 93 |
+| Never-reviewed current obligations | 111 |
 | Removed reviewed obligations | 0 |
-| JSON/CRLF receipt replays | 23 |
-| Items without AC1 at version 1 (`criterion_unknown`) | 31 |
-| Source files byte-identical after reads | 114 |
+| JSON/CRLF receipt replays | 31 |
+| Items without AC1 at version 1 (`criterion_unknown`) | 33 |
+| Source files byte-identical after reads | 134 |
 | Largest compact report, JSON bytes | 1,209 |
 | Exact-artifact approvals produced | 0 |
 
@@ -66,3 +66,38 @@ importing a description update on a Task with a relationship can yield
 [The follow-up tracker item](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-sdk-import-history-gap.toon)
 records the minimal reproduction. Scope capture refuses corrupt history and never
 repairs it. New-item imports used to seed the model remain replayable.
+
+Revision-boundary hardening repeats the overlap audit: PR 42 already delivered
+the feature; coverage and lineage remain separate, core verified `get(at)` is
+the revision oracle, and pm-evidence owns citation resolution. The new issue
+[scope boundary revalidation](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-scope-boundary-revalidation.toon)
+tracks strict shared schema validation and the second monotonic evidence probe.
+
+The comparison now exercises 17 read boundaries for each artifact and evidence
+(34 competing-transition cases), plus five capture boundaries. A separate ABA
+regression updates evidence and imports its earlier native document after the
+first history probe. SDK-read values are byte-for-byte structurally equal after
+the replay, history advances from one to three entries, and comparison refuses
+`state_changed`. The next read correctly reports one stale dependent obligation.
+
+The schema corpus refuses sparse arrays, unsafe versions, extra keys, oversized
+strings and escaped JSON beyond the byte budget before any SDK read. It allows
+an actual receipt emitted by the released v1 producer at the public main snapshot,
+as well as released v1 receipt shapes and whitespace/CRLF transports. Another seeded fuzz
+runs 600 numeric input trials and 30 producer/validator/transport round trips
+under seeded ambient session focus;
+all package operations leave SDK-read native artifact and evidence state intact.
+The output boundary applies the same safe integer version domain and exact
+nonnegative count domain before returning success, with extreme output-number
+refusals tested independently. No floating-point threshold drives a verdict.
+
+Two behavioral reverts in a disposable source copy each fail their regression:
+restoring only the old scope validators accepts an extra-key declaration;
+restoring the old comparison returns success after the byte-identical evidence
+replay. The fixed sources are never changed for these reverts. Targeted tests
+are rerun on the fixed implementation afterwards.
+
+Packed acceptance now executes capture, JSON/TOON comparison and refusal exits
+through both npm global and Bun global hosts in addition to the existing
+project-local npx and native bunx paths. Neither SDK acquisition nor scope
+comparison resolves the host from argv, a symlink or an executable lookup.

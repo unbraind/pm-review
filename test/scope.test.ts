@@ -70,7 +70,8 @@ test('malformed and foreign declarations have typed remedies and never modify th
   scopeDenied(await captureReviewScope(client, 'missing', selection), 'history_unavailable');
   scopeDenied(await captureReviewScope(client, id, { ...selection, version: 999999 }), 'history_unavailable');
   scopeDenied(await captureReviewScope(client, id, { ...selection, obligations: [{ ...row, evidence: [{ id: 'missing', version: 1 }] }] }), 'history_unavailable');
-  scopeDenied(await carryForwardReview(client, id, { ...scope, artifact: 'forged' }), 'baseline_changed');
+  scopeDenied(await carryForwardReview(client, id, { ...scope, artifact: 'forged' }), 'scope_invalid');
+  scopeDenied(await carryForwardReview(client, id, { ...scope, artifact: '0'.repeat(64) }), 'baseline_changed');
   scopeDenied(await carryForwardReview(client, 'missing', scope), 'history_unavailable');
   assert.deepEqual((await client.get(id, { full: true })).item, before);
   assert.equal(scopeDigest({ z: 1, a: { y: ' \r\n', x: [] } }), scopeDigest({ a: { x: [], y: ' \r\n' }, z: 1 }));
