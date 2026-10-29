@@ -6,13 +6,14 @@ status: open
 priority: 2
 tags: []
 created_at: "2026-10-25T06:04:42.850Z"
-updated_at: "2026-10-26T00:49:38.343Z"
+updated_at: "2026-10-28T21:29:36.454Z"
 author: codex-agent
 acceptance_criteria: Reproduce against current core SDK; Preserve existing native relationship fields and append-only replay integrity across imported updates; Keep review history refusals conservative until the upstream import path is fixed
 parent: pm-review-epic
-comments[2]{created_at,author,text}:
+comments[3]{created_at,author,text}:
   "2026-10-25T06:06:39.645Z",codex-agent,"Confirmed independently with a minimal real non-git tracker on pinned SDK 2026.10.20: the only imported change was description on an existing Task with one related dependency. Historical version 1 read succeeded before import; version 2 read failed afterward with history_replay_invalid / verify_failed:before_hash_mismatch:entry_2. New-item SDK imports used for model seeding remain replayable. No workaround repairs or rewrites history. Report this SDK gap in the handoff; do not file upstream from this task."
   "2026-10-26T00:49:38.343Z",codex-agent,"Targeted evidence validation reproduced the existing core import-history limitation with the pinned 2026.10.20 SDK: importing a rich native document over an existing linked-artifact item reported verify_failed:before_hash_mismatch:entry_2, and historical get refused history_replay_invalid. The new read-only request queue rejects that evidence as evidence_unavailable and never repairs its history. Its model seeds a fresh native document, uses SDK mutations, and replays its own packet/arrival inputs; no native import/export/sync writer is added."
+  "2026-10-28T21:29:36.453Z",codex-agent,"Conflict-witness validation on pinned SDK 2026.10.25 reproduced the existing refusal after a rich native document was imported over an existing ReviewFinding. Verified snapshot acquisition could not reconstruct a current audited revision. Main randomized fixtures therefore seed fresh rich native documents via commitImportedItem, then mutate through PmClient; unavailable-history regression independently proves the witness never treats missing source evidence as resolution. No history is repaired or rewritten."
 files[1]{path,scope}:
   test/scope-model.test.ts,project
 docs[1]{path,scope}:

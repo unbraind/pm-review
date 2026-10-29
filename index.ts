@@ -66,3 +66,9 @@ export default defineExtension({
     registerReviewCommands(api);
   },
 });
+/** Export bounded raw-disposition witnesses; core decisions remain authoritative. */
+export { reviewConflicts } from './src/conflicts.ts';
+/** Export the shared compact JSON/TOON wire encoder. */
+export { serializeConflictWitness } from './src/conflict-state.ts';
+/** Export strict selection, scope, witness and actionable refusal contracts. */
+export type { ConflictInput, ConflictCode, ConflictRefusal, ConflictScope, ConflictJudgment, ConflictPacket, ConflictResult } from './src/conflict-types.ts';

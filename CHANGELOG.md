@@ -9,6 +9,7 @@
 - Compute exact-head review round completion ([pm-review-round](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-round.toon))
 - Scaffold fleet gates and certify packed consumers ([pm-review-quality](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-quality.toon))
 - Import every bot thread, review and issue comment idempotently ([pm-review-import](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-import.toon))
+- Expose conflicting verdict witnesses without voting them away ([pm-review-conflicting-verdicts](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-conflicting-verdicts.toon))
 - Request the smallest missing review evidence for each obligation ([pm-review-targeted-evidence-requests](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-targeted-evidence-requests.toon))
 - Carry review attention across unaffected artifact revisions ([pm-review-review-carry-forward](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-review-carry-forward.toon))
 - Import provider-neutral review evidence envelopes ([pm-review-evidence-envelopes](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-evidence-envelopes.toon))
