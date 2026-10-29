@@ -437,6 +437,11 @@ selected fields, or evidence revisions make dependent judgments stale. Omitted
 criteria remain never reviewed. Retained attention always returns
 `approval: unverified`; it cannot satisfy fresh exact-artifact review gates.
 
+SDK and CLI inputs share a strict bounded schema: sparse arrays, extra keys and
+unsafe history versions receive `scope_invalid` before tracker reads. A second
+evidence revision probe detects replays that restore older bytes between passes.
+Reads remain observational and never reserve the tracker against later edits.
+
 [Selection example, typed SDK, refusals and concurrency semantics](docs/review-carry-forward.md).
 
 Every workflow job granted write permissions, including CodeQL, Dependabot and

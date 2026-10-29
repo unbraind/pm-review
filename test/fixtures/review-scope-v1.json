@@ -1,0 +1,23 @@
+{
+  "ok": true,
+  "schema": "review-scope/v1",
+  "id": "pm-review-review-carry-forward",
+  "version": 1,
+  "author": "compatibility-validation",
+  "reason": "Test declaration from the released review-scope v1 producer",
+  "artifact": "732dc75f2e60be4403a5092aadd044cb0a5bd01873d277017933620eb26424af",
+  "obligations": [
+    {
+      "criterion": "AC1",
+      "digest": "236e101a4fed2ce1512852e140088cc014dcc82244504377044837555cd28f12",
+      "judgment": "reviewed",
+      "fields": [
+        {
+          "name": "description",
+          "digest": "698bc78a1c53d52d4065a3e79d74425615e8a4cec5df306e29eca8a2388af19c"
+        }
+      ],
+      "evidence": []
+    }
+  ]
+}

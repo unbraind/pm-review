@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { PmClient, getHistoryPath, readHistoryEntries } from '@unbrained/pm-cli/sdk';
+import { PmClient, commitImportedItem, getHistoryPath, locateItem, readHistoryEntries, readLocatedItem, readSettings } from '@unbrained/pm-cli/sdk';
 import type { GetOptions } from '@unbrained/pm-cli/sdk';
 import { captureReviewScope, carryForwardReview } from '../src/scope.ts';
 import type { CarryForwardReport } from '../src/scope-types.ts';
-import { scopeFixture } from './scope-fixture.ts';
+import { scopeFixture, scopeDenied } from './scope-fixture.ts';
+import { inFixtureWorkspace } from './helpers.ts';
 
 /** Instrument real SDK reads; every value and competing transition still comes from the real tracker. */
 function interleave(client: PmClient, boundary: number, transition: () => Promise<void>) {
@@ -32,7 +33,7 @@ test('peer transitions at every SDK read boundary preserve peer state and report
   await carryForwardReview(dry.observed, id, baseline);
   const boundaries = dry.steps();
   // This includes historical reconstruction, each current read, successor probes, and both passes.
-  assert.equal(boundaries, 14);
+  assert.equal(boundaries, 16);
   for (const subject of ['evidence', 'artifact']) for (let boundary = 0; boundary <= boundaries; boundary++) {
     const sourceVersion = (await readHistoryEntries(getHistoryPath(pmRoot, evidence), evidence)).length;
     const artifactVersion = (await readHistoryEntries(getHistoryPath(pmRoot, id), id)).length;
@@ -74,4 +75,36 @@ test('peer transitions at every SDK read boundary preserve peer state and report
   const report = await carryForwardReview(client, id, baseline) as CarryForwardReport;
   assert.equal(report.approval, 'unverified');
   t.diagnostic(`comparison: ${boundaries + 1} boundaries for each of artifact and evidence (${2 * (boundaries + 1)} cases); capture: ${captureDry.steps() + 1} boundaries; one non-git tracker, two real SDK clients; no shared mutation paths`);
+});
+
+
+test('an evidence successor followed by a byte-identical old import between passes refuses retention', async t => {
+  const { client, id, evidence, selection, cwd, pmRoot } = await scopeFixture(t);
+  const peer = new PmClient({ cwd, pmRoot, author: 'peer-agent', noExtensions: true });
+  const located = (await locateItem(pmRoot, evidence))!;
+  const document = (await readLocatedItem(located)).document;
+  const settings = await readSettings(pmRoot);
+  const before = (await client.get(evidence, { full: true })).item;
+  const baseline = await captureReviewScope(client, id, selection);
+  let replayed = false;
+  const observed = new Proxy(client, { get(target, key, receiver) {
+    if (key !== 'get') return Reflect.get(target, key, receiver);
+    return async (...args: Parameters<PmClient['get']>) => {
+      try { return await target.get(...args); }
+      finally {
+        if (!replayed && args[0] === evidence && args[1]?.at === '2') {
+          replayed = true;
+          await peer.update(evidence, { description: 'Competing evidence review successor' });
+          await inFixtureWorkspace(cwd, async () => commitImportedItem({ pmRoot, id: evidence, itemPath: located.itemPath, document, settings, author: 'peer-agent', message: 'Replay older evidence input', conflictWarningPrefix: 'scope-replay' }));
+        }
+      }
+    };
+  } });
+  scopeDenied(await carryForwardReview(observed, id, baseline), 'state_changed');
+  assert.equal(replayed, true);
+  assert.deepEqual((await client.get(evidence, { full: true })).item, before, 'ABA regression requires identical SDK values after replay');
+  assert.equal((await readHistoryEntries(getHistoryPath(pmRoot, evidence), evidence)).length, 3);
+  const current = await carryForwardReview(client, id, baseline) as CarryForwardReport;
+  assert.deepEqual(current.counts, { unchanged: 1, stale: 1, never_reviewed: 1, removed: 0 });
+  assert.equal(current.approval, 'unverified');
 });
