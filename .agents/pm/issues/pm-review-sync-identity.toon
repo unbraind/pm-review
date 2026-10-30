@@ -2,14 +2,17 @@ id: pm-review-sync-identity
 title: Restore unique import identity for shared delivery PRs
 description: "Reconcile duplicate PR 46 importer identities without losing either delivered item, historic evidence or append-only history. Validate the complete corpus and an isolated gated import and repeat."
 type: Issue
-status: in_progress
+status: closed
 priority: 1
 tags[1]: "gh:unbraind/pm-review#57"
 created_at: "2026-10-28T19:28:58.295Z"
-updated_at: "2026-10-28T19:41:21.614Z"
+updated_at: "2026-10-30T14:31:42.276Z"
+closed_at: "2026-10-30T14:31:38.149Z"
+completed_at: "2026-10-28T20:15:40.000Z"
 author: codex-agent
 acceptance_criteria: Shared delivery links remain on both original closed items with unchanged completion evidence and history prefixes; Every importer identity has one owner and the gated preview succeeds; Isolated atomic gated import and repeat preserve item and history bytes with no duplicate items
 resolution: "Replace duplicate PR importer keys with shared delivery tags, retain append-only evidence, and review exactly two generic public procfs hashes for the pinned privacy gate."
+expected_result: Shared delivery links remain on both original closed items with unchanged completion evidence and history prefixes; Every importer identity has one owner and the gated preview succeeds; Isolated atomic gated import and repeat preserve item and history bytes with no duplicate items
 actual_result: "Complete-corpus regression and gated preview pass. Published pinned importer applies 0 new/4 updates, then repeats 0 new/0 updates with 125 item/history files byte-identical; privacy has zero findings and strict health has zero warnings."
 comments[6]{created_at,author,text}:
   "2026-10-28T19:29:04.516Z",codex-agent,"Read gated-sync job 122676744472 from run 40646598672: pm-github 2026.10.23 refuses one duplicate provenance identity before any import writes. Both pm-review-bun-closeout-copy and pm-review-targeted-evidence-requests claim PR 46. Plan remove PR delivery identities from both, preserve the PR URL as a non-identity delivery tag and existing closure evidence, and leave provider ownership to its imported record rather than choosing an arbitrary owner. No importer runtime defect established."
@@ -28,4 +31,5 @@ tests[1]{command,path,scope,timeout_seconds,provenance{author,created_at,source_
 docs[2]{path,scope}:
   CHANGELOG.md,project
   docs/issue-sync.md,project
+close_reason: "Delivered by PR #60 (06cd671): Keep deadline cleanup reliable and unblock gated issue sync"
 body: ""

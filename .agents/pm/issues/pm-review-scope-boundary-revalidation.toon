@@ -2,14 +2,19 @@ id: pm-review-scope-boundary-revalidation
 title: Refuse malformed scope receipts and invalidate interleaved evidence replays
 description: Revision-scoped carry-forward is already delivered by PR 42. Revalidate the feature and harden its existing read-only boundary rather than adding another state store or duplicate command.
 type: Issue
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-29T07:23:15.486Z"
-updated_at: "2026-10-29T08:13:55.641Z"
+updated_at: "2026-10-30T14:31:26.876Z"
+closed_at: "2026-10-30T14:31:23.418Z"
+completed_at: "2026-10-29T08:55:32.000Z"
 author: codex-agent
 acceptance_criteria: An unrelated artifact edit preserves only unaffected obligations; touched evidence invalidates its judgments; retained attention is never promoted into fresh exact-artifact approval; Sparse or extreme inputs receive bounded typed refusals before SDK reads; Detect an evidence successor introduced between observation passes even when older bytes are replayed; Document measured public read-only tracker results and exact-head npm and Bun CI gates
 parent: pm-review-epic
+resolution: "Delivered by PR #62 (cce88a7): Keep review attention scoped and reject stale evidence replays"
+expected_result: An unrelated artifact edit preserves only unaffected obligations; touched evidence invalidates its judgments; retained attention is never promoted into fresh exact-artifact approval; Sparse or extreme inputs receive bounded typed refusals before SDK reads; Detect an evidence successor introduced between observation passes even when older bytes are replayed; Document measured public read-only tracker results and exact-head npm and Bun CI gates
+actual_result: "PR #62 merged at 2026-10-29T08:55:32Z as cce88a7; required CI passed on the merged head."
 comments[7]{created_at,author,text}:
   "2026-10-29T07:23:28.381Z",codex-agent,"Overlap recheck: main c4915fe (PR 42) already supplies captureReviewScope, carryForwardReview, review scope/carry-forward, docs, 500-sequence model and interleaving tests. Core public SDK supplies verified historical get(at), native criteria splitting and host-injected PmClient; pm-evidence owns fragment citations/revisions and pm-context owns criterion packing. No second review store is needed. New scope: strict shared input validation, dense arrays/extremes, evidence replay interleaving, and refreshed public-data/gate evidence. Read-only comparison performs no SDK writes, transaction, lease, journal, import/export/sync or status-role decisions. commitWorkspaceTransaction does not isolate ordinary writers (upstream pm-cli issue 1620); observed reads remain non-atomic."
   "2026-10-29T07:29:16.591Z",codex-agent,"Behavioral revert proofs in a disposable source copy: reverting only scope validators fails strict-schema regression 1/1 (extra-key input was accepted); reverting only carryForwardReview fails evidence ABA regression 1/1 (returned success after old native bytes were replayed). Fixed worktree sources were never modified by the reverts. Public main snapshot 46ed26c, read-only plain tracker: 64 items, 941 history versions, 31 changed artifacts/comparisons and CRLF replays; 29 unchanged obligations, 2 stale, 111 never reviewed, 0 removed; exactly 33 criterion_unknown refusals, 134 source files unchanged, largest report 1209 JSON bytes, zero approvals. Scope remains observed, with a final-read-to-action window; no shared writer state is introduced."
@@ -38,4 +43,5 @@ docs[4]{path,scope}:
   docs/review-carry-forward.md,project
   examples/review-scope.json,project
   README.md,project
+close_reason: "Delivered by PR #62 (cce88a7): Keep review attention scoped and reject stale evidence replays"
 body: ""
