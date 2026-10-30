@@ -2,14 +2,19 @@ id: pm-review-conflicting-verdicts
 title: Expose conflicting verdict witnesses without voting them away
 description: "AC1: Opposed explicit fix and refuse judgments on one confirmed finding lineage and exact artifact scope yield both source identities in a bounded read-only decision packet. AC2: Provider counts and decision recency never settle conflict. AC3: Withdrawn or unavailable reviews cannot settle conflict. AC4: Typed SDK and CLI share strict validation, compact JSON/TOON, typed remedies, docs, model-based and no-git evidence, public tracker measurements and passing CI npm/Bun release gates. Overlap rechecked against pinned core SDK declarations and sibling pm-web: findingLineage/lineageGroups supply confirmed finding identity; core PmClient.planDecision and native Plan decisions remain authoritative; pm-web decision inbox owns human request/response. This feature only projects review-specific incompatible judgments and missing resolution evidence; it adds no persistence, vote aggregation, import, sync, journal or resolution workflow."
 type: Feature
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-28T21:20:48.734Z"
-updated_at: "2026-10-28T23:57:46.117Z"
+updated_at: "2026-10-30T14:30:53.365Z"
+closed_at: "2026-10-30T14:30:50.201Z"
+completed_at: "2026-10-29T00:43:01.000Z"
 author: codex-agent
 acceptance_criteria: "Two opposed explicit judgments at one confirmed lineage and exact artifact scope yield both original source identities; Provider counts and recency never resolve votes; Withdrawn or unavailable reviews cannot settle the conflict; Typed SDK and CLI return bounded JSON/TOON packets and typed remedies; Seeded 500-sequence SDK read-back, native fields, relationships, replay, custom-status, no-git, interleaving, public-data and packed-install evidence pass; CI npm and Bun release gates pass at unchanged thresholds"
 parent: pm-review-epic
+resolution: "Delivered by PR #61 (46ed26c): Expose conflicting review verdicts with both source witnesses"
+expected_result: "Two opposed explicit judgments at one confirmed lineage and exact artifact scope yield both original source identities; Provider counts and recency never resolve votes; Withdrawn or unavailable reviews cannot settle the conflict; Typed SDK and CLI return bounded JSON/TOON packets and typed remedies; Seeded 500-sequence SDK read-back, native fields, relationships, replay, custom-status, no-git, interleaving, public-data and packed-install evidence pass; CI npm and Bun release gates pass at unchanged thresholds"
+actual_result: "PR #61 merged at 2026-10-29T00:43:01Z as 46ed26c; required CI passed on the merged head."
 comments[11]{created_at,author,text}:
   "2026-10-28T21:22:55.675Z",codex-agent,"Design: reuse lineageGroups, complete native SDK reads, requestSnapshot verified history addressing and scopeDigest; command uses host-injected PmClient. Exact scope is GitHub repo/PR/revision or envelope origin/subject/revision. Only explicit fix versus refuse are opposed; pending, stale, duplicate and informational do not imply rejection. Read-only packets preserve all raw current judgments, including withdrawn sources, and mark missing core decision, resolution evidence and availability. No tracker mutations, leases, journal, import/export/sync or ambient create defaults are added. Tests will exercise SDK read-back, seeded 500-sequence replay/relationship changes, custom statuses, extreme metadata, every read boundary, packed installers and public non-git input fingerprints."
   "2026-10-28T21:36:40.686Z",codex-agent,"Public read-only export validation at origin/main 06cd671: 63 items, 22 ReviewFindings and 22 lineage/scopes; 17 packets with 15 explicit judgments and 2 non-explicit skips; 5 typed input_invalid refusals for historical observations without a source revision. No natural opposition in this public corpus. Maximum JSON 1518 bytes, TOON 1411 bytes; 17 CRLF query replays matched; all 132 native input files unchanged. Sources were exported outside git with native files read-only. Synthetic opposing-source regressions supply positive acceptance evidence. Typecheck, lint, docstring and zero-duplication gates passed; randomized, interleaving and packed-global checks continue."
@@ -46,4 +51,5 @@ docs[4]{path,scope}:
   docs/conflicting-verdicts.md,project
   examples/conflicting-verdicts.ts,project
   README.md,project
+close_reason: "Delivered by PR #61 (46ed26c): Expose conflicting review verdicts with both source witnesses"
 body: ""

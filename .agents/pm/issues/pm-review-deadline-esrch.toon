@@ -2,14 +2,17 @@ id: pm-review-deadline-esrch
 title: Treat vanished deadline descendants as terminated
 description: "Handle ENOENT and ESRCH consistently across process enumeration, liveness reads and deadline signals, while preserving live-process and unrelated-error failures."
 type: Issue
-status: in_progress
+status: closed
 priority: 1
 tags[1]: "gh:unbraind/pm-review#56"
 created_at: "2026-10-28T19:28:53.537Z"
-updated_at: "2026-10-28T19:41:19.947Z"
+updated_at: "2026-10-30T14:31:13.826Z"
+closed_at: "2026-10-30T14:31:09.484Z"
+completed_at: "2026-10-28T20:15:40.000Z"
 author: codex-agent
 acceptance_criteria: "Deterministic disappearance schedules cover enumeration, stat and signal boundaries and fail on source revert; Live descendants remain blocking and unrelated failures are visible; Focused tests, typecheck and lint pass and npm/Bun CI release gates certify the final head"
 resolution: "Share ENOENT/ESRCH classification across process enumeration, liveness and group/PID signalling; retain PID fallback and return bounded cleanup refusals for unrelated failures."
+expected_result: "Deterministic disappearance schedules cover enumeration, stat and signal boundaries and fail on source revert; Live descendants remain blocking and unrelated failures are visible; Focused tests, typecheck and lint pass and npm/Bun CI release gates certify the final head"
 actual_result: Focused linked tests pass 35/35 with zero failures or skips; deterministic source reverts fail and restoration passes. Final-head npm/Bun release gates are delegated to PR CI.
 comments[3]{created_at,author,text}:
   "2026-10-28T19:29:02.870Z",codex-agent,"Confirmed original CI failure at run 40506542936 and current ENOENT-only stat catch. Production killGroup currently suppresses every enumeration and signal error, so the fix must also expose unrelated cleanup failures in bounded receipts. Plan shared disappearance classification and deterministic I/O schedules, retaining the real detached-descendant deadline test. Current main has newer successful CI runs; this is still an unresolved intermittent race."
@@ -27,4 +30,5 @@ tests[1]{command,path,scope,timeout_seconds,provenance{author,created_at,source_
 docs[2]{path,scope}:
   CHANGELOG.md,project
   docs/closeout.md,project
+close_reason: "Delivered by PR #60 (06cd671): Keep deadline cleanup reliable and unblock gated issue sync"
 body: ""
