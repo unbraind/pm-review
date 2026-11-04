@@ -1,0 +1,28 @@
+id: pm-review-toolchain-1104
+title: Adopt the November 4 pm review toolchain contracts
+description: "Update https://github.com/unbraind/pm-review/pull/75 and verify current native SDK contracts and stable documentation assertions."
+type: Chore
+status: in_progress
+priority: 2
+tags[4]: dependencies,"gh:unbraind/pm-review#75",migration,sdk
+created_at: "2026-11-04T19:16:04.041Z"
+updated_at: "2026-11-04T21:06:22.299Z"
+author: codex-toolchain-1104
+acceptance_criteria: "Exact current toolchain pins; obsolete fixtures and SDK pin coupling corrected; targeted tests, full coverage, typecheck and lint pass at unchanged thresholds."
+comments[6]{created_at,author,text}:
+  "2026-11-04T19:21:49.593Z",codex-toolchain-1104,"Test contract: verified all three hosted failures on SDK 2026.11.4 in isolated file runs. pm-cli 2026.10.30 GH-1614 refuses typed parent=none in the ordinary-item, ambient-focus and additional-source fixtures. Use unset:[parent] in all three locations; retain workflow, input-boundary, vote-count, lineage-size and packet-budget assertions. Production uses no such sentinel."
+  "2026-11-04T19:21:54.088Z",codex-toolchain-1104,"The README schemaAddField compatibility statement now names the declared minimum SDK 2026.10.13, instead of incorrectly calling that older version the current pin. No minimum compatibility declaration was raised."
+  "2026-11-04T19:42:19.385Z",codex-toolchain-1104,"Corrected isolated failures pass: ambient custom-status/focus regression 1/1 through linked pm test; strict-input and provider-vote/packet-boundary regressions 2/2. Typecheck, lint, duplication (0%), docstrings and regenerated changelog check pass. The redundant pre-fix interleaving run was stopped after isolated reproductions; full coverage will run after the preceding package suites."
+  "2026-11-04T20:12:25.432Z",codex-toolchain-1104,"Packed acceptance passes 3/3 on the new toolchain: npm/npx and native Bun/bunx activation/search; npm-global and Bun-global carry-forward/conflict witnesses; closeout excludes live global runtime state. Command: nice -n 10 env NPM_CONFIG_USERCONFIG=/dev/null npm run test:install. The complete coverage run remains queued behind pm-context."
+  "2026-11-04T21:06:17.943Z",codex-toolchain-1104,"Complete coverage reached the 2100-second remaining task allocation and exited 124 before finishing; cancellation-generated test-file failures and partial reports are not semantic failures or valid coverage measurements. No assertion failure was reported before cancellation. Completed within this run: all 500 conflict sequences (1005 operations, 96 native fields, 157 old-value replays, 38 conflict cases), 217 observation/peer-transition cases, 198 request boundary/baseline cases and 54 SDK/file/CLI byte-budget comparisons. Partial coverage and identified live fixtures were removed. Full CI completion remains required; no bounds or thresholds were changed."
+  "2026-11-04T21:06:20.084Z",codex-toolchain-1104,"Final local gates: original three failures pass 3/3; packed npm/Bun local/global acceptance passes 3/3; typecheck, lint, duplication 0%, docstrings, production audit, release attestation and changelog check pass. Keep this migration item in_progress for orchestrator verification; full source coverage is not certified by the bounded local run."
+files[3]{path,scope,note}:
+  test/conflict-fixture.ts,project,Explicit source-root parent clear
+  test/conflict-interleaving.test.ts,project,Explicit ambient-focus parent clear
+  test/conflicts.test.ts,project,Explicit ordinary-item parent clear
+tests[1]{command,scope,timeout_seconds,provenance{author,created_at,source_kind,source_ref}}:
+  nice -n 10 node --test --test-name-pattern=random.custom test/conflict-interleaving.test.ts,project,240,codex-toolchain-1104,"2026-11-04T19:22:08.118Z",local_mutation,dependabot/npm_and_yarn/pm-toolchain-3b0ff5633e
+docs[2]{path,scope,note}:
+  CHANGELOG.md,project,Regenerated migration entry
+  README.md,project,Schema contract references the declared minimum SDK
+body: ""

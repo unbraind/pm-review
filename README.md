@@ -249,7 +249,7 @@ The release gates enforce typechecking, fleet ESLint/jscpd/docstrings, statement
 
 Implementation and acceptance receipts live in this package's `.agents/pm` tracker. Its epic links companion `pm-cli-website-ox5m`. Items remain open for orchestrator verification. The release workflow has no schedule and requires explicit maintainer enablement and dispatch.
 
-The pinned SDK (2026.10.13) forwards `PmClient.schemaAddField`'s declared `type` correctly. pm-review uses that typed helper; real tracker tests verify stored schema types and numeric/boolean round trips. Successful round and status results omit `exit_code`; incomplete gates return `exit_code: 1`, as required by the host extension contract.
+The minimum supported SDK (2026.10.13) forwards `PmClient.schemaAddField`'s declared `type` correctly. pm-review uses that typed helper; real tracker tests verify stored schema types and numeric/boolean round trips. Successful round and status results omit `exit_code`; incomplete gates return `exit_code: 1`, as required by the host extension contract.
 
 MIT licensed.
 
