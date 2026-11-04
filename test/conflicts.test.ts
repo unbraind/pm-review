@@ -121,7 +121,7 @@ test('one strict input boundary refuses extreme values before reads and permits 
   for (const row of invalid) refusal(await reviewConflicts(noRead, row), 'input_invalid');
   for (const selector of ['constructor', '__proto__', 'old.identifier', '  #legacy-id  ']) assert.ok(conflictInput({ ...input, item: selector }));
   refusal(await reviewConflicts(client, { ...input, item: 'missing' }), 'finding_unavailable');
-  const task = (await client.create({ type: 'Task', title: 'Foreign ordinary item', parent: 'none' })).item;
+  const task = (await client.create({ type: 'Task', title: 'Foreign ordinary item', unset: ['parent'] })).item;
   refusal(await reviewConflicts(client, { ...input, item: task.id }), 'finding_unavailable');
   for (const review_pr of [Infinity, -Infinity, NaN, 0, -1, Number.MAX_VALUE]) assert.equal(conflictScope({ review_repo: 'example/package', review_pr }, input.revision), undefined);
   await client.update(ids[0], fieldOptions({ review_pr: 0 }));

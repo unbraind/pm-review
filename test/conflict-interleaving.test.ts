@@ -58,7 +58,7 @@ test('every observation boundary preserves peer verdict, A-B-A, scope and lineag
 
 test('random custom workflow roles and ambient focus cannot settle judgments or alter native relationships', async t => {
   const { client, input, ids } = await conflictFixture(t);
-  const parent = (await client.create({ type: 'Epic', title: 'Synthetic ambient focus', parent: 'none' })).item;
+  const parent = (await client.create({ type: 'Epic', title: 'Synthetic ambient focus', unset: ['parent'] })).item;
   await client.focus(parent.id);
   let seed = 0x1028;
   for (let index = 0; index < 16; index++) {

@@ -27,7 +27,7 @@ export function conflictPacket(result: ConflictResult): ConflictPacket {
 
 /** Model records accepted by the previously released lineage reader, without bypassing native history. */
 export async function addConflictSource(client: PmClient, root: string, index: number, large = false): Promise<string> {
-  const item = (await client.create({ type: 'ReviewFinding', title: `Additional explicit source ${index}`, parent: 'none', ...fieldOptions({ review_bot: 'same-provider', review_node_id: `source-${index}${large ? 'n'.repeat(1900) : ''}`, review_url: 'https://reviews.example.org/' + (large ? 'u'.repeat(4000) : String(index)), review_head: 'a'.repeat(40), review_repo: 'example/package', review_pr: 1, review_verdict: 'fix', review_verdict_source: 'local', review_reason: 'Explicit additional input validation reasoning', review_commit: large ? 'c'.repeat(2000) : '' }) })).item;
+  const item = (await client.create({ type: 'ReviewFinding', title: `Additional explicit source ${index}`, unset: ['parent'], ...fieldOptions({ review_bot: 'same-provider', review_node_id: `source-${index}${large ? 'n'.repeat(1900) : ''}`, review_url: 'https://reviews.example.org/' + (large ? 'u'.repeat(4000) : String(index)), review_head: 'a'.repeat(40), review_repo: 'example/package', review_pr: 1, review_verdict: 'fix', review_verdict_source: 'local', review_reason: 'Explicit additional input validation reasoning', review_commit: large ? 'c'.repeat(2000) : '' }) })).item;
   await client.comments(root, { add: 'review-lineage/v1 ' + JSON.stringify({ with: item.id, revision: 'a'.repeat(64), reason: 'Previously persisted explicit identity confirmation' }) });
   return item.id;
 }
