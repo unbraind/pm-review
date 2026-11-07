@@ -1,14 +1,14 @@
 id: pm-review-deadline-esrch
-title: Treat vanished deadline descendants as terminated
-description: "Handle ENOENT and ESRCH consistently across process enumeration, liveness reads and deadline signals, while preserving live-process and unrelated-error failures."
+title: Detached-descendant deadline test rejects ESRCH from a disappearing /proc process
+description: "GH issue #56: https://github.com/unbraind/pm-review/issues/56 · author @unbraind · state reason completed · created 2026-10-27T14:36:48Z · updated 2026-10-28T20:15:41Z"
 type: Issue
 status: closed
 priority: 1
-tags[1]: "gh:unbraind/pm-review#56"
-created_at: "2026-10-28T19:28:53.537Z"
-updated_at: "2026-10-30T14:31:13.826Z"
-closed_at: "2026-10-30T14:31:09.484Z"
-completed_at: "2026-10-28T20:15:40.000Z"
+tags[2]: "gh:unbraind/pm-review#56","github_author:unbraind"
+created_at: "2026-10-27T14:36:48Z"
+updated_at: "2026-11-07T07:15:15.696Z"
+closed_at: "2026-10-28T20:15:41Z"
+completed_at: "2026-10-28T20:15:41Z"
 author: codex-agent
 acceptance_criteria: "Deterministic disappearance schedules cover enumeration, stat and signal boundaries and fail on source revert; Live descendants remain blocking and unrelated failures are visible; Focused tests, typecheck and lint pass and npm/Bun CI release gates certify the final head"
 resolution: "Share ENOENT/ESRCH classification across process enumeration, liveness and group/PID signalling; retain PID fallback and return bounded cleanup refusals for unrelated failures."
@@ -30,5 +30,15 @@ tests[1]{command,path,scope,timeout_seconds,provenance{author,created_at,source_
 docs[2]{path,scope}:
   CHANGELOG.md,project
   docs/closeout.md,project
-close_reason: "Delivered by PR #60 (06cd671): Keep deadline cleanup reliable and unblock gated issue sync"
-body: ""
+close_reason: "Closed on GitHub as completed on 2026-10-28T20:15:41Z; closing PR https://github.com/unbraind/pm-review/pull/60 (\"Keep deadline cleanup reliable and unblock gated issue sync\")"
+github_close_reason: "Closed on GitHub as completed on 2026-10-28T20:15:41Z; closing PR https://github.com/unbraind/pm-review/pull/60 (\"Keep deadline cleanup reliable and unblock gated issue sync\")"
+github_closed_at: "2026-10-28T20:15:41Z"
+github_created_at: "2026-10-27T14:36:48Z"
+github_link_only: false
+github_number: 56
+github_release: ""
+github_state: closed
+github_state_reason: completed
+github_updated_at: "2026-10-28T20:15:41Z"
+github_url: "https://github.com/unbraind/pm-review/issues/56"
+body: "## Hosted test failure plus exact static evidence\n\nOn current main `8d06644a481071ed4566373660bfa0d3772c38c9`, [Node 22 job 122197173290](https://github.com/unbraind/pm-review/actions/runs/40506542936/job/122197173290) fails the test “deadline kills a detached linked-command descendant before discarding its workspace”. The log reports `ESRCH: no such process, read` from `readFileSync` at `test/closeout.test.ts:258:24`. Totals: 283 tests, 282 pass, 1 fail, zero skipped/cancelled. The other Node 26 job is still in progress at this observation; no newer main CI supersedes this result.\n\n[Current test lines 249–267](https://github.com/unbraind/pm-review/blob/8d06644a481071ed4566373660bfa0d3772c38c9/test/closeout.test.ts#L249-L267) polls the descendant's `/proc/<pid>/stat`. Its catch accepts only `ENOENT` as process disappearance; `ESRCH` is rethrown. This is a liveness-probe error path, not the final assertion that the descendant remains live.\n\n### Bounded reproduction\nExtract only this catch policy into a pure function with an injected reader:\n- reader throws ENOENT → accepted as terminated;\n- reader throws ESRCH → error rethrown;\n- reader throws EACCES → error rethrown;\n- zombie status → accepted as terminated;\n- sleeping/live status → not accepted.\n\nThese five isolated assertions pass against the current policy and reproduce the ESRCH rejection without creating processes, reading /proc, or sending signals. The actual OS race was observed only in the linked hosted job.\n\n### Expected / impact / limits\nA process disappearing during the bounded termination observation should not make the test fail merely because the kernel reports ESRCH rather than ENOENT. Preserve the distinction between a vanished process, a live descendant, and unrelated read failures. Current behavior makes the release gate fail with a probe error.\n\nThis does **not** establish that any descendant survived its deadline, or that production termination is broken. The full release suite was not rerun locally. Reported 100% measured coverage does not override the failed test.\n\nCanonical context: [pm-review-closeout-verification](https://github.com/unbraind/pm-review/blob/8d06644a481071ed4566373660bfa0d3772c38c9/.agents/pm/features/pm-review-closeout-verification.toon) requires bounded descendant termination and records previous asynchronous/startup test corrections. All55 issue/PR records were checked; the existing classifier timing and Bun workspace-copy issues describe different failure paths, not this errno race.\n\n### Acceptance / regression criteria\n- Handle confirmed process-disappearance outcomes ESRCH and ENOENT in the liveness probe.\n- Keep an actually live descendant failing after the existing bounded observation window.\n- Do not swallow unrelated errors such as EACCES or weaken the termination contract.\n- Add deterministic reader-error cases, then pass the relevant test and Node22/26 release gates on the corrected immutable head."
