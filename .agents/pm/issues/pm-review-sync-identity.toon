@@ -1,14 +1,14 @@
 id: pm-review-sync-identity
-title: Restore unique import identity for shared delivery PRs
-description: "Reconcile duplicate PR 46 importer identities without losing either delivered item, historic evidence or append-only history. Validate the complete corpus and an isolated gated import and repeat."
+title: "Shared delivery PR #46 is tagged as duplicate importer identity, blocking gated issue sync"
+description: "GH issue #57: https://github.com/unbraind/pm-review/issues/57 · author @unbraind · state reason completed · created 2026-10-28T07:06:55Z · updated 2026-10-28T20:15:41Z"
 type: Issue
 status: closed
 priority: 1
-tags[1]: "gh:unbraind/pm-review#57"
-created_at: "2026-10-28T19:28:58.295Z"
-updated_at: "2026-10-30T14:31:42.276Z"
-closed_at: "2026-10-30T14:31:38.149Z"
-completed_at: "2026-10-28T20:15:40.000Z"
+tags[2]: "gh:unbraind/pm-review#57","github_author:unbraind"
+created_at: "2026-10-28T07:06:55Z"
+updated_at: "2026-11-07T07:15:15.670Z"
+closed_at: "2026-10-28T20:15:41Z"
+completed_at: "2026-10-28T20:15:41Z"
 author: codex-agent
 acceptance_criteria: Shared delivery links remain on both original closed items with unchanged completion evidence and history prefixes; Every importer identity has one owner and the gated preview succeeds; Isolated atomic gated import and repeat preserve item and history bytes with no duplicate items
 resolution: "Replace duplicate PR importer keys with shared delivery tags, retain append-only evidence, and review exactly two generic public procfs hashes for the pinned privacy gate."
@@ -31,5 +31,15 @@ tests[1]{command,path,scope,timeout_seconds,provenance{author,created_at,source_
 docs[2]{path,scope}:
   CHANGELOG.md,project
   docs/issue-sync.md,project
-close_reason: "Delivered by PR #60 (06cd671): Keep deadline cleanup reliable and unblock gated issue sync"
-body: ""
+close_reason: "Closed on GitHub as completed on 2026-10-28T20:15:41Z; closing PR https://github.com/unbraind/pm-review/pull/60 (\"Keep deadline cleanup reliable and unblock gated issue sync\")"
+github_close_reason: "Closed on GitHub as completed on 2026-10-28T20:15:41Z; closing PR https://github.com/unbraind/pm-review/pull/60 (\"Keep deadline cleanup reliable and unblock gated issue sync\")"
+github_closed_at: "2026-10-28T20:15:41Z"
+github_created_at: "2026-10-28T07:06:55Z"
+github_link_only: false
+github_number: 57
+github_release: ""
+github_state: closed
+github_state_reason: completed
+github_updated_at: "2026-10-28T20:15:41Z"
+github_url: "https://github.com/unbraind/pm-review/issues/57"
+body: "## Hosted refusal and exact corpus evidence\n\nAt main `8d06644a481071ed4566373660bfa0d3772c38c9`, the [2026-10-28 gated-sync job](https://github.com/unbraind/pm-review/actions/runs/40646598672/job/122676744472) fails during **Preview GitHub to pm plan**, before the import or publication steps.\n\nThe reusable workflow is `pm-github/.github/workflows/pm-github-sync.yml@d772360c1a099b968908f86026c1cb53c1a499f8`. Its resolved package is **pm-github 2026.10.23**; the deprecated input says 2026.10.16 but is not the installed-version receipt.\n\nThe attempted read-only command is:\n\n```text\npm github import unbraind/pm-review --state all --atomic --gate --dry-run --with-comments\n```\n\nAt 06:53:34 UTC it reports:\n\n```text\npm github gate: import plan is not idempotent — 1 duplicate provenance tag(s) in the existing corpus, 0 new entr(y/ies) without a provenance tag, 0 conflicting target(s). No item was written.\n```\n\nIndependent static inspection of all 59 canonical tracker records at this immutable revision finds exactly one repeated top-level `gh:unbraind/pm-review#N` identity: **`gh:unbraind/pm-review#46`**, present on both:\n\n- [pm-review-bun-closeout-copy](https://github.com/unbraind/pm-review/blob/8d06644a481071ed4566373660bfa0d3772c38c9/.agents/pm/issues/pm-review-bun-closeout-copy.toon)\n- [pm-review-targeted-evidence-requests](https://github.com/unbraind/pm-review/blob/8d06644a481071ed4566373660bfa0d3772c38c9/.agents/pm/features/pm-review-targeted-evidence-requests.toon)\n\nBoth records are closed and retain distinct acceptance/delivery evidence. [Closure PR #55](https://github.com/unbraind/pm-review/pull/55) explicitly documents that both were delivered by [PR #46](https://github.com/unbraind/pm-review/pull/46), merge `d5f100df1bc6017d29cc670aa94dbc62eb35cb17`. A shared delivery PR is valid historical evidence, but the importer's identity tag has a different one-to-one contract.\n\n## Expected / actual and ownership\n\nThe documented [pm-github provenance contract](https://github.com/unbraind/pm-github#readme) uses `gh:owner/repo#N` for unique import/upsert ownership and rejects duplicate tags across the existing corpus. The guard is correctly failing closed. This issue requests **affected-repository corpus repair**, not weaker idempotency checks or an importer runtime fix.\n\nExpected: preserve both real items, their append-only histories and their shared PR #46 delivery evidence, while representing any importer identity unambiguously. Shared delivery/closing references must not accidentally declare two owners for a single import identity.\n\nActual: duplicate identity tags prevent even the scheduled dry-run from producing a usable import plan, so import, downstream changelog/health verification and sync publication cannot proceed.\n\n## Acceptance / regression criteria\n\n- Reconcile the two records' importer identity tags deliberately; preserve both item IDs, acceptance and resolution evidence, completed dates, existing history bytes, and shared delivery PR #46 links.\n- Represent many-items-to-one-delivery-PR references through an appropriate non-identity relationship/link rather than duplicating a unique import key. Do not arbitrarily reassign provider ownership.\n- Check the complete corpus for unique importer provenance without weakening the gate or disabling `--atomic`/`--gate`.\n- On the repaired immutable revision, the dry-run above passes the provenance check and reports truthful remaining blockers, if any.\n- Verify an authorized isolated or normal reviewed gated import followed by an identical repeat preserves item/history bytes and does not create duplicate items; separately record privacy, health and publication outcomes.\n- Retain a regression or corpus-validation check covering two legitimate PM items delivered by one PR without declaring duplicate importer identity.\n\n## Limits and deduplication\n\nThis is current hosted refusal plus exact static corpus evidence; no live import, tracker repair, workflow rerun or provider write was performed by this review. No data loss is claimed. All 56 all-status GitHub issue/PR records and all 59 canonical PM records were inspected. Existing [PR #33](https://github.com/unbraind/pm-review/pull/33) addressed a different missing identity for issue #30; it does not resolve the current shared #46 tags. The open ESRCH test issue #56 and pm-github's repeat-import timestamp-churn issue #175 are distinct failure classes."
