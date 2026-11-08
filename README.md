@@ -478,3 +478,7 @@ with remedies, exact UTF-8 JSON/TOON budgets, minimum-budget refusals, and exact
 omissions. Arrival records acquisition and leaves
 approval unverified. See the [packet example](examples/review-requests.json) and
 [request and arrival contract](docs/evidence-requests.md).
+
+GitHub issue sync uses `changelog:automation` to run the same full generation
+policy that the package changelog check verifies. Reusable workflow defaults
+therefore cannot add a different pending-release policy to this caller.
