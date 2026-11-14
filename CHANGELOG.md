@@ -4,11 +4,6 @@
 
 ### Added
 
-- Record verdicts and apply replay-safe thread actions ([pm-review-verdict](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-verdict.toon))
-- Typed GitHub transport and recorded public fixtures ([pm-review-transport](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-transport.toon))
-- Compute exact-head review round completion ([pm-review-round](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-round.toon))
-- Scaffold fleet gates and certify packed consumers ([pm-review-quality](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-quality.toon))
-- Import every bot thread, review and issue comment idempotently ([pm-review-import](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-import.toon))
 - Expose conflicting verdict witnesses without voting them away ([pm-review-conflicting-verdicts](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-conflicting-verdicts.toon))
 - Request the smallest missing review evidence for each obligation ([pm-review-targeted-evidence-requests](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-targeted-evidence-requests.toon))
 - Carry review attention across unaffected artifact revisions ([pm-review-review-carry-forward](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-review-carry-forward.toon))
@@ -17,6 +12,11 @@
 - Map substantive review evidence to declared criteria ([pm-review-criterion-coverage-map](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-criterion-coverage-map.toon))
 - Verify closeout evidence and detect gamed gates ([pm-review-closeout-verification](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-closeout-verification.toon))
 - Post recorded verdicts and gate unanswered review work ([pm-review-respond](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-respond.toon))
+- Record verdicts and apply replay-safe thread actions ([pm-review-verdict](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-verdict.toon))
+- Typed GitHub transport and recorded public fixtures ([pm-review-transport](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-transport.toon))
+- Compute exact-head review round completion ([pm-review-round](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-round.toon))
+- Scaffold fleet gates and certify packed consumers ([pm-review-quality](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-quality.toon))
+- Import every bot thread, review and issue comment idempotently ([pm-review-import](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-import.toon))
 
 ### Changed
 
@@ -25,9 +25,6 @@
 
 ### Fixed
 
-- Find durable fix and refusal precedents ([pm-review-precedents](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-precedents.toon))
-- Pin the host so history verifies and keep CodeRabbit under the file cap ([pm-review-host-pin](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-host-pin.toon))
-- Keep sync changelog regeneration consistent with the release gate ([pm-review-sync-changelog](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-sync-changelog.toon))
 - Refuse malformed scope receipts and invalidate interleaved evidence replays ([pm-review-scope-boundary-revalidation](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-scope-boundary-revalidation.toon))
 - Detached-descendant deadline test rejects ESRCH from a disappearing /proc process ([pm-review-deadline-esrch](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-deadline-esrch.toon))
 - Shared delivery PR \#46 is tagged as duplicate importer identity, blocking gated issue sync ([pm-review-sync-identity](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-sync-identity.toon))
@@ -43,7 +40,10 @@
 - coderabbitai: Fix the tracking link in the automated release PR body. ([pm-review-gh-300d404ccc6050b4b5da589a](https://github.com/unbraind/pm-review/blob/main/.agents/pm/review-findings/pm-review-gh-300d404ccc6050b4b5da589a.toon))
 - Fix repeated extension value placeholders and duplicate help flags ([pm-review-help-ux](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-help-ux.toon))
 - Classify Sourcery budget, Sourcery guide and CodeRabbit manual-review notices as informational ([pm-review-pr7r](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-pr7r.toon))
+- Find durable fix and refusal precedents ([pm-review-precedents](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-precedents.toon))
+- Pin the host so history verifies and keep CodeRabbit under the file cap ([pm-review-host-pin](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-host-pin.toon))
 - Follow up SDK schemaAddField type forwarding ([pm-review-sdk-gap](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-sdk-gap.toon))
+- Keep sync changelog regeneration consistent with the release gate ([pm-review-sync-changelog](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-sync-changelog.toon))
 
 ### Removed
 
@@ -58,7 +58,6 @@
 
 ### Other
 
-- Adopt the November 4 pm review toolchain contracts ([pm-review-toolchain-1104](https://github.com/unbraind/pm-review/blob/main/.agents/pm/chores/pm-review-toolchain-1104.toon))
 - Release readiness behind PM_RELEASE_APPROVED ([pm-review-release-gate](https://github.com/unbraind/pm-review/blob/main/.agents/pm/chores/pm-review-release-gate.toon))
 - Use the pm SDK for review criterion parsing and evidence lookup ([pm-review-sdk-adoption-1025](https://github.com/unbraind/pm-review/blob/main/.agents/pm/tasks/pm-review-sdk-adoption-1025.toon))
 - Reconcile stale in-progress tracker records (2026-10-23) ([pm-review-reconcile-1023](https://github.com/unbraind/pm-review/blob/main/.agents/pm/chores/pm-review-reconcile-1023.toon))
@@ -80,3 +79,5 @@
 - coderabbitai: Raise the `execFileSync` output limit for patch reads. ([pm-review-gh-ba23afc402641b64f22d341a](https://github.com/unbraind/pm-review/blob/main/.agents/pm/review-findings/pm-review-gh-ba23afc402641b64f22d341a.toon))
 - coderabbitai: Resolve the root argument before using it. ([pm-review-gh-3756aee5638da26537c52013](https://github.com/unbraind/pm-review/blob/main/.agents/pm/review-findings/pm-review-gh-3756aee5638da26537c52013.toon))
 - sourcery-ai: Pull request larger than review limit ([pm-review-gh-28697439f32d9689fa28611d](https://github.com/unbraind/pm-review/blob/main/.agents/pm/review-findings/pm-review-gh-28697439f32d9689fa28611d.toon))
+- Adopt current pm-cli and regenerate toolchain changelog ([pm-review-toolchain-1114b](https://github.com/unbraind/pm-review/blob/main/.agents/pm/chores/pm-review-toolchain-1114b.toon))
+- Adopt the November 4 pm review toolchain contracts ([pm-review-toolchain-1104](https://github.com/unbraind/pm-review/blob/main/.agents/pm/chores/pm-review-toolchain-1104.toon))
