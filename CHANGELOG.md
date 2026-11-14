@@ -1,6 +1,6 @@
 # Changelog
 
-## 2026.10.12 - 2026-10-12
+## Unreleased
 
 ### Added
 
@@ -28,6 +28,7 @@
 - Refuse malformed scope receipts and invalidate interleaved evidence replays ([pm-review-scope-boundary-revalidation](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-scope-boundary-revalidation.toon))
 - Restore unique import identity for shared delivery PRs ([pm-review-sync-identity](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-sync-identity.toon))
 - Treat vanished deadline descendants as terminated ([pm-review-deadline-esrch](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-deadline-esrch.toon))
+- Daily release never publishes: npm reads release-artifact/package.tgz as a GitHub repository ([pm-review-kucs](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-kucs.toon))
 - Investigate intermittent native Bun closeout copy failure ([pm-review-bun-closeout-copy](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-bun-closeout-copy.toon))
 - Withdrawn lineage observations block response and status for live findings ([pm-review-withdrawn-lineage](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-withdrawn-lineage.toon))
 - Exact-head completion accepts unavailable-review notices and rejects substantive rate-limit reviews ([pm-review-github-d686d81c4a08-14](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-github-d686d81c4a08-14.toon))
