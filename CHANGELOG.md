@@ -58,6 +58,7 @@
 
 ### Other
 
+- Adopt current pm-cli and regenerate toolchain changelog ([pm-review-toolchain-1114b](https://github.com/unbraind/pm-review/blob/main/.agents/pm/chores/pm-review-toolchain-1114b.toon))
 - Release readiness behind PM_RELEASE_APPROVED ([pm-review-release-gate](https://github.com/unbraind/pm-review/blob/main/.agents/pm/chores/pm-review-release-gate.toon))
 - Use the pm SDK for review criterion parsing and evidence lookup ([pm-review-sdk-adoption-1025](https://github.com/unbraind/pm-review/blob/main/.agents/pm/tasks/pm-review-sdk-adoption-1025.toon))
 - Reconcile stale in-progress tracker records (2026-10-23) ([pm-review-reconcile-1023](https://github.com/unbraind/pm-review/blob/main/.agents/pm/chores/pm-review-reconcile-1023.toon))
@@ -79,5 +80,4 @@
 - coderabbitai: Raise the `execFileSync` output limit for patch reads. ([pm-review-gh-ba23afc402641b64f22d341a](https://github.com/unbraind/pm-review/blob/main/.agents/pm/review-findings/pm-review-gh-ba23afc402641b64f22d341a.toon))
 - coderabbitai: Resolve the root argument before using it. ([pm-review-gh-3756aee5638da26537c52013](https://github.com/unbraind/pm-review/blob/main/.agents/pm/review-findings/pm-review-gh-3756aee5638da26537c52013.toon))
 - sourcery-ai: Pull request larger than review limit ([pm-review-gh-28697439f32d9689fa28611d](https://github.com/unbraind/pm-review/blob/main/.agents/pm/review-findings/pm-review-gh-28697439f32d9689fa28611d.toon))
-- Adopt current pm-cli and regenerate toolchain changelog ([pm-review-toolchain-1114b](https://github.com/unbraind/pm-review/blob/main/.agents/pm/chores/pm-review-toolchain-1114b.toon))
 - Adopt the November 4 pm review toolchain contracts ([pm-review-toolchain-1104](https://github.com/unbraind/pm-review/blob/main/.agents/pm/chores/pm-review-toolchain-1104.toon))

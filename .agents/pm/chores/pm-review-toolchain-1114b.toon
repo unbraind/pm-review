@@ -2,12 +2,17 @@ id: pm-review-toolchain-1114b
 title: Adopt current pm-cli and regenerate toolchain changelog
 description: ""
 type: Chore
-status: in_progress
+status: closed
 priority: 2
 tags[1]: "gh:unbraind/pm-review#82"
 created_at: "2026-11-14T05:08:43.355Z"
-updated_at: "2026-11-14T07:53:15.248Z"
+updated_at: "2026-11-14T08:56:01.472Z"
+closed_at: "2026-11-14T08:56:01.386Z"
+completed_at: "2026-11-14T08:56:01.386Z"
 author: codex-toolchain-1114b
+resolution: Implemented and merged in #84 (4d7112e).
+expected_result: The change described by this item is on main.
+actual_result: "Merged in #84 as 4d7112e; checks successful at head b37f668: CodeQL, codeql, test (22), test (26)."
 comments[2]{created_at,author,text}:
   "2026-11-14T05:09:03.930Z",codex-toolchain-1114b,"Failure -> cause -> fix: changelog:check exit 1 (the synthetic broken test is intentional) -> pm-changelog 2026.11.7 completion-time ordering requires regeneration; 2026.11.10+ adds stable itemless tagging and migration rendering -> install exact current pm-cli and pm-changelog 2026.11.13, regenerate after final tracker mutation. No option-contract source regression found and no production source changes planned. Local baseline changelog check reproduced exit 1."
   "2026-11-14T07:53:15.248Z",codex-toolchain-1114b,"| Failure | Cause (changelog) | Fix |\n| --- | --- | --- |\n| changelog:check exits 1 | pm-changelog 2026.11.7 completion-time ordering requires regeneration | regenerate after final tracker write with current exact dependency pins |\n\nThe baseline changelog check fails and regenerated linked check passes. Production and test typechecking, lint, zero-duplication, docstrings, production audit, pack dry-run, changelog check and publish attestation pass. The full isolated npm release attempt reached the explicit 45-minute budget: 261 tests pass, zero assertion failures, six cancellations at cutoff (267 reported). Coverage remains incomplete and is not certified. Full npm and Bun release certification is deferred to the unchanged CI workflow under the task time-budget exception; Bun was not run locally. No seed counts, assertions, source scope or thresholds changed. No production functions changed, so a function-level behavioral revert is inapplicable; the old generated changelog failed the baseline check before regeneration."
@@ -19,4 +24,5 @@ tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   "npm run changelog:check",project,codex-toolchain-1114b,"2026-11-14T05:09:21.229Z",local_mutation,chore/adopt-pm-cli-option-contract
 docs[1]{path,scope}:
   CHANGELOG.md,project
+close_reason: "Delivered by #84 \"Adopt pm-cli 2026.11.13 extension option contract and land the pm-toolchain bump\" (merged as 4d7112e). Checks successful at the PR head b37f668: CodeQL, codeql, test (22), test (26)."
 body: ""
