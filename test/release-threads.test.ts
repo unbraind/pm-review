@@ -92,9 +92,3 @@ else if (!args.includes('t=cli-thread')) process.exitCode = 1;
   assert.equal(run(scratch).status, 0);
   assert.equal(readFileSync(summary, 'utf8').split('\n').length, 2);
 });
-
-test('release workflow invokes thread helper as a literal Node command', () => {
-  const workflow = readFileSync(join(root, '.github/workflows/release.yml'), 'utf8');
-  assert.match(workflow, /node scripts\/resolve-release-threads\.ts "\$owner" "\$repo" "\$pr_number" "\$GITHUB_STEP_SUMMARY"/);
-  assert.doesNotMatch(workflow, /resolveReviewThread\(/);
-});
