@@ -1,3 +1,4 @@
+import { testTime } from './support/time.ts';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { envelope } from './envelope-fixture.ts';
@@ -14,7 +15,7 @@ import type { EvidenceRequestResult } from '../src/requests-types.ts';
 /** Run a consumer command with isolated HOME and tracker coordinates, preserving stderr for failures. */
 function command(cwd: string, name: string, args: string[], pmRoot: string, home = cwd): string {
   const env = consumerEnv(cwd, pmRoot, home);
-  const result = spawnSync(name, args, { cwd, encoding: 'utf8', env, maxBuffer: 16 * 1024 * 1024 });
+  const result = spawnSync(name, args, { cwd, encoding: 'utf8', env, timeout: testTime(180_000), maxBuffer: 16 * 1024 * 1024 });
   assert.equal(result.error, undefined);
   assert.equal(result.status, 0, `${name} ${args.join(' ')}\n${result.stderr}\n${result.stdout}`);
   return result.stdout;
@@ -22,7 +23,8 @@ function command(cwd: string, name: string, args: string[], pmRoot: string, home
 
 /** Bind source provenance to the consumer while isolating package-manager and Git configuration. */
 function consumerEnv(cwd: string, pmRoot: string, home = cwd): NodeJS.ProcessEnv {
-  const env: NodeJS.ProcessEnv = { ...process.env, HOME: home, PM_PATH: pmRoot, PM_SOURCE_WORKSPACE_ROOT: cwd, PM_AUTHOR: 'install-test', GIT_CEILING_DIRECTORIES: dirname(cwd), GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', NPM_CONFIG_USERCONFIG: '/dev/null', npm_config_userconfig: '/dev/null' };
+  const inherited = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('PM_')));
+  const env: NodeJS.ProcessEnv = { ...inherited, HOME: home, PM_PATH: pmRoot, PM_SOURCE_WORKSPACE_ROOT: cwd, PM_AUTHOR: 'install-test', GIT_CEILING_DIRECTORIES: dirname(cwd), GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', NPM_CONFIG_USERCONFIG: '/dev/null', npm_config_userconfig: '/dev/null' };
   for (const key of Object.keys(env)) if (key.toLowerCase() === 'npm_config_allow_scripts' || /token|secret|password|credential|^NPM_MEDIA_SERVER$/i.test(key)) delete env[key];
   return env;
 }
@@ -107,7 +109,7 @@ test('packed carry-forward and conflict witnesses work through npm global and Bu
     const prefix = join(cwd, 'global');
     const env = { ...consumerEnv(cwd, pmRoot), BUN_INSTALL_GLOBAL_DIR: join(prefix, 'install/global'), BUN_INSTALL_BIN: join(prefix, 'bin') };
     const args = runtime === 'npm' ? ['install', '--global', '--prefix', prefix, '--ignore-scripts', '--no-audit', '--no-fund', tarball, `@unbrained/pm-cli@${sdkVersion}`] : ['add', '--global', '--ignore-scripts', tarball, `@unbrained/pm-cli@${sdkVersion}`];
-    const installed = spawnSync(runtime, args, { cwd, env, encoding: 'utf8', timeout: 180_000 });
+    const installed = spawnSync(runtime, args, { cwd, env, encoding: 'utf8', timeout: testTime(180_000) });
     assert.equal(installed.status, 0, installed.stdout + installed.stderr);
     const host = join(prefix, 'bin/pm');
     command(cwd, host, ['init', 'consumer', '--defaults', '--agent-guidance', 'skip', '--json'], pmRoot);
@@ -178,7 +180,7 @@ function verifyHostExitContract(cwd: string, runner: string, prefix: string[], p
     for (const scenario of ['complete', 'incomplete', 'refusal']) {
       for (const flags of action === 'round' ? [['--json'], ['--compact'], ['--compact', '--json']] : [['--json']]) {
         const env = { ...consumerEnv(cwd, pmRoot), GITHUB_TOKEN: 'synthetic-only-token', NODE_OPTIONS: `--import=${pathToFileURL(fixture).href}`, PM_REVIEW_HOST_SCENARIO: scenario };
-        const result = spawnSync(host, [...hostArgs, 'review', action, '--repo', 'example/package', '--pr', '1', ...flags], { cwd, env, encoding: 'utf8', timeout: 30_000 });
+        const result = spawnSync(host, [...hostArgs, 'review', action, '--repo', 'example/package', '--pr', '1', ...flags], { cwd, env, encoding: 'utf8', timeout: testTime(30_000) });
         const evidence = `${action}/${scenario}/${flags.join(' ')}\n${result.stdout}\n${result.stderr}`;
         assert.equal(result.error, undefined, evidence);
         assert.equal(result.status, scenario === 'complete' ? 0 : scenario === 'refusal' ? EXIT_CODE.USAGE : 1, evidence);
@@ -230,7 +232,7 @@ async function verifyCloseout(cwd: string, runner: string, prefix: string[], pmR
   assert.equal(report.criteria[0].verdict, 'proven');
   assert.match(command(cwd, runner, [...prefix, 'review', 'closeout', item.id], pmRoot), /proven/);
   command(cwd, runner, [...prefix, 'update', item.id, '--acceptance-criteria', '[test:missing proof]', '--json'], pmRoot);
-  const refused = spawnSync(runner, [...prefix, 'review', 'closeout', item.id, '--json'], { cwd, env: consumerEnv(cwd, pmRoot), encoding: 'utf8', timeout: 60_000 });
+  const refused = spawnSync(runner, [...prefix, 'review', 'closeout', item.id, '--json'], { cwd, env: consumerEnv(cwd, pmRoot), encoding: 'utf8', timeout: testTime(60_000) });
   assert.equal(refused.error, undefined);
   assert.equal(refused.status, 1, refused.stderr);
   assert.equal((JSON.parse(refused.stdout) as { criteria: { verdict: string }[] }).criteria[0].verdict, 'unproven');
@@ -257,7 +259,7 @@ syncBuiltinESMExports();
   const executable = runner === 'bunx' ? 'bun' : runner;
   const args = runner === 'bunx' ? ['--preload', preload, join(cwd, 'node_modules/.bin/pm')] : prefix;
   if (runner !== 'bunx') env.NODE_OPTIONS = `${env.NODE_OPTIONS ?? ''} --import=${pathToFileURL(preload).href}`;
-  const result = spawnSync(executable, [...args, 'review', 'closeout', id, '--json'], { cwd, env, encoding: 'utf8', timeout: 120_000 });
+  const result = spawnSync(executable, [...args, 'review', 'closeout', id, '--json'], { cwd, env, encoding: 'utf8', timeout: testTime(120_000) });
   assert.equal(result.error, undefined);
   assert.equal(result.status, 0, `${result.stderr}\n${result.stdout}`);
   assert.equal((JSON.parse(result.stdout) as { ok: boolean }).ok, true);

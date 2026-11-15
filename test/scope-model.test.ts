@@ -1,3 +1,4 @@
+import { testDepth } from './support/depth.ts';
 import assert from 'node:assert/strict';
 import { isDeepStrictEqual } from 'node:util';
 import { readFile, writeFile } from 'node:fs/promises';
@@ -34,13 +35,13 @@ function referenceCounts(model: Reference, current: GetResult['item'], evidence:
   return counts;
 }
 
-test('seeded model: 500 random operation sequences preserve all native SDK state across scope export, file input and old receipt replays', async t => {
+test('seeded model: random operation sequences preserve all native SDK state across scope export, file input and old receipt replays', async t => {
   const seed = 0x51c0f025;
   const next = random(seed);
   const nativeFields = new Set<string>();
   let comparisons = 0;
   let operations = 0;
-  for (let sequence = 0; sequence < 500; sequence++) {
+  for (let sequence = 0; sequence < testDepth(500); sequence++) {
     const { client, id: templateId, evidence, cwd, pmRoot, selection } = await scopeFixture(t);
     const id = "sample-native-model";
     const settings = await readSettings(pmRoot);
@@ -109,8 +110,8 @@ test('seeded model: 500 random operation sequences preserve all native SDK state
       assert.equal(await readFile(getHistoryPath(pmRoot, id), 'utf8'), history, 'Scope replay wrote native history');
       comparisons++;
     }
-    if ((sequence + 1) % 100 === 0) t.diagnostic(`${sequence + 1}/500 seeded sequences checked`);
+    if ((sequence + 1) % 100 === 0) t.diagnostic(`${sequence + 1}/${testDepth(500)} seeded sequences checked`);
   }
   assert.ok(nativeFields.size >= 75, `Native field families were not fully seeded: ${nativeFields.size}`);
-  t.diagnostic(`seed=${seed}; sequences=500; operations=${operations}; comparisons=${comparisons}; native SDK fields=${nativeFields.size}; replayed receipt versions never wrote native state`);
+  t.diagnostic(`seed=${seed}; sequences=${testDepth(500)}; operations=${operations}; comparisons=${comparisons}; native SDK fields=${nativeFields.size}; replayed receipt versions never wrote native state`);
 });

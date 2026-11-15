@@ -1,3 +1,4 @@
+import { testDepth } from './support/depth.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFile } from 'node:fs/promises';
@@ -71,7 +72,7 @@ test('seeded boundary fuzz covers numeric domains and every producer output vali
   let seed = 0x2883cafe;
   const before = (await client.get(id, { full: true })).item;
   const beforeEvidence = (await client.get(evidence, { full: true })).item;
-  for (let trial = 0; trial < 600; trial++) {
+  for (let trial = 0; trial < testDepth(600); trial++) {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
     const version = trial % 2 ? Number(`1e${seed % 650 - 325}`) : seed / 3;
     const input = { ...selection, version };

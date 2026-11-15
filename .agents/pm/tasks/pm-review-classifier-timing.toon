@@ -1,0 +1,43 @@
+id: pm-review-classifier-timing
+title: Apply Fleet CI v2 and remove classifier timing flakiness
+description: "Fleet CI v2 rollout linked to companion pm-cli-website-dyhg. Reuses the classifier flaky-gate investigation: a correct classifier exceeded a fixed 50 ms elapsed bound under shared scheduling. Preserve every gate across quick hosted PR checks and exhaustive local deep checks, including required CodeQL."
+type: Task
+status: in_progress
+priority: 2
+tags[2]: ci,performance
+created_at: "2026-10-21T15:50:26.310Z"
+updated_at: "2026-11-15T12:42:40.475Z"
+assignee: codex-sol
+claim_principal: codex-sol
+author: codex-agent
+acceptance_criteria: Preserve required checks and all release-gate contracts across quick PR and full deep tiers; keep coverage thresholds unchanged; remove scheduler-sensitive millisecond assertions; validate touched tests and PR CI.
+comments[6]{created_at,author,text}:
+  "2026-10-21T15:50:35.589Z",codex-agent,"Observed on source commit 92f1c29: full npm release source suite 149/150, no skipped tests; only the existing large-input classifier timing assertion failed at 63.60046 ms. Isolated command node --test --test-name-pattern=\"under 50\" test/review-regressions.test.ts passed 1/1. Coverage measured 100 percent in all four dimensions. No timing or coverage gate was changed. Follow-up only; closeout implementation is tracked separately in pm-review-closeout-verification."
+  "2026-10-21T17:38:31.225Z",codex-agent,"Additional scheduling-sensitive observation on ca837cc: isolated-HOME full suite passed 154/155, with the existing severity parser subprocess reaching its 5000 ms deadline before completion. Shared-host load was approximately 68 while this process was restricted to four CPUs and nice 15. CI Node 22 and 26 passed all 155 tests. No timeout, classifier code or coverage threshold was changed; investigate separately alongside the earlier wall-clock classifier observation."
+  "2026-10-21T18:03:34.061Z",codex-agent,"The unchanged full isolated-HOME release gate subsequently passed on installed Node 26: 155/155 source tests with 0 skipped, including both existing timing-sensitive assertions, followed by packed consumer acceptance 1/1. The isolated severity parser rerun also passed 1/1 at its original deadline. Earlier failures remain valid observations for reproducibility work; this follow-up remains open and no threshold was relaxed."
+  "2026-11-15T12:37:54.559Z",codex-sol,"Reusing this flaky-gate item for Fleet CI v2, companion pm-cli-website-dyhg. Required contexts are test (22), test (26), and codeql. Because codeql is required, retain its triggers without paths-ignore. Implement one quick npm release gate on Node 26, quick build/tests on Node 22, and full npm/Bun gates on both versions in deep CI. Release workflows and release verifier scripts remain outside scope."
+  "2026-11-15T12:41:11.912Z",codex-sol,"Baseline main CI run 43680447531: test (26) 42m37s created-to-completed, 17m53s queue; test (22) 41m58s, 21m14s queue. Downloaded job logs identify request model 472.69-473.71s, scope model 177.92-180.77s, conflict model 99.83-99.94s. Quick corpus keeps deterministic first 50/500 and 60/600 cases, every per-case assertion and all four 100 percent coverage thresholds. Packed acceptance already proves Bun project/global installs and installed bunx execution; retain install smoke only. Release scripts/workflows untouched."
+  "2026-11-15T12:42:40.471Z",codex-sol,"Typecheck, test compilation and lint pass through pm test (6.305s). Strict tracker health with required merge drivers and changelog:check pass. All three workflow YAML files parse with duplicate-key validation; actionlint is unavailable. Three workflow/depth/timeout contracts pass, as does the isolated adversarial classifier operation-budget regression. The touched-file quick suite, including packed acceptance, is running. PM test-result persistence is disabled by existing project policy, so receipts are summarized in comments without changing that policy."
+files[16]{path,scope}:
+  .github/workflows/ci-deep.yml,project
+  .github/workflows/ci.yml,project
+  .github/workflows/codeql.yml,project
+  src/findings.ts,project
+  test/conflict-model.test.ts,project
+  test/conflict-reason-boundaries.test.ts,project
+  test/core.test.ts,project
+  test/install.acceptance.ts,project
+  test/output-budget.test.ts,project
+  test/release-ci.test.ts,project
+  test/requests-model.test.ts,project
+  test/review-regressions.test.ts,project
+  test/scope-boundary.test.ts,project
+  test/scope-model.test.ts,project
+  test/support/depth.ts,project
+  test/support/time.ts,project
+tests[2]{command,scope,timeout_seconds,provenance{author,created_at,source_kind,source_ref}}:
+  "npm run typecheck && npm run build:test && npm run lint",project,300,codex-sol,"2026-11-15T12:41:33.298Z",local_mutation,ci/quick-pr-tier-deep-local-tier
+  PM_TEST_DEPTH=quick node --test --test-concurrency=2 --test-reporter=spec test/conflict-model.test.ts test/conflict-reason-boundaries.test.ts test/core.test.ts test/install.acceptance.ts test/output-budget.test.ts test/release-ci.test.ts test/requests-model.test.ts test/review-regressions.test.ts test/scope-boundary.test.ts test/scope-model.test.ts,project,1200,codex-sol,"2026-11-15T12:41:59.399Z",local_mutation,ci/quick-pr-tier-deep-local-tier
+docs[1]{path,scope}:
+  docs/ci-tiers.md,project
+body: ""

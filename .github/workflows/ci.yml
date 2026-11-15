@@ -1,17 +1,23 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request: {}
   workflow_dispatch: {}
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.event.pull_request.number && format('pr-{0}', github.event.pull_request.number) || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    # Expected quick execution is 6-10 minutes; bound stuck hosted jobs.
+    timeout-minutes: 25
+    env:
+      PM_TEST_DEPTH: quick
     strategy:
       fail-fast: false
       matrix:
@@ -26,6 +32,29 @@ jobs:
           fetch-tags: true
           persist-credentials: false
 
+      - name: Detect code changes
+        id: changes
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          code=true
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            code=false
+            git diff --name-only --no-renames -z "$BASE_SHA...$HEAD_SHA" > "$RUNNER_TEMP/ci-changed-paths"
+            while IFS= read -r -d '' path; do
+              case "$path" in
+                # Executable tracker files use the same code tier in every package.
+                .agents/pm/*.mjs|.agents/pm/*.cjs|.agents/pm/*.js|.agents/pm/*.ts) code=true ;;
+                .agents/pm/*|*.md|docs/*|CHANGELOG.md|LICENSE) ;;
+                *) code=true ;;
+              esac
+            done < "$RUNNER_TEMP/ci-changed-paths"
+          fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
@@ -33,12 +62,14 @@ jobs:
           cache: npm
 
       - name: Setup Bun
+        if: steps.changes.outputs.code == 'true' && matrix.node-version == 26
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
 
       - name: Install dependencies
         run: npm ci
 
       - name: Verify tracked pm project health
+        if: steps.changes.outputs.code != 'true' || matrix.node-version == 26
         shell: bash
         run: |
           set -euo pipefail
@@ -57,15 +88,20 @@ jobs:
           # clone-local merge driver config declared by .gitattributes is absent.
           ./node_modules/.bin/pm health --strict-exit --require-merge-drivers
 
-      - name: Verify commit identities and private path policy
-        run: npm run identity:check
+      - name: Check documentation and tracker changes
+        if: steps.changes.outputs.code != 'true'
+        run: npm run changelog:check
 
-      - name: Full npm release gate
+      - name: Engines floor build and tests
+        if: steps.changes.outputs.code == 'true' && matrix.node-version == 22
+        run: npm test
+
+      - name: Quick npm release gate
+        if: steps.changes.outputs.code == 'true' && matrix.node-version == 26
         run: npm run release:check
 
+      # test:install already proves Bun project/global installs and bunx --bun
+      # against the packed tarball, including commands and real tracker reads.
       - name: Verify Bun can install the package graph
+        if: steps.changes.outputs.code == 'true' && matrix.node-version == 26
         run: bun install --no-save
-
-      - name: Bun release gates
-        if: matrix.node-version == 26
-        run: bun run release:check

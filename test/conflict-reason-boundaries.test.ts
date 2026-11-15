@@ -1,3 +1,4 @@
+import { testDepth } from './support/depth.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFile } from 'node:fs/promises';
@@ -11,12 +12,12 @@ import { fieldOptions, recordVerdict } from '../src/tracker.ts';
 import type { ConflictResult } from '../src/conflict-types.ts';
 import { conflictFixture, conflictPacket } from './conflict-fixture.ts';
 
-test('seeded excerpt property: 500 size and Unicode variants preserve presentation without a semantic length cutoff', () => {
+test('seeded excerpt property: size and Unicode variants preserve presentation without a semantic length cutoff', () => {
   let seed = 0x10290061;
   const next = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed; };
   const glyphs = ['x', '😀', '界', '\r', '\n', '\u0301'];
   const tails = [0, 1, 239, 240, 241, 99999, 100000, 100001, 200001];
-  for (let sample = 0; sample < 500; sample++) {
+  for (let sample = 0; sample < testDepth(500); sample++) {
     const prefix = Array.from({ length: next() % 242 }, () => glyphs[next() % glyphs.length]);
     const glyph = glyphs[next() % glyphs.length];
     const tail = tails[sample % tails.length] + next() % 3;

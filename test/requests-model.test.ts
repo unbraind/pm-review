@@ -1,3 +1,4 @@
+import { testDepth } from './support/depth.ts';
 import assert from 'node:assert/strict';
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -10,7 +11,7 @@ import { requestsFixture, queue } from './requests-fixture.ts';
 import { richScopeDocument } from './scope-model-fixture.ts';
 import { inFixtureWorkspace } from './helpers.ts';
 
-test('seeded model: 500 random packet/arrival sequences preserve every native field, relationships, whitespace and old-input replays through SDK reads', async t => {
+test('seeded model: random packet/arrival sequences preserve every native field, relationships, whitespace and old-input replays through SDK reads', async t => {
   const seed = 0x10e71026;
   let state = seed;
   const next = () => { state ^= state << 13; state ^= state >>> 17; state ^= state << 5; return state >>> 0; };
@@ -28,7 +29,7 @@ test('seeded model: 500 random packet/arrival sequences preserve every native fi
   const file = join(cwd, 'requests.json');
   const version = async (id: string) => (await readHistoryEntries(getHistoryPath(pmRoot, id), id)).length;
   let operations = 0; let comparisons = 0; let satisfied = 0; let replays = 0;
-  for (let sequence = 0; sequence < 500; sequence++) {
+  for (let sequence = 0; sequence < testDepth(500); sequence++) {
     const initial = queue(await reviewEvidenceRequests(client, { ...packet, select: [packet.select[0]] }));
     const binding: EvidenceRequestInput = { ...packet, select: [packet.select[0]], arrivals: [{ request: initial.requests[0].key, item: evidence, version: await version(evidence), field: 'files', index: 0 }] };
     packets.push({ input: binding, targetVersion: await version(finding) });
@@ -66,10 +67,10 @@ test('seeded model: 500 random packet/arrival sequences preserve every native fi
     assert.equal(await readFile(getHistoryPath(pmRoot, evidence), 'utf8'), history);
     if (sequence % 50 === 0) assert.deepEqual(await reviewEvidenceRequests(client, JSON.parse(text)), result);
     comparisons++;
-    if ((sequence + 1) % 100 === 0) t.diagnostic(`${sequence + 1}/500 request sequences checked`);
+    if ((sequence + 1) % 100 === 0) t.diagnostic(`${sequence + 1}/${testDepth(500)} request sequences checked`);
   }
   assert.ok(fields.length >= 75, `Only ${fields.length} native fields seeded`);
-  assert.ok(replays > 100);
+  assert.ok(replays > testDepth(500) / 5);
   assert.ok(satisfied > 0);
-  t.diagnostic(`seed=${seed}; sequences=500; operations=${operations}; comparisons=${comparisons}; native fields=${fields.length}; older source value replays=${replays}; satisfied=${satisfied}; old packet/arrival replays, SDK/file parity and read-back state preserved`);
+  t.diagnostic(`seed=${seed}; sequences=${testDepth(500)}; operations=${operations}; comparisons=${comparisons}; native fields=${fields.length}; older source value replays=${replays}; satisfied=${satisfied}; old packet/arrival replays, SDK/file parity and read-back state preserved`);
 });

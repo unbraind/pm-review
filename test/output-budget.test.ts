@@ -1,3 +1,4 @@
+import { testDepth } from './support/depth.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { encodeToon } from '@unbrained/pm-cli/sdk';
@@ -50,11 +51,11 @@ test('final budget regression: reason expansion cannot turn the 297-byte omissio
   assert.equal(serializeEvidenceRequests({ ok: false, refusal: { code: 'input_invalid', remedy: 'Correct the packet.' } }), '{"ok":false,"refusal":{"code":"input_invalid","remedy":"Correct the packet."}}');
 });
 
-test('500 seeded output properties cover every JSON/TOON prefix boundary, reason class, UTF-8 width and minimum', t => {
+test('seeded output properties cover every JSON/TOON prefix boundary, reason class, UTF-8 width and minimum', t => {
   let state = 0x0b0d1026;
   const next = () => { state = (Math.imul(state, 1664525) + 1013904223) >>> 0; return state; };
   let checked = 0;
-  for (let trial = 0; trial < 500; trial++) {
+  for (let trial = 0; trial < testDepth(500); trial++) {
     const base = budgetQueue();
     if (next() % 3 === 0) base.satisfied.push({ key: 'f'.repeat(64), item: `artifact-${trial}`, version: trial + 1 });
     if (next() % 3 === 0) base.skipped.push({ selection: 0, reason: 'criterion_reviewed' });
@@ -89,5 +90,5 @@ test('500 seeded output properties cover every JSON/TOON prefix boundary, reason
       }
     }
   }
-  t.diagnostic(`seed=0x0b0d1026; 500 random output models; ${checked} JSON/TOON boundary budgets checked against actual UTF-8 wire bytes`);
+  t.diagnostic(`seed=0x0b0d1026; ${testDepth(500)} random output models; ${checked} JSON/TOON boundary budgets checked against actual UTF-8 wire bytes`);
 });
