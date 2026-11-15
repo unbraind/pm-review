@@ -1,0 +1,17 @@
+id: pm-review-coverage-glob-advisory
+title: Track development coverage glob cancellation advisory
+description: "Fleet CI v2 dependency installation found three moderate development-only audit entries: c8, test-exclude and glob, stemming from GHSA-3g3m-2fjr-6pw4 (glob AbortSignal cancellation bypass). The older pm-review-dev-audit issue covered a different braces advisory and is closed. Do not apply npm audit fix --force: its suggestion downgrades c8 to 9.1.0. Resolve with an upstream patched dependency graph and verify unchanged coverage contracts."
+type: Issue
+status: open
+priority: 2
+tags[2]: dependencies,security
+created_at: "2026-11-15T12:45:41.488Z"
+updated_at: "2026-11-15T12:51:15.293Z"
+author: codex-sol
+acceptance_criteria: Upgrade to a compatible patched development graph; preserve coverage source scope and all four thresholds; npm audit has no affected glob advisory.
+comments[1]{created_at,author,text}:
+  "2026-11-15T12:51:15.292Z",codex-sol,"npm audit reports three moderate development entries via c8 and test-exclude to glob, GHSA-3g3m-2fjr-6pw4. npm run audit:prod reports zero vulnerabilities. This differs from the resolved braces advisory in pm-review-dev-audit. No forced dependency downgrade or package changes were made."
+files[2]{path,scope}:
+  package-lock.json,project
+  package.json,project
+body: ""

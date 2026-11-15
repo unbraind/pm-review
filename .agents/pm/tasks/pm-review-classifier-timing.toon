@@ -1,0 +1,113 @@
+id: pm-review-classifier-timing
+title: Apply Fleet CI v2 and remove classifier timing flakiness
+description: "Fleet CI v2 rollout linked to companion pm-cli-website-dyhg. Reuses the classifier flaky-gate investigation: a correct classifier exceeded a fixed 50 ms elapsed bound under shared scheduling. Preserve every gate across quick hosted PR checks and exhaustive local deep checks, including required CodeQL."
+type: Task
+status: in_progress
+priority: 2
+tags[3]: ci,"gh:unbraind/pm-review#88",performance
+created_at: "2026-10-21T15:50:26.310Z"
+updated_at: "2026-11-15T20:01:48.314Z"
+author: codex-agent
+acceptance_criteria: Preserve required checks and all release-gate contracts across quick PR and full deep tiers; keep coverage thresholds unchanged; remove scheduler-sensitive millisecond assertions; validate touched tests and PR CI.
+comments[16]{created_at,author,text}:
+  "2026-10-21T15:50:35.589Z",codex-agent,"Observed on source commit 92f1c29: full npm release source suite 149/150, no skipped tests; only the existing large-input classifier timing assertion failed at 63.60046 ms. Isolated command node --test --test-name-pattern=\"under 50\" test/review-regressions.test.ts passed 1/1. Coverage measured 100 percent in all four dimensions. No timing or coverage gate was changed. Follow-up only; closeout implementation is tracked separately in pm-review-closeout-verification."
+  "2026-10-21T17:38:31.225Z",codex-agent,"Additional scheduling-sensitive observation on ca837cc: isolated-HOME full suite passed 154/155, with the existing severity parser subprocess reaching its 5000 ms deadline before completion. Shared-host load was approximately 68 while this process was restricted to four CPUs and nice 15. CI Node 22 and 26 passed all 155 tests. No timeout, classifier code or coverage threshold was changed; investigate separately alongside the earlier wall-clock classifier observation."
+  "2026-10-21T18:03:34.061Z",codex-agent,"The unchanged full isolated-HOME release gate subsequently passed on installed Node 26: 155/155 source tests with 0 skipped, including both existing timing-sensitive assertions, followed by packed consumer acceptance 1/1. The isolated severity parser rerun also passed 1/1 at its original deadline. Earlier failures remain valid observations for reproducibility work; this follow-up remains open and no threshold was relaxed."
+  "2026-11-15T12:37:54.559Z",codex-sol,"Reusing this flaky-gate item for Fleet CI v2, companion pm-cli-website-dyhg. Required contexts are test (22), test (26), and codeql. Because codeql is required, retain its triggers without paths-ignore. Implement one quick npm release gate on Node 26, quick build/tests on Node 22, and full npm/Bun gates on both versions in deep CI. Release workflows and release verifier scripts remain outside scope."
+  "2026-11-15T12:41:11.912Z",codex-sol,"Baseline main CI run 43680447531: test (26) 42m37s created-to-completed, 17m53s queue; test (22) 41m58s, 21m14s queue. Downloaded job logs identify request model 472.69-473.71s, scope model 177.92-180.77s, conflict model 99.83-99.94s. Quick corpus keeps deterministic first 50/500 and 60/600 cases, every per-case assertion and all four 100 percent coverage thresholds. Packed acceptance already proves Bun project/global installs and installed bunx execution; retain install smoke only. Release scripts/workflows untouched."
+  "2026-11-15T12:42:40.471Z",codex-sol,"Typecheck, test compilation and lint pass through pm test (6.305s). Strict tracker health with required merge drivers and changelog:check pass. All three workflow YAML files parse with duplicate-key validation; actionlint is unavailable. Three workflow/depth/timeout contracts pass, as does the isolated adversarial classifier operation-budget regression. The touched-file quick suite, including packed acceptance, is running. PM test-result persistence is disabled by existing project policy, so receipts are summarized in comments without changing that policy."
+  "2026-11-15T12:45:17.207Z",codex-sol,"Correction to the initial health receipt: inherited global pm-github requires host 2026.11.14 while the package pins 2026.11.13. Strict health exits 1 in that ambient environment, but passes with PM_GLOBAL_PATH pointing to an empty temporary global tracker, matching fresh CI. No global installation or package pin changed. Actual Bash change detection passes 10 real Git-history cases plus 10 dispatch cases, including source deletion/rename, nested tracker code, unusual filenames and documentation."
+  "2026-11-15T12:45:42.280Z",codex-sol,"Touched-file quick run completed 44 source tests successfully with no skips; three packed tests failed only because the raw test command omitted the build prerequisite and packed acceptance deliberately uses npm pack --ignore-scripts. Rerunning those three through PM_TEST_DEPTH=quick npm run test:install, which builds first. No product defect or code fix is needed. Follow-up pm-review-coverage-glob-advisory tracks the unrelated development-only audit finding; no dependency upgrades are included."
+  "2026-11-15T12:54:18.674Z",codex-sol,"Packed acceptance rerun passes all 3 tests, zero failures/cancellations/skips, through PM_TEST_DEPTH=quick npm run test:install in 391.694s total (test runner 390.308s). Together with the first run, all 44 touched source tests and all 3 packed tests have passed. Source quick timings on this shared machine: conflicts 30.242s, requests 24.948s, scope 52.849s; baseline hosted full timings are recorded separately and are not a controlled comparison. Production audit reports zero vulnerabilities. Initial implementation head 927a0fb is PR #88; CI run 43715282389 and CodeQL run 43715282307 are still queued. One quick coverage run is active with a 1200-second safety limit."
+  "2026-11-15T13:01:05.488Z",codex-sol,"One quick coverage run completed in 603.557s: 316/317 source tests passed, one failed, zero skips. The failure is the tooling assertion requiring the old standalone identity CI step, now deliberately delegated through release:check. This early assertion also prevented its identity executable branch from running: application source coverage is 100 percent across all dimensions, overall branch coverage was 99.95 percent (identity-gate.ts line 59 only). Updated the assertion to require npm release:check in PR CI and npm/Bun gates in deep CI, while retaining the existing identity script and executable checks. No thresholds or source inventory changed. Validate the touched tooling file locally; do not repeat the whole local coverage run."
+  "2026-11-15T13:02:12.068Z",codex-sol,"Final local validation: corrected tooling file passes 39/39 tests, zero failures/cancellations/skips, in 16.115s via pm test. Typecheck, test compilation and lint pass again (4.304s). All touched test files have passing receipts: 44 source cases, 3 packed cases and 39 tooling cases. The single complete quick coverage run took 10m03.557s before the tooling assertion fix; final overall 100 percent certification remains pending PR CI. No full-depth local run, second complete coverage run, release workflow edit, release verifier edit, review-thread action, variable/protection change, merge or item closure. Release this claim for orchestrator handoff; Task remains in progress and advisory follow-up remains open."
+  "2026-11-15T13:43:06.376Z",codex-sol,"Review round: retain the identity gate on the documentation and tracker tier; strengthen the tooling contract and run targeted verification before pushing after the dispatch hold."
+  "2026-11-15T13:50:28.190Z",codex-sol,"Review finding PRRT_kwDOVGABD863p255 fixed: documentation and tracker jobs explicitly run identity:check; workflow and tooling contracts require that step. Static gates and 49 targeted tests passed, including tooling negative fixtures; strict unique-key YAML passed. The first changelog check exposed the existing CI task missing from generated history; regenerated the one missing entry, then the linked changelog and identity checks passed. No separate privacy script exists in this package; identity:check also rejects added private home paths. No measured coverage sources changed; package coverage was not run. Review threads remain untouched."
+  "2026-11-15T19:57:07.813Z",codex-sol-round-d,"Round D: verify PR 88 thread PRRT_kwDOVGABD863qfM3 against the workflow; correct the docs/tracker identity gate table and prose. Review the complete PR diff for privacy, deadlines, scale validation, platform filenames and generated-outcome thresholds. Existing checks pass; rerun scoped local gates before publishing. No thread actions or merge."
+  "2026-11-15T19:59:07.366Z",codex-sol-round-d,"Self-review: the attestation auditor reads shebangs from every tracked file, and three focused tests read README or tracker docs. Preserve those checks in the docs path. Split deep jobs into a Node by package-manager matrix with one release gate per job. Round scaled harness timeouts up, reject timer overflow, and extend regressions; product contracts remain unchanged."
+  "2026-11-15T20:01:45.086Z",codex-sol-round-d,"Round D validation: thread PRRT_kwDOVGABD863qfM3 corrected in the identity gate table and prose. Self-review also restored attestation and focused README/tracker documentation checks in the cheap path, split deep into four single-gate jobs, and rounded fractional harness deadlines while rejecting timer overflow. Linked local gates passed 79 tests with zero failures or skips, plus typecheck, test compilation and lint. Strict YAML parse, strict health, attestation and changelog verification pass. No covered source changed; no coverage rerun. Documentation distinguishes Bun launcher/installed-consumer proof from Node full-suite execution. No review-thread actions or merge; release claim and leave in progress for verification."
+files[18]{path,scope}:
+  .github/workflows/ci-deep.yml,project
+  .github/workflows/ci.yml,project
+  .github/workflows/codeql.yml,project
+  CHANGELOG.md,project
+  src/findings.ts,project
+  test/conflict-model.test.ts,project
+  test/conflict-reason-boundaries.test.ts,project
+  test/core.test.ts,project
+  test/install.acceptance.ts,project
+  test/output-budget.test.ts,project
+  test/release-ci.test.ts,project
+  test/requests-model.test.ts,project
+  test/review-regressions.test.ts,project
+  test/scope-boundary.test.ts,project
+  test/scope-model.test.ts,project
+  test/support/depth.ts,project
+  test/support/time.ts,project
+  test/tooling.test.ts,project
+tests[8]:
+  - command: "npm run typecheck && npm run build:test && npm run lint"
+    scope: project
+    timeout_seconds: 300
+    provenance:
+      author: codex-sol
+      created_at: "2026-11-15T12:41:33.298Z"
+      source_kind: local_mutation
+      source_ref: ci/quick-pr-tier-deep-local-tier
+  - command: "PM_TEST_DEPTH=quick npm run test:install"
+    scope: project
+    timeout_seconds: 1200
+    provenance:
+      author: codex-sol
+      created_at: "2026-11-15T12:45:24.755Z"
+      source_kind: local_mutation
+      source_ref: ci/quick-pr-tier-deep-local-tier
+  - command: npm run build && PM_TEST_DEPTH=quick node --test --test-concurrency=2 --test-reporter=spec test/conflict-model.test.ts test/conflict-reason-boundaries.test.ts test/core.test.ts test/install.acceptance.ts test/output-budget.test.ts test/release-ci.test.ts test/requests-model.test.ts test/review-regressions.test.ts test/scope-boundary.test.ts test/scope-model.test.ts
+    scope: project
+    timeout_seconds: 1200
+    provenance:
+      author: codex-sol
+      created_at: "2026-11-15T12:46:26.738Z"
+      source_kind: local_mutation
+      source_ref: ci/quick-pr-tier-deep-local-tier
+  - command: PM_TEST_DEPTH=quick npm run coverage
+    scope: project
+    timeout_seconds: 1200
+    provenance:
+      author: codex-sol
+      created_at: "2026-11-15T12:49:31.672Z"
+      source_kind: local_mutation
+      source_ref: ci/quick-pr-tier-deep-local-tier
+  - command: PM_TEST_DEPTH=quick node --test --test-reporter=spec test/tooling.test.ts
+    scope: project
+    timeout_seconds: 300
+    provenance:
+      author: codex-sol
+      created_at: "2026-11-15T13:01:06.216Z"
+      source_kind: local_mutation
+      source_ref: ci/quick-pr-tier-deep-local-tier
+  - command: "npm run typecheck && npm run build && npm run build:test && npm run lint && PM_TEST_DEPTH=quick node --test --test-concurrency=2 test/tooling.test.ts test/release-ci.test.ts test/release-workflow.test.ts && node --input-type=module -e 'import {readFileSync,readdirSync} from \"node:fs\"; import assert from \"node:assert/strict\"; import {parseDocument} from \"yaml\"; for (const file of readdirSync(\".github/workflows\").filter(f=>/\\.ya?ml$/.test(f))) { const doc=parseDocument(readFileSync(\".github/workflows/\"+file,\"utf8\"),{uniqueKeys:true,strict:true}); assert.deepEqual(doc.errors,[],file); } console.log(\"Strict workflow YAML: passed\");' && npm run changelog:check && npm run identity:check"
+    scope: project
+    provenance:
+      author: codex-sol
+      created_at: "2026-11-15T13:45:54.375Z"
+      source_kind: local_mutation
+      source_ref: ci/quick-pr-tier-deep-local-tier
+  - command: "npm run changelog:check && npm run identity:check"
+    scope: project
+    provenance:
+      author: codex-sol
+      created_at: "2026-11-15T13:49:19.127Z"
+      source_kind: local_mutation
+      source_ref: ci/quick-pr-tier-deep-local-tier
+  - command: "npm run typecheck && npm run build:test && npm run lint && PM_TEST_DEPTH=quick node --test test/release-ci.test.ts test/release-approval.test.ts test/tooling.test.ts test/closeout-round.test.ts"
+    scope: project
+    provenance:
+      author: codex-sol-round-d
+      created_at: "2026-11-15T19:59:08.708Z"
+      source_kind: local_mutation
+      source_ref: ci/quick-pr-tier-deep-local-tier
+docs[2]{path,scope}:
+  docs/ci-tiers.md,project
+  README.md,project
+body: ""

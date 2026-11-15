@@ -1,3 +1,4 @@
+import { testTime } from './support/time.ts';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
@@ -29,14 +30,14 @@ test('review body sections retain pending findings through import', async t => {
 test('severity parsing bounds adversarial priority whitespace', () => {
   for (const marker of ['priority high', 'priority_-=\tmajor', 'priority: low']) assert.notEqual(severityOf(marker), 'unknown');
   const moduleUrl = new URL('../src/findings.ts', import.meta.url).href;
-  const result = spawnSync(process.execPath, ['--input-type=module', '-e', `import { severityOf } from ${JSON.stringify(moduleUrl)}; if (severityOf('priority' + '\\t'.repeat(150_000) + '!') !== 'unknown') process.exit(1);`], { timeout: 5_000, encoding: 'utf8' });
+  const result = spawnSync(process.execPath, ['--input-type=module', '-e', `import { severityOf } from ${JSON.stringify(moduleUrl)}; if (severityOf('priority' + '\\t'.repeat(150_000) + '!') !== 'unknown') process.exit(1);`], { timeout: testTime(30_000), encoding: 'utf8' });
   assert.equal(result.error, undefined);
   assert.equal(result.status, 0, result.stderr);
 });
 
 test('title parsing bounds adversarial open tags and Markdown whitespace', () => {
   const moduleUrl = new URL('../src/findings.ts', import.meta.url).href;
-  const result = spawnSync(process.execPath, ['--input-type=module', '-e', `import { summaryOf } from ${JSON.stringify(moduleUrl)}; summaryOf('<'.repeat(150_000)); summaryOf('Title' + ' '.repeat(150_000) + '!');`], { timeout: 5_000, encoding: 'utf8' });
+  const result = spawnSync(process.execPath, ['--input-type=module', '-e', `import { summaryOf } from ${JSON.stringify(moduleUrl)}; summaryOf('<'.repeat(150_000)); summaryOf('Title' + ' '.repeat(150_000) + '!');`], { timeout: testTime(30_000), encoding: 'utf8' });
   assert.equal(result.error, undefined);
   assert.equal(result.status, 0, result.stderr);
   assert.equal(summaryOf(' ## **Title** \t'), 'Title');

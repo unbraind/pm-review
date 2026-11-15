@@ -1,3 +1,4 @@
+import { testDepth } from './support/depth.ts';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
@@ -38,7 +39,7 @@ async function nativeModel(t: TestContext) {
   return { client, pmRoot, input, ids, original };
 }
 
-test('seeded model: 500 random native operation sequences and old-query replays preserve every SDK field and relationship', async t => {
+test('seeded model: random native operation sequences and old-query replays preserve every SDK field and relationship', async t => {
   const seed = 0xc0f11028;
   let state = seed;
   const next = () => { state ^= state << 13; state ^= state >>> 17; state ^= state << 5; return state >>> 0; };
@@ -46,7 +47,7 @@ test('seeded model: 500 random native operation sequences and old-query replays 
   let oversized = 0;
   let model = await nativeModel(t);
   const fields = Object.keys(model.original[0]);
-  for (let sequence = 0; sequence < 500; sequence++) {
+  for (let sequence = 0; sequence < testDepth(500); sequence++) {
     if (sequence > 0 && sequence % 25 === 0) model = await nativeModel(t);
     const { client, pmRoot, input, ids, original } = model;
     const queries = [input, { ...input, revision: 'older-revision' }];
@@ -96,11 +97,11 @@ test('seeded model: 500 random native operation sequences and old-query replays 
       assert.deepEqual(await client.deps(id, { format: 'graph' }), graphs[index]);
       assert.equal(await readFile(getHistoryPath(pmRoot, id), 'utf8'), histories[index]);
     }
-    if ((sequence + 1) % 100 === 0) t.diagnostic(`${sequence + 1}/500 conflict sequences checked`);
+    if ((sequence + 1) % 100 === 0) t.diagnostic(`${sequence + 1}/${testDepth(500)} conflict sequences checked`);
   }
   assert.ok(fields.length >= 75);
-  assert.ok(oldReplays > 50);
+  assert.ok(oldReplays > testDepth(500) / 10);
   assert.ok(conflicts > 0);
-  assert.equal(oversized, 5);
-  t.diagnostic(`seed=${seed}; sequences=500; operations=${operations}; native fields=${fields.length}; older native value replays=${oldReplays}; conflicts=${conflicts}; oversized reason sequences=${oversized}; JSON/TOON and CRLF query replays preserve SDK state, relationships and audited histories`);
+  assert.equal(oversized, Math.ceil(testDepth(500) / 100));
+  t.diagnostic(`seed=${seed}; sequences=${testDepth(500)}; operations=${operations}; native fields=${fields.length}; older native value replays=${oldReplays}; conflicts=${conflicts}; oversized reason sequences=${oversized}; JSON/TOON and CRLF query replays preserve SDK state, relationships and audited histories`);
 });

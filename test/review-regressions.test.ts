@@ -1,3 +1,4 @@
+import { testTime } from './support/time.ts';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
@@ -180,13 +181,21 @@ test('duplicate and stale first apply vote and retries satisfy the round voting 
 });
 
 
-test('bot classification handles 100k spaces and asterisks in under 50 ms', () => {
+test('bot classification handles 100k spaces and asterisks with bounded regex scans', () => {
   const moduleUrl = new URL('../src/findings.ts', import.meta.url).href;
-  const script = `import assert from 'node:assert/strict'; import { performance } from 'node:perf_hooks'; import { isInformational, severityOf } from ${JSON.stringify(moduleUrl)};
+  const script = `import assert from 'node:assert/strict'; import { isInformational, severityOf } from ${JSON.stringify(moduleUrl)};
     for (let i = 0; i < 20; i++) { isInformational('**' + ' '.repeat(200)); severityOf('priority' + ' '.repeat(200)); isInformational('* '.repeat(100)); severityOf('* '.repeat(100)); }
     const bodies = ['**' + ' '.repeat(99998), '* '.repeat(50000), 'priority' + ' '.repeat(100000), '**' + ' '.repeat(99991) + 'medium!'];
-    for (const body of bodies) { const start = performance.now(); assert.equal(isInformational(body), false); assert.equal(severityOf(body), 'unknown'); const elapsed = performance.now() - start; assert.ok(elapsed < 50, 'classification took ' + elapsed + ' ms'); console.log(elapsed); }`;
-  const result = spawnSync(process.execPath, ['--input-type=module', '-e', script], { timeout: 5000, encoding: 'utf8' });
+    const exec = RegExp.prototype.exec;
+    let scans = 0;
+    RegExp.prototype.exec = function(value) { scans += value.length; return exec.call(this, value); };
+    for (const body of bodies) {
+      scans = 0;
+      assert.equal(isInformational(body), false);
+      assert.equal(severityOf(body), 'unknown');
+      assert.ok(scans > 0 && scans <= 12 * body.length, 'classification exceeded its linear scan budget: ' + scans);
+    }`;
+  const result = spawnSync(process.execPath, ['--input-type=module', '-e', script], { timeout: testTime(30_000), encoding: 'utf8' });
   assert.equal(result.error, undefined);
   assert.equal(result.status, 0, result.stderr);
 });
