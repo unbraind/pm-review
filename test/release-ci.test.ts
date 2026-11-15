@@ -30,8 +30,10 @@ test('PR gates preserve required names, bounded execution and the cheap docs pat
   const cheap = steps.filter((step: { if?: string; run?: string }) => step.run && (!step.if || step.if.includes("code != 'true'")));
   assert.ok(cheap.some((step: { run: string }) => step.run.includes('npm ci')));
   assert.ok(cheap.some((step: { run: string }) => step.run.includes('health --strict-exit --require-merge-drivers')));
-  assert.ok(cheap.some((step: { run: string }) => step.run === 'npm run changelog:check'));
+  assert.ok(cheap.some((step: { run: string }) => step.run.includes('npm run changelog:check')));
   assert.ok(cheap.some((step: { run: string }) => step.run === 'npm run identity:check'));
+  assert.ok(cheap.some((step: { run: string }) => step.run.includes('npm run verify:release-publish-attestation')));
+  assert.ok(cheap.some((step: { run: string }) => step.run.includes('automatic release activation|release PR tracking link|historical validation receipts')));
 });
 
 test('deep tier retains both full release gates on both engines and avoids local WAN setup', () => {
@@ -40,10 +42,15 @@ test('deep tier retains both full release gates on both engines and avoids local
   assert.deepEqual(ci.on.push.branches, ['main']);
   const job = ci.jobs.deep;
   assert.deepEqual(job.strategy.matrix['node-version'], [22, 26]);
+  assert.deepEqual(job.strategy.matrix['package-manager'], ['npm', 'bun']);
   assert.deepEqual(job.env, { PM_TEST_DEPTH: 'full', PM_TEST_TIME_SCALE: 3 });
   assert.equal(job['timeout-minutes'], 120);
   assert.match(job['runs-on'], /PM_LOCAL_DEEP != 'off'.*self-hosted.*pm-local.*ubuntu-latest/);
-  for (const run of ['npm run release:check', 'bun run release:check', 'bun --version', 'bun install --no-save']) {
+  for (const manager of ['npm', 'bun']) {
+    const gate = job.steps.find((step: { run?: string }) => step.run === `${manager} run release:check`);
+    assert.equal(gate.if, `matrix.package-manager == '${manager}'`);
+  }
+  for (const run of ['bun --version', 'bun install --no-save']) {
     assert.ok(job.steps.some((step: { run?: string; if?: string }) => step.run === run && !step.if));
   }
   const node = job.steps.find((step: { uses?: string }) => step.uses?.startsWith('actions/setup-node@'));
@@ -74,7 +81,13 @@ test('depth defaults to full and watchdog scaling rejects unbounded values', () 
     assert.equal(testTime(1000), 1000);
     process.env.PM_TEST_TIME_SCALE = '3';
     assert.equal(testTime(1000), 3000);
-    for (const invalid of ['0', '-1', 'NaN', 'Infinity', '0.0001', '']) {
+    process.env.PM_TEST_TIME_SCALE = '1.2345';
+    assert.equal(testTime(1001), 1236);
+    process.env.PM_TEST_TIME_SCALE = '0.0001';
+    assert.equal(testTime(1000), 1);
+    process.env.PM_TEST_TIME_SCALE = '3000000';
+    assert.throws(() => testTime(1000), /PM_TEST_TIME_SCALE/);
+    for (const invalid of ['0', '-1', 'NaN', 'Infinity', '']) {
       process.env.PM_TEST_TIME_SCALE = invalid;
       assert.throws(() => testTime(1000), /PM_TEST_TIME_SCALE/);
     }

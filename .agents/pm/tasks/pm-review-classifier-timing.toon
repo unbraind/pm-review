@@ -6,10 +6,10 @@ status: in_progress
 priority: 2
 tags[3]: ci,"gh:unbraind/pm-review#88",performance
 created_at: "2026-10-21T15:50:26.310Z"
-updated_at: "2026-11-15T13:50:30.929Z"
+updated_at: "2026-11-15T20:01:48.314Z"
 author: codex-agent
 acceptance_criteria: Preserve required checks and all release-gate contracts across quick PR and full deep tiers; keep coverage thresholds unchanged; remove scheduler-sensitive millisecond assertions; validate touched tests and PR CI.
-comments[13]{created_at,author,text}:
+comments[16]{created_at,author,text}:
   "2026-10-21T15:50:35.589Z",codex-agent,"Observed on source commit 92f1c29: full npm release source suite 149/150, no skipped tests; only the existing large-input classifier timing assertion failed at 63.60046 ms. Isolated command node --test --test-name-pattern=\"under 50\" test/review-regressions.test.ts passed 1/1. Coverage measured 100 percent in all four dimensions. No timing or coverage gate was changed. Follow-up only; closeout implementation is tracked separately in pm-review-closeout-verification."
   "2026-10-21T17:38:31.225Z",codex-agent,"Additional scheduling-sensitive observation on ca837cc: isolated-HOME full suite passed 154/155, with the existing severity parser subprocess reaching its 5000 ms deadline before completion. Shared-host load was approximately 68 while this process was restricted to four CPUs and nice 15. CI Node 22 and 26 passed all 155 tests. No timeout, classifier code or coverage threshold was changed; investigate separately alongside the earlier wall-clock classifier observation."
   "2026-10-21T18:03:34.061Z",codex-agent,"The unchanged full isolated-HOME release gate subsequently passed on installed Node 26: 155/155 source tests with 0 skipped, including both existing timing-sensitive assertions, followed by packed consumer acceptance 1/1. The isolated severity parser rerun also passed 1/1 at its original deadline. Earlier failures remain valid observations for reproducibility work; this follow-up remains open and no threshold was relaxed."
@@ -23,6 +23,9 @@ comments[13]{created_at,author,text}:
   "2026-11-15T13:02:12.068Z",codex-sol,"Final local validation: corrected tooling file passes 39/39 tests, zero failures/cancellations/skips, in 16.115s via pm test. Typecheck, test compilation and lint pass again (4.304s). All touched test files have passing receipts: 44 source cases, 3 packed cases and 39 tooling cases. The single complete quick coverage run took 10m03.557s before the tooling assertion fix; final overall 100 percent certification remains pending PR CI. No full-depth local run, second complete coverage run, release workflow edit, release verifier edit, review-thread action, variable/protection change, merge or item closure. Release this claim for orchestrator handoff; Task remains in progress and advisory follow-up remains open."
   "2026-11-15T13:43:06.376Z",codex-sol,"Review round: retain the identity gate on the documentation and tracker tier; strengthen the tooling contract and run targeted verification before pushing after the dispatch hold."
   "2026-11-15T13:50:28.190Z",codex-sol,"Review finding PRRT_kwDOVGABD863p255 fixed: documentation and tracker jobs explicitly run identity:check; workflow and tooling contracts require that step. Static gates and 49 targeted tests passed, including tooling negative fixtures; strict unique-key YAML passed. The first changelog check exposed the existing CI task missing from generated history; regenerated the one missing entry, then the linked changelog and identity checks passed. No separate privacy script exists in this package; identity:check also rejects added private home paths. No measured coverage sources changed; package coverage was not run. Review threads remain untouched."
+  "2026-11-15T19:57:07.813Z",codex-sol-round-d,"Round D: verify PR 88 thread PRRT_kwDOVGABD863qfM3 against the workflow; correct the docs/tracker identity gate table and prose. Review the complete PR diff for privacy, deadlines, scale validation, platform filenames and generated-outcome thresholds. Existing checks pass; rerun scoped local gates before publishing. No thread actions or merge."
+  "2026-11-15T19:59:07.366Z",codex-sol-round-d,"Self-review: the attestation auditor reads shebangs from every tracked file, and three focused tests read README or tracker docs. Preserve those checks in the docs path. Split deep jobs into a Node by package-manager matrix with one release gate per job. Round scaled harness timeouts up, reject timer overflow, and extend regressions; product contracts remain unchanged."
+  "2026-11-15T20:01:45.086Z",codex-sol-round-d,"Round D validation: thread PRRT_kwDOVGABD863qfM3 corrected in the identity gate table and prose. Self-review also restored attestation and focused README/tracker documentation checks in the cheap path, split deep into four single-gate jobs, and rounded fractional harness deadlines while rejecting timer overflow. Linked local gates passed 79 tests with zero failures or skips, plus typecheck, test compilation and lint. Strict YAML parse, strict health, attestation and changelog verification pass. No covered source changed; no coverage rerun. Documentation distinguishes Bun launcher/installed-consumer proof from Node full-suite execution. No review-thread actions or merge; release claim and leave in progress for verification."
 files[18]{path,scope}:
   .github/workflows/ci-deep.yml,project
   .github/workflows/ci.yml,project
@@ -42,7 +45,7 @@ files[18]{path,scope}:
   test/support/depth.ts,project
   test/support/time.ts,project
   test/tooling.test.ts,project
-tests[7]:
+tests[8]:
   - command: "npm run typecheck && npm run build:test && npm run lint"
     scope: project
     timeout_seconds: 300
@@ -95,6 +98,13 @@ tests[7]:
     provenance:
       author: codex-sol
       created_at: "2026-11-15T13:49:19.127Z"
+      source_kind: local_mutation
+      source_ref: ci/quick-pr-tier-deep-local-tier
+  - command: "npm run typecheck && npm run build:test && npm run lint && PM_TEST_DEPTH=quick node --test test/release-ci.test.ts test/release-approval.test.ts test/tooling.test.ts test/closeout-round.test.ts"
+    scope: project
+    provenance:
+      author: codex-sol-round-d
+      created_at: "2026-11-15T19:59:08.708Z"
       source_kind: local_mutation
       source_ref: ci/quick-pr-tier-deep-local-tier
 docs[2]{path,scope}:
