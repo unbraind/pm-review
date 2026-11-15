@@ -48,6 +48,7 @@
 ### Removed
 
 - coderabbitai: Remove the timed-reply completion criterion. ([pm-review-gh-b8d0ce4233d43151b6ae2029](https://github.com/unbraind/pm-review/blob/main/.agents/pm/review-findings/pm-review-gh-b8d0ce4233d43151b6ae2029.toon))
+- Apply Fleet CI v2 and remove classifier timing flakiness ([pm-review-classifier-timing](https://github.com/unbraind/pm-review/blob/main/.agents/pm/tasks/pm-review-classifier-timing.toon))
 
 ### Security
 

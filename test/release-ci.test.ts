@@ -31,6 +31,7 @@ test('PR gates preserve required names, bounded execution and the cheap docs pat
   assert.ok(cheap.some((step: { run: string }) => step.run.includes('npm ci')));
   assert.ok(cheap.some((step: { run: string }) => step.run.includes('health --strict-exit --require-merge-drivers')));
   assert.ok(cheap.some((step: { run: string }) => step.run === 'npm run changelog:check'));
+  assert.ok(cheap.some((step: { run: string }) => step.run === 'npm run identity:check'));
 });
 
 test('deep tier retains both full release gates on both engines and avoids local WAN setup', () => {

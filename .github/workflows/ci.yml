@@ -88,6 +88,10 @@ jobs:
           # clone-local merge driver config declared by .gitattributes is absent.
           ./node_modules/.bin/pm health --strict-exit --require-merge-drivers
 
+      - name: Check documentation and tracker identities
+        if: steps.changes.outputs.code != 'true'
+        run: npm run identity:check
+
       - name: Check documentation and tracker changes
         if: steps.changes.outputs.code != 'true'
         run: npm run changelog:check
