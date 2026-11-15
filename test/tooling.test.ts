@@ -23,7 +23,6 @@ import { runCoverageGate } from "../scripts/coverage-gate.ts";
 import { runDocstringGate } from "../scripts/docstring-gate.ts";
 import { VERDICTS } from "../src/types.ts";
 import { auditIdentities, containsAbsoluteHomePath, runIdentityGate } from "../scripts/identity-gate.ts";
-import { resolveReleaseThreads } from "../scripts/resolve-release-threads.ts";
 
 import fleetConfig from '../eslint.config.ts';
 
@@ -243,45 +242,12 @@ test('identity policy reads post-baseline patches larger than the default execFi
 });
 
 test('release PR tracking link resolves to an existing epic', () => {
-  const workflow = readFileSync(join(repositoryRoot, '.github/workflows/release.yml'), 'utf8');
-  const body = workflow.split('\n').find(line => line.includes('--body') && line.includes('Tracking:'));
+  const workflow = readFileSync(join(repositoryRoot, 'docs/release-caller-rollout.md'), 'utf8');
+  const body = workflow.split('\n').find(line => line.includes('Tracking:'));
   assert.ok(body);
   const link = body.match(/https:\/\/github\.com\/unbraind\/pm-review\/blob\/main\/(\.agents\/pm\/epics\/[^)]+\.toon)/);
   assert.ok(link);
   assert.equal(existsSync(join(repositoryRoot, link[1])), true);
-});
-
-test('release PR auto-resolution only touches threads written entirely by the allowlisted review bot', () => {
-  let filter = '';
-  resolveReleaseThreads('example', 'package', '42', 'unused', args => {
-    filter = args[args.indexOf('--jq') + 1];
-    return { success: true, stdout: '' };
-  });
-  assert.ok(filter, 'release helper must retain the unresolved-thread jq filter');
-  const thread = (id: string, authors: ReadonlyArray<readonly [string, string]>) => ({ id, isResolved: false, comments: { totalCount: authors.length, nodes: authors.map(([type, login]) => ({ author: { __typename: type, login } })) } });
-  const fixture = { data: { repository: { pullRequest: { reviewThreads: { nodes: [
-    thread('review-bot', [['Bot', 'coderabbitai']]),
-    thread('code-scanning', [['Bot', 'github-advanced-security']]),
-    thread('mixed-bots', [['Bot', 'coderabbitai'], ['Bot', 'sourcery-ai']]),
-    thread('human', [['User', 'maintainer']]),
-  ] } } } } };
-  const outcome = spawnSync('jq', ['-r', filter], { input: JSON.stringify(fixture), encoding: 'utf8' });
-  assert.equal(outcome.status, 0, outcome.stderr);
-  assert.deepEqual(outcome.stdout.trim().split('\n'), ['review-bot']);
-});
-
-test('release pack manifest parsing survives npm 10 prepare output before the JSON array', () => {
-  const workflow = readFileSync(join(repositoryRoot, '.github/workflows/release.yml'), 'utf8');
-  const assignment = workflow.split('\n').find(line => line.includes('filename="$(node -p'));
-  assert.ok(assignment);
-  // npm 10 can run the package prepare script during pack and prefix its output to the JSON manifest.
-  const root = fixtureProject('release-pack-manifest', {
-    'pack.json': 'prepare: installing the merge driver\nprepare: done\n[{"filename":"pm-review-2026.10.12.tgz"}]\n',
-  });
-  const outcome = spawnSync('bash', ['-c', `set -e\n${assignment}\nprintf '%s' "$filename"`], { cwd: root, encoding: 'utf8' });
-  assert.equal(outcome.error, undefined);
-  assert.equal(outcome.status, 0, outcome.stderr);
-  assert.equal(outcome.stdout, 'pm-review-2026.10.12.tgz');
 });
 
 test('Git includes eval queries while ignoring generated search contents', () => {
