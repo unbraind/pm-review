@@ -1,4 +1,4 @@
-import { preparationFailure } from '../src/closeout-run.ts';
+import { fullOutputArgs, preparationFailure } from '../src/closeout-run.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { join, resolve } from 'node:path';
@@ -7,6 +7,11 @@ import type { CloseoutReport } from '../src/closeout-types.ts';
 
 /** Make an empty decision receipt for evidence-boundary tests, without replacing the SDK. */
 function report(): CloseoutReport { return { id: 'fixture', ok: false, baseline: 'recorded', revert_check: 'not_requested', criteria: [], findings: [], skipped: [], tests: [], commands: [] }; }
+
+test('complete-output compatibility covers the supported floor, migration and later calendar releases', () => {
+  for (const version of ['2025.12.31', '2026.10.13', '2026.11.13']) assert.deepEqual(fullOutputArgs(version), [], version);
+  for (const version of ['2026.11.14', '2026.12.1', '2027.1.1']) assert.deepEqual(fullOutputArgs(version), ['--full-output'], version);
+});
 
 test('criterion proof needs every named result, authentic file links and a present artifact', () => {
   assert.deepEqual(itemEvidence({}), { files: [], docs: [], tests: [], comments: [], acceptance_criteria: '' });

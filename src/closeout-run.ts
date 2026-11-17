@@ -15,6 +15,12 @@ export interface CloseoutRun { command?: string; path?: string; status: string; 
 /** A disposable run has either parsed host evidence or a bounded refusal. */
 export interface CloseoutExecution { runs: CloseoutRun[]; error: string; functions?: { file: string; start: number; end: number; count: number }[] }
 
+/** Request complete streams on releases that trim quiet passing CLI output. */
+export function fullOutputArgs(version: string): string[] {
+  const [year, month, day] = version.split('.').map(Number);
+  return year > 2026 || year === 2026 && (month > 11 || month === 11 && day >= 14) ? ['--full-output'] : [];
+}
+
 /** Run a pinned host with bounded wall time and output, independent of linked timeout overrides. */
 export function boundedHost(args: string[], cwd: string, timeout: number, terminate = killProcessTree): Promise<CloseoutExecution> {
   return new Promise(resolveResult => {
@@ -121,16 +127,13 @@ export async function executeCloseout(client: PmClient, id: string, options: Clo
     const require = createRequire(import.meta.url);
     const cli = resolve(dirname(require.resolve('@unbrained/pm-cli/cli')), '../cli.js');
     const { version } = JSON.parse(readFileSync(require.resolve('@unbrained/pm-cli/package.json'), 'utf8')) as { version: string };
-    const [year, month, day] = version.split('.').map(Number);
-    // Older supported hosts lack this flag; 2026.11.14 starts trimming passing streams.
-    const fullOutput = year > 2026 || year === 2026 && (month > 11 || month === 11 && day >= 14) ? ['--full-output'] : [];
     const seconds = options.timeoutSeconds ?? 60;
     // Reading through the supplied client ensures hosted/back-end failures are visible before execution.
     await client.get(id, { depth: 'full' });
     const counters = join(sandbox, 'counters');
     mkdirSync(counters);
     phase = 'test-host';
-    const execution = await boundedHost([cli, '--no-extensions', '--json', '--pm-path', tracker, 'test', id, '--run', ...fullOutput, '--timeout', String(seconds), '--fail-on-skipped', '--fail-on-empty-test-run', '--env-set', `NODE_V8_COVERAGE=${counters}`], workspace, seconds * 1000);
+    const execution = await boundedHost([cli, '--no-extensions', '--json', '--pm-path', tracker, 'test', id, '--run', ...fullOutputArgs(version), '--timeout', String(seconds), '--fail-on-skipped', '--fail-on-empty-test-run', '--env-set', `NODE_V8_COVERAGE=${counters}`], workspace, seconds * 1000);
     phase = 'native-counters';
     execution.functions = [];
     for (const entry of readdirSync(counters)) {
