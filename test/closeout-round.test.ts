@@ -13,6 +13,17 @@ function receipt(): CloseoutReport {
   return { id: 'fixture', ok: false, baseline: '', revert_check: 'not_requested', criteria: [], findings: [], skipped: [], tests: [], commands: [] };
 }
 
+test('passing host output retains early named assertions beyond the quiet CLI tail', async t => {
+  const { cwd, client, pmRoot } = await tracker(t);
+  writeFileSync(join(cwd, 'case.test.ts'), "import { test } from 'node:test'; for (let i = 0; i < 12; i++) test('complete proof ' + i, () => {});\n");
+  const { item } = await client.create({ type: 'Task', title: 'Complete output proof', acceptanceCriteria: '[test:complete proof 0]' });
+  await inFixtureWorkspace(cwd, () => client.run('test', { id: item.id, options: { add: [`command=${process.execPath} --test --test-reporter=tap case.test.ts,path=case.test.ts`] } }));
+  const report = await reviewCloseout(client, item.id, { cwd, pmRoot });
+  assert.equal(report.tests.length, 12);
+  assert.equal(report.criteria[0].verdict, 'proven');
+  assert.equal(report.findings.some(finding => finding.code === 'execution_missing'), false);
+});
+
 test('round regression: policy names match complete basenames and preserve config variants', () => {
   const ordinary = ['src/linter-rules.ts', 'src/abc8.ts', 'src/mycoverage.ts', 'not-package.json', 'lib/package.json.ts', 'src/jestHelpers.ts'];
   const policies = ['package.json', 'packages/app/package.json', '.eslintrc.json', '.nycrc.json', 'c8.json', 'coverage.json', 'eslint.config.mjs', 'config/jestConfig.ts', 'config/vitest.config.cts', 'lint-rules.js'];
