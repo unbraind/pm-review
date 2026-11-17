@@ -6,14 +6,15 @@ status: in_progress
 priority: 1
 tags[1]: "gh:unbraind/pm-review#91"
 created_at: "2026-11-17T18:26:54.052Z"
-updated_at: "2026-11-17T18:44:32.036Z"
+updated_at: "2026-11-17T18:46:23.272Z"
 author: codex-sol
 repro_steps: Run closeout tests with SDK 2026.11.13 and 2026.11.14.
 expected_result: Named fresh assertions remain available for criterion verification.
 actual_result: Commands pass but closeout reports execution_missing.
-comments[2]{created_at,author,text}:
+comments[3]{created_at,author,text}:
   "2026-11-17T18:30:59.098Z",codex-sol,"Job 133920462791 reports execution_missing although the linked command passed. Release 2026.11.14 documents quiet passing streams limited to 6 lines and 480 characters (pm-v1mp64); this is intended output projection, not tracker discovery or realpath failure. Request --full-output on hosts from that version, retaining older host compatibility."
   "2026-11-17T18:44:06.542Z",codex-sol,"Validation: npm run typecheck, npm run lint, build and build:test pass. The final pm-linked closeout process/round/main/review selection passes 47 tests with no skips. A disposable consumer on SDK 2026.11.13 passes the new complete-output assertion plus the four reported discovery/symlink/no-git regressions: 5 passed, 0 failed. Regenerated changelog:check passes."
+  "2026-11-17T18:46:14.515Z",codex-sol,"Implementation and dependency adoption commit: d3ede6a. Final linked evidence-only selection adds 3 passes to the 47 closeout process/round/main/review passes; all 50 targeted tests pass without skips. SDK 2026.11.13 compatibility selection passes 5/5. Item remains open for orchestrator review."
 files[5]{path,scope}:
   CHANGELOG.md,project
   package-lock.json,project
