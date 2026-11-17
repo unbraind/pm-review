@@ -29,8 +29,8 @@
 - Restore unique import identity for shared delivery PRs ([pm-review-sync-identity](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-sync-identity.toon))
 - Treat vanished deadline descendants as terminated ([pm-review-deadline-esrch](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-deadline-esrch.toon))
 - Investigate intermittent native Bun closeout copy failure ([pm-review-bun-closeout-copy](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-bun-closeout-copy.toon))
-- Withdrawn lineage observations block response and status for live findings ([pm-review-withdrawn-lineage](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-withdrawn-lineage.toon))
 - Exact-head completion accepts unavailable-review notices and rejects substantive rate-limit reviews ([pm-review-github-d686d81c4a08-14](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-github-d686d81c4a08-14.toon))
+- Withdrawn lineage observations block response and status for live findings ([pm-review-withdrawn-lineage](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-withdrawn-lineage.toon))
 - Round success returns unsupported explicit zero exit code ([pm-review-round-exit-contract](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-round-exit-contract.toon))
 - Track development glob dependency advisory before publication ([pm-review-dev-audit](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-dev-audit.toon))
 - Prefer the actionable heading over CodeRabbit static-analysis wrapper text ([pm-review-summary-ux](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-summary-ux.toon))
@@ -82,3 +82,8 @@
 - coderabbitai: Resolve the root argument before using it. ([pm-review-gh-3756aee5638da26537c52013](https://github.com/unbraind/pm-review/blob/main/.agents/pm/review-findings/pm-review-gh-3756aee5638da26537c52013.toon))
 - sourcery-ai: Pull request larger than review limit ([pm-review-gh-28697439f32d9689fa28611d](https://github.com/unbraind/pm-review/blob/main/.agents/pm/review-findings/pm-review-gh-28697439f32d9689fa28611d.toon))
 - Adopt the November 4 pm review toolchain contracts ([pm-review-toolchain-1104](https://github.com/unbraind/pm-review/blob/main/.agents/pm/chores/pm-review-toolchain-1104.toon))
+
+### Closed
+
+- Closed: Detached-descendant deadline test rejects ESRCH from a disappearing /proc process ([pm-review-github-d686d81c4a08-56](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-github-d686d81c4a08-56.toon))
+- Closed: Shared delivery PR \#46 is tagged as duplicate importer identity, blocking gated issue sync ([pm-review-github-d686d81c4a08-57](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-github-d686d81c4a08-57.toon))
