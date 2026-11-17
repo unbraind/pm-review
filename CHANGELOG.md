@@ -43,6 +43,7 @@
 - Find durable fix and refusal precedents ([pm-review-precedents](https://github.com/unbraind/pm-review/blob/main/.agents/pm/features/pm-review-precedents.toon))
 - Pin the host so history verifies and keep CodeRabbit under the file cap ([pm-review-host-pin](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-host-pin.toon))
 - Follow up SDK schemaAddField type forwarding ([pm-review-sdk-gap](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-sdk-gap.toon))
+- Preserve closeout assertion evidence across SDK output changes ([pm-review-sdk-output-1117](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-sdk-output-1117.toon))
 - Keep sync changelog regeneration consistent with the release gate ([pm-review-sync-changelog](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-sync-changelog.toon))
 
 ### Removed
