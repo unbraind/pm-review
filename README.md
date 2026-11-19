@@ -35,7 +35,7 @@ To evaluate a source commit, start in the checkout and install the packed archiv
 
 ```sh
 npm ci
-tarball=$(npm pack --silent)
+tarball=$(npm pack --silent) && test -n "$tarball" && test -f "$tarball" || exit 1
 archive="$(pwd)/$tarball"
 consumer=$(mktemp -d -t pm-review.XXXXXX)
 cd "$consumer"
@@ -45,7 +45,10 @@ npx --no-install pm package install ./node_modules/pm-review
 npx --no-install pm review --help
 ```
 
-Daily and manual releases run from `main` when `PM_RELEASE_APPROVED` is enabled. The workflow publishes through npm trusted publishing with provenance.
+Automated npm publication requires the maintainer to configure a GitHub Actions
+[trusted publisher](https://docs.npmjs.com/trusted-publishers/) for this repository
+with workflow filename `release.yml`. `PM_RELEASE_APPROVED=true` gates daily and manual
+releases on `main`. The trusted publisher authorizes the workflow to publish to npm through OIDC. The workflow publishes with provenance.
 
 Requires Node 22.18 or later and PM CLI/SDK 2026.10.13 or later. Authentication follows pm-github: `GITHUB_TOKEN`, then `GH_TOKEN`, then `gh auth token`. Credentials stay in memory and never appear in receipts. The endpoint is GitHub.com; redirects are refused and each network request has a deadline.
 
@@ -241,7 +244,7 @@ npm run changelog:full
 
 The release gates enforce typechecking, fleet ESLint/jscpd/docstrings, statement/branch/function/line coverage at 100%, production audit, package allowlist, generated changelog, publish attestation and packed npm/Bun acceptance. Coverage includes authored executable source and package tooling, with source-inventory reconciliation and invalidation of failed reports. Tests use real temporary PM trackers without SDK mocks. Public read-only GitHub fixtures are recorded from pm-rl#68; fixture metadata records the capture head and operations without tokens. Synthetic mutations exercise apply without changing a real PR.
 
-Implementation and acceptance receipts live in this package's `.agents/pm` tracker. Its epic links companion `pm-cli-website-ox5m`. Items remain open for orchestrator verification. The release workflow has no schedule and requires explicit maintainer enablement and dispatch.
+Implementation and acceptance receipts live in this package's `.agents/pm` tracker. Its epic links companion `pm-cli-website-ox5m`. Items remain open for orchestrator verification.
 
 The minimum supported SDK (2026.10.13) forwards `PmClient.schemaAddField`'s declared `type` correctly. pm-review uses that typed helper; real tracker tests verify stored schema types and numeric/boolean round trips. Successful round and status results omit `exit_code`; incomplete gates return `exit_code: 1`, as required by the host extension contract.
 
