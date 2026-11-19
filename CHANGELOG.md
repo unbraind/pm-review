@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Other
+
+- Adopt the released reusable Daily Release caller ([pm-review-release-caller-rollout](https://github.com/unbraind/pm-review/blob/main/.agents/pm/tasks/pm-review-release-caller-rollout.toon))
+
 ## 2026.11.19 - 2026-11-19
 
 ### Added

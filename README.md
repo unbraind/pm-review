@@ -6,22 +6,21 @@ Project management = context management.
 
 ## Install and release approval
 
-The first npm release is pending the maintainer's interactive bootstrap. After
-that first publish, the maintainer configures npm trusted publishing for
-`release.yml` and sets the repository variable `PM_RELEASE_APPROVED` to `true`.
-The daily workflow and manual dispatch both require this variable and `main`.
-Publishing uses OIDC with provenance; no stored npm token is needed.
-
-Once published, install the package and compatible pm host, then activate the
-extension in an initialized pm project:
+In an initialized pm project, choose npm or Bun to install and activate the extension from the registry.
 
 ```sh
 npm install pm-review @unbrained/pm-cli
 npx --no-install pm package install ./node_modules/pm-review
+```
 
+```sh
 bun add pm-review @unbrained/pm-cli
 bunx --bun --no-install pm package install ./node_modules/pm-review
+```
 
+If the pm host is already installed, it can install and activate the extension directly.
+
+```sh
 pm package install npm:pm-review
 pm review --help
 ```
@@ -30,28 +29,23 @@ The package exports its SDK through `main` and `types` and registers commands
 with pm. It has no standalone `bin`: use `npx pm` or `bunx --bun pm` through
 the installed host. npm/Bun dependency installation alone does not activate it.
 
-## Install
+### Local archive
 
-This new package is unreleased. The registry examples below apply after maintainer-approved publication. For local evaluation, build and pack the package, then install the resulting tarball into a scratch project.
+To evaluate a source commit, start in the checkout and install the packed archive in a fresh consumer directory.
 
 ```sh
 npm ci
-npm run build
-npm pack
-pm install ./pm-review-2026.10.12.tgz --project
+tarball=$(npm pack --silent)
+archive="$(pwd)/$tarball"
+consumer=$(mktemp -d -t pm-review.XXXXXX)
+cd "$consumer"
+npm install "$archive" @unbrained/pm-cli
+npx --no-install pm init review --defaults --agent-guidance skip
+npx --no-install pm package install ./node_modules/pm-review
+npx --no-install pm review --help
 ```
 
-After publication:
-
-```sh
-pm install pm-review --project
-npm install pm-review @unbrained/pm-cli
-bun add pm-review @unbrained/pm-cli
-npx --package @unbrained/pm-cli --package pm-review pm install pm-review --project
-bunx --bun --package @unbrained/pm-cli pm install pm-review --project
-```
-
-npm and Bun dependency installation make the package available to your application. `pm install` installs and activates its extension for the project. A consuming SDK host can also import the extension and register it through the PM extension loader.
+Daily and manual releases run from `main` when `PM_RELEASE_APPROVED` is enabled. The workflow publishes through npm trusted publishing with provenance.
 
 Requires Node 22.18 or later and PM CLI/SDK 2026.10.13 or later. Authentication follows pm-github: `GITHUB_TOKEN`, then `GH_TOKEN`, then `gh auth token`. Credentials stay in memory and never appear in receipts. The endpoint is GitHub.com; redirects are refused and each network request has a deadline.
 
