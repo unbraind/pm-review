@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Daily release never publishes: npm reads release-artifact/package.tgz as a GitHub repository ([pm-review-kucs](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-kucs.toon))
+
 ## 2026.11.19 - 2026-11-19
 
 ### Added
