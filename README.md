@@ -34,15 +34,17 @@ the installed host. npm/Bun dependency installation alone does not activate it.
 To evaluate a source commit, start in the checkout and install the packed archive in a fresh consumer directory.
 
 ```sh
-npm ci
-tarball=$(npm pack --silent) && test -n "$tarball" && test -f "$tarball" || exit 1
-archive="$(pwd)/$tarball"
-consumer=$(mktemp -d -t pm-review.XXXXXX)
-cd "$consumer"
-npm install "$archive" @unbrained/pm-cli
-npx --no-install pm init review --defaults --agent-guidance skip
-npx --no-install pm package install ./node_modules/pm-review
-npx --no-install pm review --help
+(
+  npm ci
+  tarball=$(npm pack --silent) && test -n "$tarball" && test -f "$tarball" || exit 1
+  archive="$(pwd)/$tarball"
+  consumer=$(mktemp -d -t pm-review.XXXXXX)
+  cd "$consumer"
+  npm install "$archive" @unbrained/pm-cli
+  npx --no-install pm init review --defaults --agent-guidance skip
+  npx --no-install pm package install ./node_modules/pm-review
+  npx --no-install pm review --help
+)
 ```
 
 Automated npm publication requires the maintainer to configure a GitHub Actions
