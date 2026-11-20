@@ -6,22 +6,21 @@ Project management = context management.
 
 ## Install and release approval
 
-The first npm release is pending the maintainer's interactive bootstrap. After
-that first publish, the maintainer configures npm trusted publishing for
-`release.yml` and sets the repository variable `PM_RELEASE_APPROVED` to `true`.
-The daily workflow and manual dispatch both require this variable and `main`.
-Publishing uses OIDC with provenance; no stored npm token is needed.
-
-Once published, install the package and compatible pm host, then activate the
-extension in an initialized pm project:
+In an initialized pm project, choose npm or Bun to install and activate the extension from the registry.
 
 ```sh
 npm install pm-review @unbrained/pm-cli
 npx --no-install pm package install ./node_modules/pm-review
+```
 
+```sh
 bun add pm-review @unbrained/pm-cli
 bunx --bun --no-install pm package install ./node_modules/pm-review
+```
 
+If the pm host is already installed, it can install and activate the extension directly.
+
+```sh
 pm package install npm:pm-review
 pm review --help
 ```
@@ -30,28 +29,35 @@ The package exports its SDK through `main` and `types` and registers commands
 with pm. It has no standalone `bin`: use `npx pm` or `bunx --bun pm` through
 the installed host. npm/Bun dependency installation alone does not activate it.
 
-## Install
+### Local archive
 
-This new package is unreleased. The registry examples below apply after maintainer-approved publication. For local evaluation, build and pack the package, then install the resulting tarball into a scratch project.
-
-```sh
-npm ci
-npm run build
-npm pack
-pm install ./pm-review-2026.10.12.tgz --project
-```
-
-After publication:
+To evaluate a source commit, start in the checkout and install the packed archive in a fresh consumer directory.
 
 ```sh
-pm install pm-review --project
-npm install pm-review @unbrained/pm-cli
-bun add pm-review @unbrained/pm-cli
-npx --package @unbrained/pm-cli --package pm-review pm install pm-review --project
-bunx --bun --package @unbrained/pm-cli pm install pm-review --project
+(
+  npm ci || exit 1
+  tarball=$(npm pack --silent) && test -n "$tarball" && test -f "$tarball" || exit 1
+  packed_version=$(node -p 'require("./package.json").version') || exit 1
+  archive="$(pwd)/$tarball"
+  consumer=$(mktemp -d -t pm-review.XXXXXX) && test -n "$consumer" && cd "$consumer" || exit 1
+  npm install "$archive" @unbrained/pm-cli || exit 1
+  npx --no-install pm init review --defaults --agent-guidance skip || exit 1
+  npx --no-install pm package install ./node_modules/pm-review || exit 1
+  npx --no-install pm review --help || exit 1
+  installed_version=$(node -p 'require("./node_modules/pm-review/package.json").version') || exit 1
+  test "$installed_version" = "$packed_version" || {
+    printf 'Expected version %s, installed %s.\n' "$packed_version" "$installed_version" >&2
+    exit 1
+  }
+)
 ```
 
-npm and Bun dependency installation make the package available to your application. `pm install` installs and activates its extension for the project. A consuming SDK host can also import the extension and register it through the PM extension loader.
+Automated npm publication requires the maintainer to configure a GitHub Actions
+[trusted publisher](https://docs.npmjs.com/trusted-publishers/) for this repository
+with workflow filename `release.yml` and select `npm publish` under **Allowed actions**.
+Trusted publishers created after September 3, 2026 default to
+`npm stage publish` only. `PM_RELEASE_APPROVED=true` gates daily and manual
+releases on `main`. The trusted publisher authorizes the workflow to publish to npm through OIDC. The workflow publishes with provenance.
 
 Requires Node 22.18 or later and PM CLI/SDK 2026.10.13 or later. Authentication follows pm-github: `GITHUB_TOKEN`, then `GH_TOKEN`, then `gh auth token`. Credentials stay in memory and never appear in receipts. The endpoint is GitHub.com; redirects are refused and each network request has a deadline.
 
@@ -247,7 +253,7 @@ npm run changelog:full
 
 The release gates enforce typechecking, fleet ESLint/jscpd/docstrings, statement/branch/function/line coverage at 100%, production audit, package allowlist, generated changelog, publish attestation and packed npm/Bun acceptance. Coverage includes authored executable source and package tooling, with source-inventory reconciliation and invalidation of failed reports. Tests use real temporary PM trackers without SDK mocks. Public read-only GitHub fixtures are recorded from pm-rl#68; fixture metadata records the capture head and operations without tokens. Synthetic mutations exercise apply without changing a real PR.
 
-Implementation and acceptance receipts live in this package's `.agents/pm` tracker. Its epic links companion `pm-cli-website-ox5m`. Items remain open for orchestrator verification. The release workflow has no schedule and requires explicit maintainer enablement and dispatch.
+Implementation and acceptance receipts live in this package's `.agents/pm` tracker. Its epic links companion `pm-cli-website-ox5m`. Items remain open for orchestrator verification.
 
 The minimum supported SDK (2026.10.13) forwards `PmClient.schemaAddField`'s declared `type` correctly. pm-review uses that typed helper; real tracker tests verify stored schema types and numeric/boolean round trips. Successful round and status results omit `exit_code`; incomplete gates return `exit_code: 1`, as required by the host extension contract.
 
