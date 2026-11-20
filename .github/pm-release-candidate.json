@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "repository": "unbraind/pm-review",
-  "baseSha": "0e543f3771cf06971d1e2f1ce27792e6e4742d90",
-  "version": "2026.11.19",
-  "runId": 44462043670,
+  "baseSha": "d6e1b74bf9eb04968ff39e6439988a0279ab5914",
+  "version": "2026.11.20",
+  "runId": 44731463147,
   "runAttempt": 1,
   "configDigest": "19f861084767fcd1b42ece3bc60c873d40cadd652aba909211d2aaf4f1e1ede6"
 }
