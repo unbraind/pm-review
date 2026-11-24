@@ -50,7 +50,12 @@ export function runChangelog(args: string[], cwd = process.cwd()): number {
   }
   const outputIndex = args.indexOf('--output');
   const output = resolve(cwd, outputIndex === -1 ? 'CHANGELOG.md' : args[outputIndex + 1]);
-  if (check) return existsSync(output) && readFileSync(output, 'utf8') === markdown ? 0 : 1;
+  if (check) {
+    if (existsSync(output) && readFileSync(output, 'utf8') === markdown) return 0;
+    // Ask the generator for its drift classification and diff after link validation.
+    spawnSync(process.execPath, [createRequire(import.meta.url).resolve('pm-changelog/cli'), ...forwarded, '--check'], { cwd, stdio: ['ignore', 'inherit', 'inherit'] });
+    return 1;
+  }
   writeFileSync(output, markdown);
   return 0;
 }

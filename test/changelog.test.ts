@@ -50,7 +50,9 @@ test('changelog rejects missing branch files under an alternate configured base'
   const { cwd } = await tracker(t);
   const input = join(cwd, 'items.json');
   writeFileSync(input, JSON.stringify([{ id: 'missing-item', title: 'Missing finding', type: 'Issue', status: 'open' }]));
-  assert.throws(() => runChangelog(['--input', input, '--status', 'open', '--item-url-base', 'https://example.test/tracker'], cwd), /no branch file/);
+  const args = ['--input', input, '--status', 'open', '--item-url-base', 'https://example.test/tracker'];
+  assert.throws(() => runChangelog(args, cwd), /no branch file/);
+  assert.throws(() => runChangelog([...args, '--check'], cwd), /no branch file/);
 });
 
 test('changelog writes and checks output larger than 1 MiB without truncation', async t => {
@@ -84,4 +86,27 @@ test('changelog CLI publishes canonical stdout and GitHub step summaries', async
     if (withSummary) assert.equal(readFileSync(summary, 'utf8'), result.stdout);
   }
   assert.equal(runChangelog(['--input', input, '--status', 'open', '--stdout'], cwd), 0);
+});
+
+test('changelog check drift explains itself: the gate prints the drift classification and a unified diff', async t => {
+  const { cwd } = await tracker(t);
+  const input = join(cwd, 'items.json');
+  writeFileSync(input, JSON.stringify([{ id: 'drift-item', title: 'Drifted finding', type: 'Issue', status: 'closed' }]));
+  const args = ['--input', input, '--status', 'closed', '--mode', 'replace'];
+  assert.equal(runChangelog(args, cwd), 0);
+  // A deep gate that fails only on a drifted changelog must say why: without
+  // the drift explanation, a queued-run failure is indistinguishable from a
+  // crash and the leg has to be re-run by hand to see anything at all.
+  const committed = readFileSync(join(cwd, 'CHANGELOG.md'), 'utf8');
+  writeFileSync(join(cwd, 'CHANGELOG.md'), committed.replace('# Changelog', '# Changelog (stale)'));
+  const result = spawnSync(process.execPath, [resolve('scripts/changelog.ts'), ...args, '--check'], { cwd, encoding: 'utf8' });
+  assert.equal(result.status, 1, result.stderr);
+  assert.match(result.stderr, /Changelog is out of date: /);
+  assert.match(result.stderr, /Drift classification: /);
+  assert.match(result.stderr, /--- committed /);
+  assert.match(result.stderr, /\+\+\+ generated/);
+  assert.ok(readFileSync(join(cwd, 'CHANGELOG.md'), 'utf8').includes('# Changelog (stale)'));
+  // An up-to-date check stays silent and green.
+  assert.equal(runChangelog(args, cwd), 0);
+  assert.equal(runChangelog([...args, '--check'], cwd), 0);
 });

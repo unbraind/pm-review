@@ -1,0 +1,25 @@
+id: pm-review-2jcx
+title: "Changelog gate fails silently on drift: print the drift classification and diff"
+description: "The deep tier's changelog:check (scripts/changelog.ts --check) exits 1 with no output at all when the committed changelog is out of date, because the wrapper compared the generated markdown with the committed file itself and returned 1 without a message. The scheduled deep legs then failed with nothing but an exit code. Delegate the check verdict to the generator's own --check path, which prints the drift classification and a unified diff, so a failing gate explains itself. The underlying drift in the observed deep failure was a release-tag race: a queued deep run audits a pre-release snapshot while the release tag already exists, and the generator rebuilds full history from every tag; that reachability scoping belongs upstream (pm item for the follow-up)."
+type: Issue
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-11-23T15:46:40.576Z"
+updated_at: "2026-11-24T00:50:18.477Z"
+author: codex-agent
+comments[6]{created_at,author,text}:
+  "2026-11-23T15:46:53.667Z",codex-agent,"Classification (scheduled-failure triage 2026-11-23, deep run 44715927320): class 1. All four deep legs failed 'Full npm release gate'/'Full Bun release gate' at changelog:check with exit code 1 and NO output. Reproduced locally at the failing commit: the committed changelog still carried an 'Unreleased' section while the generator, rebuilding full history from every release tag, produced the released '2026.11.20' section (the v2026.11.20 tag landed at 12:59Z, after the run's 10:03Z snapshot) - a queued-snapshot release-tag race; current main passes because the release commit regenerated the changelog. The in-repo defect this PR fixes: the wrapper's own byte compare returned 1 without any message, so the deep legs failed silently. Fix: forward --check to the generator and return its verdict, so the gate prints the drift classification and unified diff through the generator's own check path."
+  "2026-11-23T15:47:41.651Z",codex-agent,"Revert proof: with only the scripts/changelog.ts change reverted to origin/main, the new regression test fails (5 pass, 1 fail: the CLI --check run produces no 'Changelog is out of date' drift output); with the fix restored the suite is 6/6 pass. The test asserts the drift message, the drift classification, the unified diff markers, that a failing check does not rewrite the file, and that an up-to-date check stays green."
+  "2026-11-23T22:37:22.497Z",codex-agent,Continuation preserved the wrapper link validation and original check verdict. A failing comparison asks the generator for the diagnostic. A regression assertion now exercises missing item links in check mode.
+  "2026-11-23T22:39:38.085Z",codex-agent,Pinned pm test passed all six focused cases with two workers. Reverting only scripts/changelog.ts made the diagnostic assertion fail on empty stderr. The prior diagnostic implementation had 99.95% branch coverage and bypassed the existing link guard. The revised check preserves link validation and reports drift without changing the comparison.
+  "2026-11-24T00:49:08.149Z",codex-agent,"Full depth npm and Bun release gates passed at time scale 3 with two test workers and isolated Git identity. Each passed all 322 coverage tests and all three packed-install checks. The coverage gate reported 100 percent statements, branches, functions and lines over 47 source files. End-to-end wall time was 70.5 minutes for npm and 58.3 minutes for Bun. The regression still fails when only the wrapper change is reverted."
+  "2026-11-24T00:50:18.477Z",codex-agent,The regenerated changelog preserves the published 2026.11.23 dependency section and adds this change under Unreleased. Strict tracker health passes with an empty home and CI-style Git configuration. The shared home resolves an ambient extension version newer than the pinned host.
+files[2]{path,scope}:
+  scripts/changelog.ts,project
+  test/changelog.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  env HOME=$(mktemp -d) GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 node --test --test-concurrency=2 test/changelog.test.ts,project,codex-agent,"2026-11-23T15:47:00.062Z",local_mutation,deep-1123
+docs[1]{path,scope}:
+  CHANGELOG.md,project
+body: ""

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Changelog gate fails silently on drift: print the drift classification and diff ([pm-review-2jcx](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-2jcx.toon))
+
 ## 2026.11.23 - 2026-11-23
 
 ### Dependencies
