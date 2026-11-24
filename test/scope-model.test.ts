@@ -5,7 +5,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { canonicalDocument, commitImportedItem, getHistoryPath, getItemPath, locateItem, readHistoryEntries, readLocatedItem, readSettings } from '@unbrained/pm-cli/sdk';
-import type { GetResult, ItemDocument } from '@unbrained/pm-cli/sdk';
+import type { GetResult } from '@unbrained/pm-cli/sdk';
 import { captureReviewScope } from '../src/scope.ts';
 import { reviewScopeFile } from '../src/scope-file.ts';
 import type { CarryForwardReport, ReviewScope, ScopeObligation } from '../src/scope-types.ts';
@@ -46,8 +46,6 @@ test('seeded model: random operation sequences preserve all native SDK state acr
     const id = "sample-native-model";
     const settings = await readSettings(pmRoot);
     const located = (await locateItem(pmRoot, templateId))!;
-    const sourceLocated = (await locateItem(pmRoot, evidence))!;
-    const sourceDocument = (await readLocatedItem(sourceLocated)).document;
     const seedDocument = richScopeDocument((await readLocatedItem(located)).document, evidence);
     seedDocument.metadata.id = id;
     // Core owns normalization and audited imports. The package never serializes native item data.
@@ -87,9 +85,9 @@ test('seeded model: random operation sequences preserve all native SDK state acr
       else if (choice === 1) await client.update(id, { dep: [`id=${evidence},kind=${next() % 2 ? 'blocks' : 'related'},author=model-agent,created_at=2026-10-01T10:00:00.000Z,source_kind=related_to`] });
       else if (choice === 2) await client.update(evidence, { description: `  evidence ${next()}\r\nsecond line  ` });
       else if (choice === 3) {
-        // Replay genuinely older native input, including its old timestamp, through the core import path.
-        const document: ItemDocument = structuredClone(sourceDocument);
-        await inFixtureWorkspace(cwd, async () => commitImportedItem({ pmRoot, id: evidence, itemPath: sourceLocated.itemPath, document, settings, author: 'model-agent', message: 'Replay old native evidence input', conflictWarningPrefix: 'scope-model' }));
+        // Restore the exact older native state and append a successor history event.
+        const restored = await client.restore(evidence, '1', { message: 'Restore old native evidence state' });
+        assert.equal(restored.restored_from.version, 1);
       } else await client.comments(id, { add: `foreign-provider/v1 annotation ${next()}\r\n  preserves native values` });
       operations++;
       if (operation === 1) await capture();

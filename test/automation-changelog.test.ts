@@ -6,6 +6,13 @@ import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
+test('all changelog entry points retain published dependency updates', () => {
+  const manifest: { scripts: Record<string, string> } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  for (const name of ['changelog', 'changelog:full', 'changelog:check', 'release:notes']) {
+    assert.ok(manifest.scripts[name]?.split(/\s+/).includes('--dependency-updates'), `${name} must include --dependency-updates`);
+  }
+});
+
 test('the configured sync regeneration passes the package changelog check in a real temporary tracker', () => {
   const root = fileURLToPath(new URL('../', import.meta.url));
   const manifest: { name: string; version: string; scripts: Record<string, string> } = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));

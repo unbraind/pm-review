@@ -6,6 +6,10 @@
 
 - Changelog gate fails silently on drift: print the drift classification and diff ([pm-review-2jcx](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-2jcx.toon))
 
+### Other
+
+- Adopt pm-cli 2026.11.24 host-aligned SDK behaviour ([pm-review-sdk-host-alignment-1122](https://github.com/unbraind/pm-review/blob/main/.agents/pm/chores/pm-review-sdk-host-alignment-1122.toon))
+
 ## 2026.11.23 - 2026-11-23
 
 ### Dependencies
@@ -19,6 +23,10 @@
 ### Fixed
 
 - Daily release never publishes: npm reads release-artifact/package.tgz as a GitHub repository ([pm-review-kucs](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-kucs.toon))
+
+### Dependencies
+
+- Bump @unbrained/pm-cli ([#97](https://github.com/unbraind/pm-review/pull/97))
 
 ## 2026.11.19 - 2026-11-19
 
@@ -103,3 +111,41 @@
 - coderabbitai: Resolve the root argument before using it. ([pm-review-gh-3756aee5638da26537c52013](https://github.com/unbraind/pm-review/blob/main/.agents/pm/review-findings/pm-review-gh-3756aee5638da26537c52013.toon))
 - sourcery-ai: Pull request larger than review limit ([pm-review-gh-28697439f32d9689fa28611d](https://github.com/unbraind/pm-review/blob/main/.agents/pm/review-findings/pm-review-gh-28697439f32d9689fa28611d.toon))
 - Adopt the November 4 pm review toolchain contracts ([pm-review-toolchain-1104](https://github.com/unbraind/pm-review/blob/main/.agents/pm/chores/pm-review-toolchain-1104.toon))
+
+### Dependencies
+
+- Bump the pm-toolchain group with 2 updates ([#94](https://github.com/unbraind/pm-review/pull/94))
+- Bump eslint ([#92](https://github.com/unbraind/pm-review/pull/92))
+- Bump @babel/eslint-parser ([#89](https://github.com/unbraind/pm-review/pull/89))
+- Bump jscpd ([#83](https://github.com/unbraind/pm-review/pull/83))
+- Bump the pm-toolchain group across 1 directory with 3 updates ([#78](https://github.com/unbraind/pm-review/pull/78))
+- Bump unbraind/pm-github/.github/workflows/pm-github-closeout.yml ([#81](https://github.com/unbraind/pm-review/pull/81))
+- Bump unbraind/pm-github/.github/workflows/pm-github-sync.yml ([#80](https://github.com/unbraind/pm-review/pull/80))
+- Bump the codeql-action group with 2 updates ([#79](https://github.com/unbraind/pm-review/pull/79))
+- Bump the pm-toolchain group across 1 directory with 3 updates ([#75](https://github.com/unbraind/pm-review/pull/75))
+- Bump eslint ([#72](https://github.com/unbraind/pm-review/pull/72))
+- Bump unbraind/pm-github/.github/workflows/pm-github-closeout.yml ([#68](https://github.com/unbraind/pm-review/pull/68))
+- Bump unbraind/pm-github/.github/workflows/pm-github-sync.yml ([#67](https://github.com/unbraind/pm-review/pull/67))
+- Bump the pm-toolchain group across 1 directory with 3 updates ([#65](https://github.com/unbraind/pm-review/pull/65))
+- Bump @types/node ([#66](https://github.com/unbraind/pm-review/pull/66))
+- Bump the pm-toolchain group across 1 directory with 3 updates ([#63](https://github.com/unbraind/pm-review/pull/63))
+- Bump the pm-toolchain group with 2 updates ([#58](https://github.com/unbraind/pm-review/pull/58))
+- Bump pm-changelog ([#54](https://github.com/unbraind/pm-review/pull/54))
+- Bump the pm-toolchain group across 1 directory with 3 updates ([#51](https://github.com/unbraind/pm-review/pull/51))
+- Bump jscpd ([#52](https://github.com/unbraind/pm-review/pull/52))
+- Bump unbraind/pm-github/.github/workflows/pm-github-sync.yml ([#50](https://github.com/unbraind/pm-review/pull/50))
+- Bump unbraind/pm-github/.github/workflows/pm-github-closeout.yml ([#49](https://github.com/unbraind/pm-review/pull/49))
+- Bump the codeql-action group with 2 updates ([#48](https://github.com/unbraind/pm-review/pull/48))
+- Bump the pm-toolchain group across 1 directory with 3 updates ([#35](https://github.com/unbraind/pm-review/pull/35))
+- Bump the pm-toolchain group with 2 updates ([#28](https://github.com/unbraind/pm-review/pull/28))
+- Bump @unbrained/pm-cli ([#24](https://github.com/unbraind/pm-review/pull/24))
+- Bump the pm-toolchain group across 1 directory with 2 updates ([#21](https://github.com/unbraind/pm-review/pull/21))
+- Bump eslint ([#22](https://github.com/unbraind/pm-review/pull/22))
+- Bump the pm-toolchain group with 3 updates ([#19](https://github.com/unbraind/pm-review/pull/19))
+- Bump the codeql-action group with 2 updates ([#20](https://github.com/unbraind/pm-review/pull/20))
+- Bump pm-changelog ([#13](https://github.com/unbraind/pm-review/pull/13))
+- Bump actions/setup-node from 7.0.0 to 7.1.0 ([#5](https://github.com/unbraind/pm-review/pull/5))
+- Bump actions/download-artifact from 8.0.1 to 8.0.2 ([#6](https://github.com/unbraind/pm-review/pull/6))
+- Bump actions/upload-artifact from 7.0.1 to 7.0.2 ([#4](https://github.com/unbraind/pm-review/pull/4))
+- Bump the codeql-action group with 2 updates ([#3](https://github.com/unbraind/pm-review/pull/3))
+- Bump the dependencies group with 3 updates ([#2](https://github.com/unbraind/pm-review/pull/2))

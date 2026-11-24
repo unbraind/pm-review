@@ -218,25 +218,59 @@ test('bare command success is absent named execution even when comments claim EX
 test('git-backed execution clones metadata, restores new and deleted source only in the copy', async t => {
   const { client, cwd, pmRoot } = await tracker(t);
   sourceFiles(cwd);
+  writeFileSync(join(cwd, 'case.test.ts'), `
+    import assert from 'node:assert/strict';
+    import { execFileSync } from 'node:child_process';
+    import { existsSync, readFileSync } from 'node:fs';
+    import { test } from 'node:test';
+    test('observe restored source and cloned Git metadata', () => {
+      assert.equal(execFileSync('git', ['log', '-1', '--format=%s'], { encoding: 'utf8' }).trim(), 'baseline');
+      assert.equal(existsSync('new.ts'), false);
+      assert.equal(readFileSync('nested/restored.ts', 'utf8'), 'restored');
+      assert.equal(existsSync('node_modules'), true);
+    });
+  `);
   execFileSync('git', ['init', '-q'], { cwd });
   execFileSync('git', ['add', 'source.ts', 'case.test.ts'], { cwd });
   execFileSync('git', ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'baseline'], { cwd });
   mkdirSync(join(cwd, '.deps'));
   symlinkSync(join(cwd, '.deps'), join(cwd, 'node_modules'), 'dir');
+  writeFileSync(join(cwd, 'new.ts'), 'new');
   const item = (await client.create({ type: 'Task', title: 'Clone execution' })).item;
-  // Historical path-only links are importable even though modern test mutations require commands.
-  const located = await locateItem(pmRoot, item.id);
-  const { document } = await readLocatedItem(located!);
-  document.metadata.tests = [{ path: 'case.test.ts', scope: 'project' }];
-  await inFixtureWorkspace(cwd, async () => commitImportedItem({ pmRoot, id: item.id, itemPath: located!.itemPath, document, author: 'test-agent', message: 'Import legacy test link', settings: await readSettings(pmRoot), conflictWarningPrefix: 'fixture' }));
+  await inFixtureWorkspace(cwd, () => client.run('test', { id: item.id, options: { add: ['command=node --test --test-reporter=tap case.test.ts,path=case.test.ts'] } }));
   const execution = await executeCloseout(client, item.id, { cwd, pmRoot, timeoutSeconds: 60 }, [
     { file: 'new.ts', before: null, after: 'new' },
     { file: 'nested/restored.ts', before: 'restored', after: null },
   ]);
   assert.equal(execution.error, '');
-  assert.equal(execution.runs[0].status, 'skipped');
+  assert.deepEqual(execution.runs.map(run => run.status), ['passed'], JSON.stringify(execution.runs));
+  assert.match(execution.runs[0].stdout ?? '', /ok 1 - observe restored source and cloned Git metadata/);
+  assert.equal(readFileSync(join(cwd, 'new.ts'), 'utf8'), 'new');
+  assert.equal(existsSync(join(cwd, 'nested/restored.ts')), false);
 });
 
+test('closeout refuses a persisted legacy path-only test as execution evidence', async t => {
+  const { client, cwd, pmRoot } = await tracker(t);
+  sourceFiles(cwd);
+  const { item } = await client.create({ type: 'Task', title: 'Legacy fixture template', acceptanceCriteria: '[test:returns fixed result]' });
+  const located = await locateItem(pmRoot, item.id);
+  assert.ok(located);
+  const { document } = await readLocatedItem(located);
+  document.metadata.tests = [{ path: 'case.test.ts', scope: 'project' }];
+  const settings = await readSettings(pmRoot);
+  const existing = await inFixtureWorkspace(cwd, () => commitImportedItem({ pmRoot, id: item.id, itemPath: located.itemPath, document, author: 'test-agent', message: 'Attempt to replace existing fixture', settings, conflictWarningPrefix: 'fixture' }));
+  assert.equal(existing.committed, false);
+  const id = 'sample-legacy-closeout';
+  document.metadata.id = id;
+  const imported = await inFixtureWorkspace(cwd, () => commitImportedItem({ pmRoot, id, itemPath: join(dirname(located.itemPath), `${id}.toon`), document, author: 'test-agent', message: 'Import legacy test link', settings, conflictWarningPrefix: 'fixture' }));
+  assert.equal(imported.committed, true);
+  assert.deepEqual((await client.get(id, { full: true })).item.tests, document.metadata.tests);
+  const report = await reviewCloseout(client, id, { cwd, pmRoot });
+  assert.equal(report.ok, false);
+  assert.equal(report.criteria[0].verdict, 'unproven');
+  assert.deepEqual(report.commands.map(command => command.result), ['skipped']);
+  assert.ok(report.findings.some(finding => finding.code === 'execution_missing'));
+});
 
 test('registered closeout success omits explicit zero exit and returns a compact test summary', async t => {
   const { id, options, cwd, pmRoot } = await closeoutFixture(t);
