@@ -1,0 +1,27 @@
+id: pm-review-sdk-host-alignment-1122
+title: Adopt pm-cli 2026.11.24 host-aligned SDK behaviour
+description: Adopt the current fleet toolchain and validate closeout execution against the native host. Companion item pm-cli-website-spus.
+type: Chore
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-11-24T10:32:18.407Z"
+updated_at: "2026-11-24T13:37:46.079Z"
+author: codex-agent
+acceptance_criteria: Pin the current first-party toolchain and refresh the tracked lockfile; Preserve isolated closeout execution and refuse legacy non-executable links; Keep dependency bullets in all changelog entry points; Pass package release and coverage gates
+comments[1]{created_at,author,text}:
+  "2026-11-24T13:37:42.860Z",codex-agent,"Full SDK-bump baseline npm test passed 319/322. The top-level failures were git-backed execution clones metadata, restores new and deleted source only in the copy; missing source mappings refuse and imported attribution is normalized by the SDK; and an evidence successor followed by a byte-identical old import between passes refuses retention. The previous import adapter could overwrite an existing item. The current adapter refuses duplicates. Use an executable linked test on the disposable Git clone, import incomplete attribution and legacy path-only fixtures under fresh IDs, and use native history restore for exact scope replays. Legacy path-only evidence remains refused. Restore-loop revert and removal of each of the four dependency flags independently failed the corresponding regression. At the local 60-minute limit the instrumented run had 323 passes and only the requests model was interrupted. It had passed all 500 cases in the baseline. npm and Bun release:check at quick CI depth each passed 324/324, measured 100% lines, statements, branches and functions across 47 sources, and passed 3/3 packed npm and native Bun install tests. The tracker-linked test passed 25/25. Identity had zero violations, the production audit found zero vulnerabilities, and changelog:check passed."
+files[7]{path,scope}:
+  package-lock.json,project
+  package.json,project
+  test/automation-changelog.test.ts,project
+  test/closeout.test.ts,project
+  test/coverage.test.ts,project
+  test/scope-interleaving.test.ts,project
+  test/scope-model.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test --test-concurrency=2 test/closeout.test.ts test/automation-changelog.test.ts,project,codex-agent,"2026-11-24T10:37:14.135Z",local_mutation,deps/adopt-pm-cli-host-alignment-1122
+docs[2]{path,scope}:
+  CHANGELOG.md,project
+  docs/closeout.md,project
+body: ""

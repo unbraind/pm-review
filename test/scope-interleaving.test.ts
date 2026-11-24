@@ -1,11 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { PmClient, commitImportedItem, getHistoryPath, locateItem, readHistoryEntries, readLocatedItem, readSettings } from '@unbrained/pm-cli/sdk';
+import { PmClient, getHistoryPath, readHistoryEntries } from '@unbrained/pm-cli/sdk';
 import type { GetOptions } from '@unbrained/pm-cli/sdk';
 import { captureReviewScope, carryForwardReview } from '../src/scope.ts';
 import type { CarryForwardReport } from '../src/scope-types.ts';
 import { scopeFixture, scopeDenied } from './scope-fixture.ts';
-import { inFixtureWorkspace } from './helpers.ts';
 
 /** Instrument real SDK reads; every value and competing transition still comes from the real tracker. */
 function interleave(client: PmClient, boundary: number, transition: () => Promise<void>) {
@@ -78,12 +77,9 @@ test('peer transitions at every SDK read boundary preserve peer state and report
 });
 
 
-test('an evidence successor followed by a byte-identical old import between passes refuses retention', async t => {
+test('an evidence successor followed by an exact native restore between passes refuses retention', async t => {
   const { client, id, evidence, selection, cwd, pmRoot } = await scopeFixture(t);
   const peer = new PmClient({ cwd, pmRoot, author: 'peer-agent', noExtensions: true });
-  const located = (await locateItem(pmRoot, evidence))!;
-  const document = (await readLocatedItem(located)).document;
-  const settings = await readSettings(pmRoot);
   const before = (await client.get(evidence, { full: true })).item;
   const baseline = await captureReviewScope(client, id, selection);
   let replayed = false;
@@ -95,14 +91,15 @@ test('an evidence successor followed by a byte-identical old import between pass
         if (!replayed && args[0] === evidence && args[1]?.at === '2') {
           replayed = true;
           await peer.update(evidence, { description: 'Competing evidence review successor' });
-          await inFixtureWorkspace(cwd, async () => commitImportedItem({ pmRoot, id: evidence, itemPath: located.itemPath, document, settings, author: 'peer-agent', message: 'Replay older evidence input', conflictWarningPrefix: 'scope-replay' }));
+          const restored = await peer.restore(evidence, '1', { message: 'Restore the exact previous evidence state' });
+          assert.equal(restored.restored_from.version, 1);
         }
       }
     };
   } });
   scopeDenied(await carryForwardReview(observed, id, baseline), 'state_changed');
   assert.equal(replayed, true);
-  assert.deepEqual((await client.get(evidence, { full: true })).item, before, 'ABA regression requires identical SDK values after replay');
+  assert.deepEqual((await client.get(evidence, { full: true })).item, before, 'ABA regression requires identical SDK values after restore');
   assert.equal((await readHistoryEntries(getHistoryPath(pmRoot, evidence), evidence)).length, 3);
   const current = await carryForwardReview(client, id, baseline) as CarryForwardReport;
   assert.deepEqual(current.counts, { unchanged: 1, stale: 1, never_reviewed: 1, removed: 0 });

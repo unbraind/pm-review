@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, unlinkSync, rmdirSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
-import { createExtensionCommandSdk, commitImportedItem, locateItem, readLocatedItem, readSettings } from '@unbrained/pm-cli/sdk';
+import { createExtensionCommandSdk, commitImportedItem, getItemPath, locateItem, readLocatedItem, readSettings } from '@unbrained/pm-cli/sdk';
 import { activateExtensionForTest, runRegisteredCommandForTest } from '@unbrained/pm-cli/sdk/testing';
 import extension from '../index.ts';
 import type { TestContext } from 'node:test';
@@ -209,16 +209,19 @@ test('missing source mappings refuse and imported attribution is normalized by t
   const comment = (await client.get(id, { full: true })).item.comments![0];
   const binding = JSON.parse(comment.text.slice('review-coverage/v1 '.length));
   await client.comments(id, { add: 'review-coverage/v1 ' + JSON.stringify({ ...binding, evidence: 'absent' }) });
-  let result = await reviewCoverage(client, id) as CoverageMap;
+  const result = await reviewCoverage(client, id) as CoverageMap;
   assert.equal(result.judgments[1].refusal?.code, 'evidence_missing');
   assert.equal(result.judgments[1].reviewer, '');
   const located = await locateItem(pmRoot, id);
   const { document } = await readLocatedItem(located!);
   document.metadata.comments!.push({ ...comment, author: '' }, { ...comment, created_at: '' });
-  await inFixtureWorkspace(cwd, async () => commitImportedItem({ pmRoot, id, itemPath: located!.itemPath, document, author: 'test-agent', message: 'Import incomplete attribution fixture', settings: await readSettings(pmRoot), conflictWarningPrefix: 'fixture' }));
-  result = await reviewCoverage(client, id) as CoverageMap;
-  assert.ok(result.judgments[2].refusal || result.judgments[2].author.trim().length > 0);
-  assert.ok(result.judgments[3].refusal || result.judgments[3].date.trim().length > 0);
+  const importedId = 'sample-incomplete-attribution';
+  document.metadata.id = importedId;
+  const imported = await inFixtureWorkspace(cwd, async () => commitImportedItem({ pmRoot, id: importedId, itemPath: getItemPath(pmRoot, 'Task', importedId), document, author: 'test-agent', message: 'Import incomplete attribution fixture', settings: await readSettings(pmRoot), conflictWarningPrefix: 'fixture' }));
+  assert.equal(imported.committed, true);
+  const mapped = await reviewCoverage(client, importedId) as CoverageMap;
+  assert.ok(mapped.judgments[2].refusal || mapped.judgments[2].author.trim().length > 0);
+  assert.ok(mapped.judgments[3].refusal || mapped.judgments[3].date.trim().length > 0);
 });
 
 
