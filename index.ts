@@ -58,7 +58,7 @@ export type { GitHubTransport, PullRequest, Verdict } from './src/types.ts';
 
 /** Activate durable review context using the host's schema and command registries. */
 export default defineExtension({
-  name: 'pm-review', version: "2026.11.25", description: 'Bot review findings, verdict precedents and exact-head round completion',
+  name: 'pm-review', version: "2026.11.26", description: 'Bot review findings, verdict precedents and exact-head round completion',
   /** Register typed metadata before commands so host validation can use it. */
   activate(api: ExtensionApi): void {
     api.registerItemTypes([REVIEW_TYPE]);
