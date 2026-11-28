@@ -6,7 +6,7 @@ status: closed
 priority: 1
 tags[1]: "gh:unbraind/pm-review#57"
 created_at: "2026-10-28T19:28:58.295Z"
-updated_at: "2026-10-30T14:31:42.276Z"
+updated_at: "2026-11-28T04:24:04.269Z"
 closed_at: "2026-10-30T14:31:38.149Z"
 completed_at: "2026-10-28T20:15:40.000Z"
 author: codex-agent
@@ -14,6 +14,8 @@ acceptance_criteria: Shared delivery links remain on both original closed items 
 resolution: "Replace duplicate PR importer keys with shared delivery tags, retain append-only evidence, and review exactly two generic public procfs hashes for the pinned privacy gate."
 expected_result: Shared delivery links remain on both original closed items with unchanged completion evidence and history prefixes; Every importer identity has one owner and the gated preview succeeds; Isolated atomic gated import and repeat preserve item and history bytes with no duplicate items
 actual_result: "Complete-corpus regression and gated preview pass. Published pinned importer applies 0 new/4 updates, then repeats 0 new/0 updates with 125 item/history files byte-identical; privacy has zero findings and strict health has zero warnings."
+dependencies[1]{id,kind,created_at,author,source_kind,author_source}:
+  pm-review-github-d686d81c4a08-57,related,"2026-11-28T04:24:04.220Z",codex-agent,"cli:update:dep",detected
 comments[6]{created_at,author,text}:
   "2026-10-28T19:29:04.516Z",codex-agent,"Read gated-sync job 122676744472 from run 40646598672: pm-github 2026.10.23 refuses one duplicate provenance identity before any import writes. Both pm-review-bun-closeout-copy and pm-review-targeted-evidence-requests claim PR 46. Plan remove PR delivery identities from both, preserve the PR URL as a non-identity delivery tag and existing closure evidence, and leave provider ownership to its imported record rather than choosing an arbitrary owner. No importer runtime defect established."
   "2026-10-28T19:34:30.882Z",codex-agent,"Repaired both PR 46 delivery tags using pinned PM mutations; IDs, closed/completed dates, closure text and pre-existing history bytes remain intact. Complete-corpus regression passes and reverting only the two records to main in a disposable copy fails on the duplicate identity. The exact gated preview now passes: 4 fetched/planned, 4 matched by provenance, 0 new, 0 skipped. Preview does not perform the post-write privacy scan; isolated apply/repeat, health and byte comparison follow."

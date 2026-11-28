@@ -1,0 +1,26 @@
+id: pm-review-lztq
+title: Align tracker identity test with GitHub importer ownership
+description: Check unique importer ownership under the pm-github reference-tag rule and preserve the shared delivery assertions.
+type: Chore
+status: open
+priority: 2
+tags[1]: "gh:unbraind/pm-review#57"
+created_at: "2026-11-28T04:23:45.336Z"
+updated_at: "2026-11-28T04:26:06.127Z"
+author: codex-agent
+comments[5]{created_at,author,text}:
+  "2026-11-28T04:24:03.109Z",codex-agent,"The base test fails on issue #57 because it treats a shared reference tag as an ownership claim. Reuse the released pm-github ownership index in the test, add explicit-owner collision coverage, and preserve the shared delivery assertions."
+  "2026-11-28T04:25:18.439Z",codex-agent,"Revert proof, tracked corpus: restoring only the old tag-counting loop in a disposable copy of the base tracker fails with Duplicate importer identity unbraind/pm-review#57: pm-review-sync-identity and pm-review-github-d686d81c4a08-57."
+  "2026-11-28T04:25:19.615Z",codex-agent,"Revert proof, true duplicates: the same mutation makes both the explicit URL versus repository-and-number fixture and the proven legacy importer ID fixture fail with Missing expected exception. The unmodified identity test passes all 3 cases."
+  "2026-11-28T04:25:20.659Z",codex-agent,Pinned pm recorded and verified one native related edge from pm-review-sync-identity to pm-review-github-d686d81c4a08-57.
+  "2026-11-28T04:26:03.855Z",codex-agent,Focused identity gate passed 3/3 directly and through the linked test. Typecheck and lint passed. Clean-home strict tracker health passed. The development dependency pins the published ownership index so the test uses the importer policy directly.
+files[4]{path,scope}:
+  .agents/pm/issues/pm-review-sync-identity.toon,project
+  package-lock.json,project
+  package.json,project
+  test/tracker-identity.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test --test-concurrency=2 test/tracker-identity.test.ts,project,codex-agent,"2026-11-28T04:25:23.878Z",local_mutation,fix/identity-test-follows-reference-tag-rule
+docs[1]{path,scope}:
+  docs/issue-sync.md,project
+body: ""
