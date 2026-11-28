@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Align the tracker identity test with the reference-tag rule: a gh: tag is not an importer identity ([pm-review-d4u9](https://github.com/unbraind/pm-review/blob/main/.agents/pm/issues/pm-review-d4u9.toon))
+
 ## 2026.11.26 - 2026-11-26
 
 No changes.

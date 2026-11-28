@@ -1,0 +1,20 @@
+id: pm-review-d4u9
+title: "Align the tracker identity test with the reference-tag rule: a gh: tag is not an importer identity"
+description: "At main commit 379abdd, test/tracker-identity.test.ts failed with 'Duplicate importer identity unbraind/pm-review#57: pm-review-sync-identity and pm-review-github-d686d81c4a08-57'. Verification showed that only pm-review-github-d686d81c4a08-57 claims the importer identity: it carries github_number 57 and github_url. The curated pm-review-sync-identity carries only the gh:unbraind/pm-review#57 reference tag, which under the unbraind/pm-github#230 rule is a reference, not an identity. The defect was in the test, which counted reference tags as ownership, not in the tracker data."
+type: Issue
+status: closed
+priority: 2
+tags[2]: github-sync,tracker-identity
+created_at: "2026-11-28T02:28:40.487Z"
+updated_at: "2026-11-28T07:20:16.895Z"
+closed_at: "2026-11-28T07:20:16.839Z"
+completed_at: "2026-11-28T07:20:16.839Z"
+author: codex-agent
+comments[1]{created_at,author,text}:
+  "2026-11-28T07:20:15.692Z","harness:claude-code","Corrected the description (CodeRabbit on PR 115): there is exactly one importer-identity claimant for issue 57, pm-review-github-d686d81c4a08-57. pm-review-sync-identity only cites the issue by reference tag. The fix landed in PR 116 (merge b08af7f), which aligned test/tracker-identity.test.ts with the rule, added a true-duplicate case that still fails, and linked the two items with a related dependency."
+files[1]{path,scope}:
+  test/tracker-identity.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test --test-concurrency=2 test/tracker-identity.test.ts,project,codex-agent,"2026-11-28T02:28:46.230Z",local_mutation,fix/changelog-wrapper-pending-check
+close_reason: "Resolved by PR 116 (merge b08af7f): the identity test now counts only explicit importer identity (github_* fields or importer provenance), a true-duplicate fixture still fails, and the real corpus passes on main."
+body: ""

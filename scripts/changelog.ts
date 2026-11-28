@@ -31,9 +31,10 @@ function generateChangelog(args: string[], cwd: string): string | null {
 
 /** Generate before comparing or publishing, validating every local tracker link against this branch. */
 export function runChangelog(args: string[], cwd = process.cwd()): number {
-  const check = args.includes('--check');
+  const checkPending = args.includes('--check-pending');
+  const check = checkPending || args.includes('--check');
   const stepSummary = args.includes('--github-step-summary');
-  const forwarded = args.filter(arg => arg !== '--check' && arg !== '--github-step-summary');
+  const forwarded = args.filter(arg => arg !== '--check' && arg !== '--check-pending' && arg !== '--github-step-summary');
   const markdown = generateChangelog(forwarded, cwd);
   if (markdown === null) return 1;
   const base = optionValue(args, '--item-url-base', '').replace(/\/$/, '');
@@ -48,14 +49,13 @@ export function runChangelog(args: string[], cwd = process.cwd()): number {
     if (stepSummary && process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, markdown);
     return 0;
   }
+  if (check) {
+    // The generator owns drift classification, diagnostics and exit status.
+    const result = spawnSync(process.execPath, [createRequire(import.meta.url).resolve('pm-changelog/cli'), ...forwarded, checkPending ? '--check-pending' : '--check'], { cwd, stdio: ['ignore', 'inherit', 'inherit'] });
+    return result.status ?? 1;
+  }
   const outputIndex = args.indexOf('--output');
   const output = resolve(cwd, outputIndex === -1 ? 'CHANGELOG.md' : args[outputIndex + 1]);
-  if (check) {
-    if (existsSync(output) && readFileSync(output, 'utf8') === markdown) return 0;
-    // Ask the generator for its drift classification and diff after link validation.
-    spawnSync(process.execPath, [createRequire(import.meta.url).resolve('pm-changelog/cli'), ...forwarded, '--check'], { cwd, stdio: ['ignore', 'inherit', 'inherit'] });
-    return 1;
-  }
   writeFileSync(output, markdown);
   return 0;
 }
