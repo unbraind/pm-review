@@ -1,6 +1,6 @@
 {
   "name": "pm-review",
-  "version": "2026.11.26",
+  "version": "2026.11.28",
   "description": "Durable bot review findings, verdict precedents and exact-head round gates for pm-cli",
   "author": "@unbraind",
   "entry": "./dist/index.js",
