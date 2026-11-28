@@ -13,7 +13,7 @@ test('all changelog entry points retain published dependency updates', () => {
   }
 });
 
-test('the configured sync regeneration passes the package changelog check in a real temporary tracker', () => {
+test('the configured sync regeneration passes the package changelog check in a real temporary tracker', async t => {
   const root = fileURLToPath(new URL('../', import.meta.url));
   const manifest: { name: string; version: string; scripts: Record<string, string> } = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
   const workflow = readFileSync(join(root, '.github/workflows/pm-github-sync.yml'), 'utf8');
@@ -42,6 +42,32 @@ test('the configured sync regeneration passes the package changelog check in a r
     run(npm, ['run', script, ...(script === 'changelog:full' ? ['--', '--no-pending-release'] : [])]);
     run(npm, ['run', 'changelog:check']);
     assert.match(readFileSync(join(directory, 'CHANGELOG.md'), 'utf8'), /^# Changelog/m);
+
+    await t.test('pending-only drift passes read-only, but strict and versioned checks fail', () => {
+      run('git', ['tag', `v${manifest.version}`]);
+      run(npm, ['run', 'changelog:full']);
+      const output = join(directory, 'CHANGELOG.md');
+      const generated = readFileSync(output, 'utf8');
+      assert.doesNotMatch(generated, /^## Unreleased$/m);
+      const pending = generated.replace(/^(# Changelog\n\n)/, '$1## Unreleased\n\n- A pending change.\n\n');
+      const versioned = pending.replace(/^## (\d[^\n]+)$/m, '## $1 (edited)');
+      assert.match(pending, /^## Unreleased$/m);
+      assert.notEqual(versioned, pending);
+      for (const { content, flags, status, diagnostic } of [
+        { content: pending, flags: ['changelog:check'], status: 0, diagnostic: /pending_only/ },
+        { content: pending, flags: ['changelog:full', '--', '--check-pending'], status: 1, diagnostic: /out of date/ },
+        { content: versioned, flags: ['changelog:check'], status: 1, diagnostic: /out of date/ },
+      ]) {
+        writeFileSync(output, content);
+        const result = spawnSync(npm, ['run', '--silent', ...flags],
+          { cwd: directory, env: environment, encoding: 'utf8', shell: process.platform === 'win32' });
+        assert.ifError(result.error);
+        assert.equal(result.status, status, result.stderr);
+        assert.match(result.stderr, diagnostic);
+        assert.equal(result.stdout, '');
+        assert.equal(readFileSync(output, 'utf8'), content);
+      }
+    });
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }

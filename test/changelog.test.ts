@@ -106,7 +106,23 @@ test('changelog check drift explains itself: the gate prints the drift classific
   assert.match(result.stderr, /--- committed /);
   assert.match(result.stderr, /\+\+\+ generated/);
   assert.ok(readFileSync(join(cwd, 'CHANGELOG.md'), 'utf8').includes('# Changelog (stale)'));
-  // An up-to-date check stays silent and green.
+  // An up-to-date check still passes.
   assert.equal(runChangelog(args, cwd), 0);
   assert.equal(runChangelog([...args, '--check'], cwd), 0);
+});
+
+test('a signaled upstream check fails without rewriting the changelog', async t => {
+  const { cwd, pmRoot } = await tracker(t);
+  const args = ['--pm-root', pmRoot, '--mode', 'replace'];
+  assert.equal(runChangelog(args, cwd), 0);
+  const output = join(cwd, 'CHANGELOG.md');
+  const generated = readFileSync(output, 'utf8');
+  const preload = join(cwd, 'stop-check.cjs');
+  writeFileSync(preload, "if (process.argv[1]?.endsWith('cli.js') && process.argv.includes('--check')) process.kill(process.pid, 'SIGTERM');\n");
+  const result = spawnSync(process.execPath, [resolve('scripts/changelog.ts'), ...args, '--check'], {
+    cwd, encoding: 'utf8', env: { ...process.env, NODE_OPTIONS: `--require ${JSON.stringify(preload)}` },
+  });
+  assert.ifError(result.error);
+  assert.equal(result.status, 1, result.stderr);
+  assert.equal(readFileSync(output, 'utf8'), generated);
 });
